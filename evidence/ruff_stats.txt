@@ -1,0 +1,8 @@
+71	FURB157	[*] verbose-decimal-constructor
+23	I001   	[*] unsorted-imports
+21	RUF059 	[ ] unused-unpacked-variable
+ 6	C408   	[ ] unnecessary-collection-call
+ 3	FURB167	[*] regex-flag-alias
+ 3	RUF007 	[ ] zip-instead-of-pairwise
+ 3	RUF015 	[ ] unnecessary-iterable-allocation-for-first-element
+ 3	RUF100 	[*] unused-noqa
