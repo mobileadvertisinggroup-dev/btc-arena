@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "V1 record schemas",
+  "$defs": {
+    "attempt": {
+      "type": "object",
+      "required": ["account_id", "pair_id", "round_id", "attempt_number",
+                   "generated_prompt_hash", "request_hash", "requested_model",
+                   "returned_model", "raw_response", "parsed_tool_input",
+                   "schema_result", "semantic_validation_result",
+                   "fixed_rejection_reasons", "transport_error_category",
+                   "latency_ms", "token_usage", "became_executed_decision"],
+      "properties": {
+        "account_id": {"type": "string", "pattern": "^(btc|eth|sol)_(haiku|sonnet|opus)_(raw|ta)$"},
+        "pair_id": {"type": "string"},
+        "round_id": {"type": "string", "pattern": "^v1-(BTC|ETH|SOL)-"},
+        "attempt_number": {"type": "integer", "minimum": 1},
+        "generated_prompt_hash": {"type": "string", "minLength": 64, "maxLength": 64},
+        "request_hash": {"type": "string", "minLength": 64, "maxLength": 64},
+        "requested_model": {"type": "string"},
+        "returned_model": {"type": ["string", "null"]},
+        "raw_response": {"type": ["string", "null"]},
+        "parsed_tool_input": {"type": ["object", "null"]},
+        "schema_result": {"enum": ["valid", "invalid", null]},
+        "semantic_validation_result": {"enum": ["valid", "invalid", null]},
+        "fixed_rejection_reasons": {"type": "array", "items": {"type": "string"}},
+        "transport_error_category": {"type": ["string", "null"]},
+        "latency_ms": {"type": "number", "minimum": 0},
+        "token_usage": {"type": ["object", "null"]},
+        "became_executed_decision": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "pair_ledger": {
+      "type": "object",
+      "required": ["round_id", "pair", "status"],
+      "properties": {
+        "round_id": {"type": "string", "pattern": "^v1-(BTC|ETH|SOL)-"},
+        "pair": {"type": "string"},
+        "status": {"enum": ["PAIR_COMMITTED", "PAIR_ABORTED", "PAIR_TERMINAL_SPLIT"]},
+        "reason": {"type": ["string", "null"]},
+        "caused_by_arm": {"enum": ["raw", "ta"]},
+        "terminal": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "lifecycle": {
+      "type": "object",
+      "required": ["start_t", "invalidation", "triggered", "ended_t",
+                   "end_reason", "post_trigger_action", "records"],
+      "properties": {
+        "start_t": {"type": "integer"},
+        "invalidation": {
+          "type": "object",
+          "required": ["timeframe", "operator", "level"],
+          "properties": {
+            "timeframe": {"enum": ["1h_close", "1m_intrabar"]},
+            "operator": {"enum": ["price_at_or_below", "price_at_or_above"]},
+            "level": {"type": ["string", "number"]}
+          },
+          "additionalProperties": false
+        },
+        "triggered": {
+          "type": ["object", "null"],
+          "required": ["t", "price", "candle_t"],
+          "properties": {"t": {"type": "integer"}, "price": {"type": "string"},
+                         "candle_t": {"type": "integer"}},
+          "additionalProperties": false
+        },
+        "ended_t": {"type": ["integer", "null"]},
+        "end_reason": {"type": ["string", "null"]},
+        "post_trigger_action": {"enum": ["closed", "reduced", "held",
+                                          "increased", "reversed", null]},
+        "records": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "trade": {
+      "type": "object",
+      "required": ["side", "qty", "entry", "exit", "pnl", "fee", "reason", "closed_ts"],
+      "properties": {
+        "side": {"enum": ["long", "short"]},
+        "qty": {"type": "string"}, "entry": {"type": "string"},
+        "exit": {"type": "string"}, "pnl": {"type": "string"},
+        "fee": {"type": "string"},
+        "reason": {"enum": ["decision_close", "decision_flip", "stop_loss",
+                             "take_profit", "liquidation"]},
+        "closed_ts": {"type": "integer"}
+      },
+      "additionalProperties": false
+    },
+    "dashboard": {
+      "type": "object",
+      "required": ["experiment", "label", "question", "hashes", "combined_hash",
+                   "pilot_link", "health", "round_counts", "coins"],
+      "properties": {
+        "experiment": {"type": "string"},
+        "label": {"const": "V1 EXPERIMENT"},
+        "question": {"type": "string"},
+        "hashes": {"type": "object"},
+        "combined_hash": {"type": "string", "minLength": 64, "maxLength": 64},
+        "pilot_link": {"type": "object",
+                       "required": ["href", "label"]},
+        "health": {"type": "object"},
+        "round_counts": {"type": "object"},
+        "coins": {"type": "object", "required": ["BTC", "ETH", "SOL"]}
+      },
+      "additionalProperties": false
+    }
+  }
+}

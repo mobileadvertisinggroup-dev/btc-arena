@@ -35,6 +35,10 @@ def _dec(acct):
     return acct
 
 
+def _enc_all(accounts):
+    return {k: _enc(a) for k, a in accounts.items()}
+
+
 def save_state(path, accounts, meta):
     payload = {"meta": meta,
                "accounts": {k: _enc(a) for k, a in accounts.items()}}

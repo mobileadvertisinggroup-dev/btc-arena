@@ -1,5 +1,5 @@
 """Dashboard payload generation (data model only — no HTML, no deployment)."""
-from . import state, metrics, config
+from . import state, metrics
 
 
 def payload(accounts, ledger, snapshots, heartbeat, manifest, cfg):
