@@ -5,7 +5,6 @@ reasoning. Does NOT start the official experiment.
 
   python3 scripts/archive_pilot_reset.py --confirm
 """
-import json
 import os
 import shutil
 import sys
@@ -25,7 +24,7 @@ def main():
     from engine import state, persistence
     stamp = time.strftime("%Y-%m-%d", time.gmtime())
     # 1. preserve pilot results in a separate archive (page + data)
-    arch = os.path.join(ROOT, "docs", f"pilot-24h-archive")
+    arch = os.path.join(ROOT, "docs", "pilot-24h-archive")
     os.makedirs(arch, exist_ok=True)
     if os.path.isdir(PILOT_STORE):
         shutil.copytree(PILOT_STORE, os.path.join(arch, "data"),
