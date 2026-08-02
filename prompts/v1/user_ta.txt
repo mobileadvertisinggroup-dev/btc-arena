@@ -1,0 +1,38 @@
+ROUND {ROUND_ID}
+Round time: {ROUND_TS} UTC. All market data below ends at the most recently closed candle at or before this time.
+Instrument: {COIN}/USD linear perpetual (paper). This account trades only {COIN}.
+
+=== MARKET DATA ({SOURCE}) ===
+Execution price for this round (close of the last completed 1-minute candle): {PRICE}
+24h change: {CHG_24H}%
+
+Hourly candles, last 72, oldest first (UTC-time open high low close volume-in-{COIN}):
+{HOURLY_ROWS}
+
+Daily closes, last 40, oldest first:
+{DAILY_CLOSES}
+
+=== TECHNICAL INDICATORS ===
+All values are computed only from the candles shown above. Hourly timeframe unless marked daily.
+RSI(14): {RSI_H}
+MACD(12,26,9): line {MACD_LINE}  signal {MACD_SIGNAL}  histogram {MACD_HIST}
+Bollinger(20, 2.0): upper {BB_UP}  middle {BB_MID}  lower {BB_LOW}
+SMA(20): {SMA20_H}
+SMA(50): {SMA50_H}
+ATR(14): {ATR_H}
+Daily SMA(20): {SMA20_D}
+Daily RSI(14): {RSI_D}
+
+=== YOUR ACCOUNT ===
+Equity: ${EQUITY}
+Position: {POSITION_BLOCK}
+Total fees paid so far: ${FEES_TOTAL}
+Maximum position size this round: ${MAX_NOTIONAL} notional (5x equity)
+
+{TRADES_BLOCK}
+
+{CONDITION_BLOCK}
+
+{MEMORY_BLOCK}
+
+Submit your decision for this round using the submit_decision tool.

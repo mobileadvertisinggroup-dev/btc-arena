@@ -1,0 +1,56 @@
+{
+  "experiment": "v1",
+  "question": "Does giving an AI trader a fixed technical-indicator summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?",
+  "classification": "DESIGN PROPOSAL — NOT APPROVED FOR LAUNCH",
+  "coins": {
+    "BTC": {"kraken_pair": "XBTUSD", "coinbase_product": "BTC-USD", "price_decimals": 2, "qty_decimals": 6},
+    "ETH": {"kraken_pair": "ETHUSD", "coinbase_product": "ETH-USD", "price_decimals": 2, "qty_decimals": 5},
+    "SOL": {"kraken_pair": "SOLUSD", "coinbase_product": "SOL-USD", "price_decimals": 2, "qty_decimals": 3}
+  },
+  "models": {
+    "haiku":  {"requested_id": "claude-haiku-4-5-20251001", "family": "haiku"},
+    "sonnet": {"requested_id": "claude-sonnet-5", "family": "sonnet", "note": "no dated snapshot published; response.model logged per call"},
+    "opus":   {"requested_id": "claude-opus-4-8", "family": "opus", "note": "no dated snapshot published; response.model logged per call"}
+  },
+  "arms": ["raw", "ta"],
+  "accounts_per_coin": 6,
+  "total_accounts": 18,
+  "account_id_format": "{coin_lower}_{model}_{arm}",
+  "start_cash_usd": 10000.0,
+  "max_leverage": 5.0,
+  "fee_rate": 0.0005,
+  "maintenance_margin": 0.02,
+  "min_order_usd": 10.0,
+  "market_data": {
+    "primary_source": "kraken",
+    "fallback_source": "coinbase",
+    "hourly_candles_supplied": 72,
+    "daily_closes_supplied": 40,
+    "final_candle_must_be_closed": true,
+    "execution_price": "close of last completed 1m candle at snapshot build time",
+    "no_mixed_sources_within_round": true
+  },
+  "indicators": {
+    "computed_only_from_supplied_candles": true,
+    "hourly": ["RSI14", "MACD_12_26_9_window_seeded", "BB_20_2.0", "SMA20", "SMA50", "ATR14"],
+    "daily": ["SMA20", "RSI14"],
+    "excluded": ["SMA200", "sentiment", "fear_greed", "news", "social", "onchain", "macro"]
+  },
+  "schedule": {
+    "round_boundaries_utc": "hourly at minute 00",
+    "tick_cron": "*/5 * * * *",
+    "round_grace_minutes": 30,
+    "max_exit_replay_hours": 24,
+    "model_call_max_attempts_transport": 3,
+    "model_call_max_attempts_validation": 2,
+    "round_timeout_minutes": 10
+  },
+  "model_params": {
+    "max_tokens": 1500,
+    "tool_choice": {"type": "tool", "name": "submit_decision"},
+    "thinking_disabled_for": ["claude-sonnet-5"],
+    "temperature": "not sent (not accepted on target models)"
+  },
+  "data_namespace": "data-v1/",
+  "prompt_archive": "data-v1/prompts/{round_id}/{account_id}.txt"
+}
