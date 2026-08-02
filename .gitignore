@@ -1,3 +1,5 @@
 .env
 data/tick.lock
 data/launchd.log
+__pycache__/
+*.pyc
