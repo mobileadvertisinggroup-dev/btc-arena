@@ -1,12 +1,10 @@
 """Config integrity, canonical validation, prompt rendering, arm equality."""
 import json
 import re
-from decimal import Decimal
 
 import pytest
 
-from conftest import T0, flat_decision
-from engine import config, state, prompts, features
+from engine import config, prompts
 
 PROHIBITED = ["bullish", "bearish", "strong", "weak", "overbought", "oversold",
               "confirmation", "divergence", "breakout", "favorable", "unfavorable",

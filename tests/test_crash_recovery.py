@@ -1,10 +1,9 @@
 """Crash & idempotency matrix (Ruling 005.5) over the checkpointed runner."""
 import json
-from decimal import Decimal
 
 import pytest
 
-from conftest import T0, ScriptedCaller, flat_decision, long_decision, load_fix
+from conftest import T0, ScriptedCaller, long_decision, load_fix
 from engine import state, persistence, recovery, marketdata
 
 CRASH_POINTS = ["after_prompts", "after_first_attempt", "after_validate",
@@ -40,7 +39,7 @@ def run(store, snapshots, cfg, crash_at=None, script=None):
     caller = ScriptedCaller(script or script_for(snapshots))
     return recovery.run_checkpointed(T0, snapshots, caller, cfg, store,
                                      crash_at=crash_at,
-                                     candles_after_by_coin=candles_after(snapshots))
+                                     candles_after_by_coin=candles_after(snapshots))[0]
 
 
 @pytest.mark.parametrize("point", CRASH_POINTS)

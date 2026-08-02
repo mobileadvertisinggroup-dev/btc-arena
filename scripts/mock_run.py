@@ -59,8 +59,14 @@ for coin in ("BTC", "ETH", "SOL"):
     script[f"{coin.lower()}_opus_raw"] = flat_decision()
     script[f"{coin.lower()}_opus_ta"] = flat_decision()
 
+import tempfile
 caller = ScriptedCaller(script)
-ledger, archive, parchive = rounds.run_boundary(T0, snapshots, accounts, caller, cfg)
+_store = tempfile.mkdtemp(prefix="arena-mockrun-")
+persistence.save_state(_store + "/state.json", accounts, {"boundary": None})
+from engine import recovery
+ledger, archive, parchive = recovery.run_checkpointed(
+    T0, snapshots, caller, cfg, _store)
+accounts, _meta = persistence.load_state(_store + "/state.json")
 
 # one common post-T replay per coin (2 h of fixture 1m candles after T)
 records = []

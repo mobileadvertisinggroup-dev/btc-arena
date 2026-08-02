@@ -39,7 +39,6 @@ def gen_series(coin, seed):
         t += MIN
     # aggregate 1h and 1d from the same walk (consistent OHLC)
     def agg(rows, step):
-        out = []
         bucket = {}
         for r in rows:
             b = (r["t"] // step) * step

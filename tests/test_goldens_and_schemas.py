@@ -9,7 +9,6 @@ import sys
 from decimal import Decimal
 
 import jsonschema
-import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from conftest import T0, ScriptedCaller, long_decision  # noqa: E402
@@ -114,8 +113,9 @@ def test_attempt_records_validate(accounts, snapshots, cfg):
     accounts["eth_opus_raw"]["terminal"] = True
     script = {"btc_haiku_raw": [bad, long_decision(p, 2000)],
               "sol_opus_ta": [rounds.TransportError("x")] * 3}
-    caller = ScriptedCaller(script)
-    ledger, archive, _ = rounds.run_boundary(T0, snapshots, accounts, caller, cfg)
+    from conftest import run_prod
+    ledger, archive, _, caller = run_prod(accounts, snapshots, cfg,
+                                          ScriptedCaller(script))
     assert archive
     for rec in archive:
         _validate("attempt", rec)
@@ -131,7 +131,6 @@ def test_attempt_records_validate(accounts, snapshots, cfg):
 
 
 def test_lifecycle_trade_dashboard_schemas(accounts, snapshots, cfg):
-    import copy
     from engine import dashboard, persistence
     p = snapshots["BTC"]["P_T"]
     a = accounts["btc_haiku_raw"]
@@ -144,8 +143,8 @@ def test_lifecycle_trade_dashboard_schemas(accounts, snapshots, cfg):
     _validate("lifecycle", enc["lifecycle"])
     for tr in enc["trades"]:
         _validate("trade", tr)
-    caller = ScriptedCaller({})
-    ledger, *_ = rounds.run_boundary(T0, snapshots, accounts, caller, cfg)
+    from conftest import run_prod
+    ledger, *_ = run_prod(accounts, snapshots, cfg, ScriptedCaller({}))
     pl = dashboard.payload(accounts, ledger, snapshots,
                            {"ts": T0, "code_hash": "x"},
                            config.build_manifest(), cfg)

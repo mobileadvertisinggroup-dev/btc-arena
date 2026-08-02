@@ -1,19 +1,15 @@
 """Pair atomicity, waves, terminal split, persistence, metrics, dashboard, isolation."""
 import copy
-from decimal import Decimal
 
-import pytest
 
 from conftest import T0, ScriptedCaller, flat_decision, long_decision
 from engine import (config, state, rounds, persistence, metrics, dashboard,
-                    prompts, marketdata)
+                    prompts)
 
 
 def run(accounts, snapshots, cfg, script=None, clock=None):
-    caller = ScriptedCaller(script or {})
-    ledger, archive, parchive = rounds.run_boundary(T0, snapshots, accounts,
-                                                    caller, cfg, clock)
-    return ledger, archive, parchive, caller
+    from conftest import run_prod
+    return run_prod(accounts, snapshots, cfg, script, clock=clock)
 
 
 def test_full_boundary_all_pairs_commit(accounts, snapshots, cfg):
@@ -29,9 +25,10 @@ def test_prompts_pregenerated_before_first_call(accounts, snapshots, cfg):
     def caller(aid, system, user, retry):
         seen[aid] = user
         return flat_decision()
+    from conftest import run_prod
     sc = ScriptedCaller({}, default="flat")
     sc.script = {aid: caller for aid in accounts}
-    ledger, archive, parchive = rounds.run_boundary(T0, snapshots, accounts, sc, cfg)
+    ledger, archive, parchive, _ = run_prod(accounts, snapshots, cfg, sc)
     for aid, user in seen.items():
         assert parchive[aid] == user                 # identical frozen prompt
 

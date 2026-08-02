@@ -6,7 +6,8 @@ from decimal import Decimal
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from engine import config, state, marketdata, rounds  # noqa: E402
+from engine import config, state, marketdata, rounds, recovery, persistence  # noqa: E402
+import tempfile
 
 FIX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 T0 = 1754870400  # matches gen_fixtures
@@ -100,3 +101,20 @@ class ScriptedCaller:
         if self.default == "flat":
             return flat_decision()
         raise rounds.TransportError("no script")
+
+
+def run_prod(accounts, snapshots, cfg, caller=None, clock=None, candles=None,
+             crash_at=None, store=None):
+    """Run the AUTHORITATIVE coordinator (recovery.run_checkpointed) against a
+    throwaway store, then mirror the persisted result back into `accounts`."""
+    if not callable(caller):
+        caller = ScriptedCaller(caller or {})
+    store = store or tempfile.mkdtemp(prefix="arena-prod-")
+    persistence.save_state(store + "/state.json", accounts, {"boundary": None})
+    ledger, archive, parchive = recovery.run_checkpointed(
+        T0, snapshots, caller, cfg, store, crash_at=crash_at,
+        candles_after_by_coin=candles, clock=clock)
+    loaded, _ = persistence.load_state(store + "/state.json")
+    accounts.clear()
+    accounts.update(loaded)
+    return ledger, archive, parchive, caller

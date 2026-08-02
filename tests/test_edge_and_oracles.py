@@ -5,7 +5,7 @@ Oracle expected values are hand-calculated literals; derivations in comments.
 from decimal import Decimal
 
 from conftest import T0, ScriptedCaller, long_decision
-from engine import state, execution, replay, decisions, features, rounds, marketdata
+from engine import state, execution, replay, decisions, features, rounds
 
 MIN = 60
 
@@ -65,8 +65,10 @@ def test_aborted_pair_still_gets_market_driven_exits_and_latches(accounts, snaps
              inv={"timeframe": "1m_intrabar", "operator": "price_at_or_below",
                   "level": float(p * Decimal("0.9995"))}, t=T0 - 3600)
     bad = dict(long_decision(p), size_usd=-1)
-    caller = ScriptedCaller({"btc_haiku_raw": [bad, bad]})
-    ledger, archive, _ = rounds.run_boundary(T0, snapshots, accounts, caller, cfg)
+    from conftest import run_prod
+    ledger, archive, _, caller = run_prod(accounts, snapshots, cfg,
+                                          ScriptedCaller({"btc_haiku_raw": [bad, bad]}))
+    raw, ta = accounts["btc_haiku_raw"], accounts["btc_haiku_ta"]
     ab = [e for e in ledger if e["pair"] == "btc_haiku"][0]
     assert ab["status"] == "PAIR_ABORTED"
     assert raw["qty"] != 0 and ta["qty"] != 0          # no decision-generated change

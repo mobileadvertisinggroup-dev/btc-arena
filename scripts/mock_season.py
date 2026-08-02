@@ -102,8 +102,8 @@ def run_season(store):
         caller = SeasonCaller(accounts, T, idx, snaps)
         after = {c: [x for x in marketdata.to_dec(K[c]["1m"])
                      if T <= x["t"] < T + HOUR] for c in ("BTC", "ETH", "SOL")}
-        led = recovery.run_checkpointed(T, snaps, caller, cfg, store,
-                                        candles_after_by_coin=after)
+        led, _, _ = recovery.run_checkpointed(T, snaps, caller, cfg, store,
+                                              candles_after_by_coin=after)
         all_ledger.extend(led)
     accounts, meta = persistence.load_state(store + "/state.json")
     attempts = [json.loads(l) for l in open(store + "/attempts.jsonl")]

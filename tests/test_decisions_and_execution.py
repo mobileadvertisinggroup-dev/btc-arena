@@ -102,7 +102,7 @@ def test_min_delta_no_execution():
 
 def test_exact_increase_reduce_and_fees():
     a = acct(); open_long(a, 5000)
-    e0, f0 = a["E"], a["fees_total"]
+    f0 = a["fees_total"]
     d = long_decision(P, 7000); d["invalidation"] = None
     assert "increased" in execution.apply_decision(a, d, P, 60)
     assert a["qty"] == Decimal("70.000000")
