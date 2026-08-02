@@ -7,3 +7,5 @@ __pycache__/
 evidence/season/
 offline_audit_bundle_v1.tar.gz
 MANIFEST.sha256.json
+.DS_Store
+offline_audit_bundle_v1/
