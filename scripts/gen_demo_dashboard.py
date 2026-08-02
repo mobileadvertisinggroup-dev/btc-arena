@@ -69,9 +69,36 @@ pl["banner"] = "NEW BTC ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED"
 pl["data_notice"] = ("ALL DATA ON THIS PAGE IS MOCK/DEMO DATA generated "
                      "offline from fixtures. No model has been called; no "
                      "experiment has started.")
+# demo chart series: two honest points (start -> current demo equity),
+# used ONLY inside the labeled demonstration scenario
+for coin in ("BTC", "ETH", "SOL"):
+    for a in pl["coins"][coin]["accounts"]:
+        a["series"] = [{"t": 0, "equity": "10000.00", "fees": "0"},
+                       {"t": 1, "equity": a["equity"], "fees": a["fees"]}]
 out = os.path.join(ROOT, "docs", "demo_payload.js")
 with open(out, "w") as f:
-    f.write("window.ARENA_DATA = ")
+    f.write("window.ARENA_DEMO = ")
     json.dump(pl, f, default=str)
     f.write(";\n")
 print("wrote", out, "| pairs:", len([e for e in ledger if e.get("status")]))
+
+# HONEST PRE-START payload: 18 fresh accounts, zero activity, no fabrication
+fresh = state.init_accounts()
+pre = dashboard.payload(fresh, [], {c: None for c in ("BTC", "ETH", "SOL")},
+                        None, manifest, cfg)
+pre["mode"] = "PREPARATION"
+pre["banner"] = "NEW BTC ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED"
+pre["data_notice"] = ("No model has been called. No paper-trading pilot or "
+                      "official experiment has started.")
+pre["pilot_progress"] = {"done": 0, "total": 24}
+for coin in ("BTC", "ETH", "SOL"):
+    for a in pre["coins"][coin]["accounts"]:
+        a["status_text"] = "Waiting for pilot"
+        a["series"] = [{"t": 0, "equity": "10000.00", "fees": "0"},
+                       {"t": 1, "equity": "10000.00", "fees": "0"}]
+out2 = os.path.join(ROOT, "docs", "prestart_payload.js")
+with open(out2, "w") as f:
+    f.write("window.ARENA_PRESTART = ")
+    json.dump(pre, f, default=str)
+    f.write(";\n")
+print("wrote", out2)

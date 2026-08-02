@@ -3,175 +3,434 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BTC Arena — Raw vs Feature (Preparation)</title>
+<title>BTC ARENA — RAW vs FEATURE</title>
 <style>
-:root {
-  --surface:#fcfcfb; --page:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e;
-  --muted:#898781; --grid:#e1e0d9; --border:rgba(11,11,11,.10);
-  --haiku:#2a78d6; --sonnet:#1baf7a; --opus:#eda100;
-  --up:#006300; --down:#d03b3b; --warn:#fab219;
+:root{
+  --paper:#f6f1e6; --panel:#fbf8f0; --ink:#141310; --mut:#6b665c;
+  --rule:#141310; --hair:#d8d2c2;
+  --haiku:#2a78d6; --sonnet:#158f63; --opus:#c47600;
+  --up:#0a6b0a; --down:#b3261e; --demo:#b3261e;
 }
-@media (prefers-color-scheme: dark) { :root {
-  --surface:#1a1a19; --page:#0d0d0d; --ink:#fff; --ink2:#c3c2b7;
-  --muted:#898781; --grid:#2c2c2a; --border:rgba(255,255,255,.10);
-  --haiku:#3987e5; --sonnet:#199e70; --opus:#c98500;
-  --up:#0ca30c; --down:#e66767;
-}}
 *{box-sizing:border-box;margin:0}
-body{background:var(--page);color:var(--ink);
-  font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
-  max-width:1160px;margin:0 auto;padding:18px}
-.banner{background:var(--warn);color:#0b0b0b;font-weight:700;text-align:center;
-  padding:10px 14px;border-radius:10px;margin-bottom:6px}
-.subnotice{color:var(--ink2);font-size:12.5px;text-align:center;margin-bottom:14px}
-header{display:flex;justify-content:space-between;align-items:baseline;
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);
+  font:13.5px/1.5 ui-monospace,"SF Mono",Menlo,Consolas,"Courier New",monospace}
+a{color:var(--ink)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 18px}
+/* masthead */
+.top{border-bottom:3px solid var(--rule);background:var(--paper);
+  position:sticky;top:0;z-index:20}
+.mast{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;gap:12px;flex-wrap:wrap}
+.brand{line-height:1.05}
+.brand .t1{font-size:26px;font-weight:800;letter-spacing:2px}
+.brand .t2{font-size:12px;letter-spacing:4px;color:var(--mut)}
+.brand .t2 b{color:var(--ink)}
+nav{display:flex;gap:2px;flex-wrap:wrap}
+nav a{font-size:11.5px;letter-spacing:1px;text-decoration:none;
+  padding:5px 10px;border:1.5px solid transparent}
+nav a:hover{border-color:var(--rule)}
+nav .soon{color:var(--mut)}
+nav .soon::after{content:" ·SOON";font-size:9px}
+/* banners */
+.prep{background:var(--ink);color:var(--paper);text-align:center;
+  font-weight:700;letter-spacing:1.5px;padding:9px 12px;font-size:13px}
+.notice{border-bottom:1.5px solid var(--rule);text-align:center;
+  color:var(--mut);font-size:12px;padding:6px 12px;background:var(--panel)}
+.demoflag{display:none;background:var(--demo);color:#fff;text-align:center;
+  font-weight:800;letter-spacing:2px;padding:8px;position:sticky;top:0;z-index:30}
+body.demo .demoflag{display:block}
+/* market strip */
+.strip{display:grid;grid-template-columns:repeat(7,1fr);border:2px solid var(--rule);
+  border-top:none;background:var(--panel)}
+.cell{padding:8px 12px;border-right:1.5px solid var(--hair)}
+.cell:last-child{border-right:none}
+.cell .l{font-size:10px;letter-spacing:1.5px;color:var(--mut);text-transform:uppercase}
+.cell .v{font-weight:700;font-size:13px}
+/* layout */
+.main{display:grid;grid-template-columns:1fr 330px;gap:18px;margin:18px 0}
+/* tabs */
+.tabs{display:flex;flex-wrap:wrap;border:2px solid var(--rule);background:var(--panel)}
+.tab{padding:8px 16px;cursor:pointer;font-weight:700;font-size:12px;
+  letter-spacing:1px;border-right:1.5px solid var(--hair);color:var(--mut);
+  text-transform:uppercase}
+.tab.active{background:var(--ink);color:var(--paper)}
+/* chart */
+.chartbox{border:2px solid var(--rule);border-top:none;background:var(--panel);
+  padding:12px}
+.chart-head{display:flex;justify-content:space-between;align-items:center;
   flex-wrap:wrap;gap:8px;margin-bottom:6px}
-h1{font-size:20px;font-weight:650}
-nav a{color:var(--ink2);margin-left:14px;font-size:13px}
-.q{color:var(--ink2);font-size:13px;margin-bottom:14px}
-.tabs{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}
-.tab{background:var(--surface);border:1px solid var(--border);border-radius:999px;
-  padding:6px 16px;cursor:pointer;font-weight:600;color:var(--ink2)}
-.tab.active{color:var(--ink);border-color:var(--ink)}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
-  padding:14px 16px;margin-bottom:14px}
-.card h2{font-size:14px;font-weight:650;margin-bottom:10px}
-.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-@media (max-width:760px){.pair{grid-template-columns:1fr}}
-.acct{background:var(--page);border:1px solid var(--border);border-radius:10px;
-  padding:10px 12px;font-size:12.5px}
-.acct .head{display:flex;justify-content:space-between;align-items:baseline}
-.acct .name{font-weight:650;display:flex;align-items:center;gap:6px}
-.dot{width:9px;height:9px;border-radius:50%;flex:none}
-.eq{font-size:19px;font-weight:650;margin:4px 0 2px}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;color:var(--ink2)}
-.kv b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
-.thesis{margin-top:6px;border-top:1px solid var(--grid);padding-top:6px}
-.inv{color:var(--muted);font-size:12px;margin-top:4px}
+.chart-title{font-weight:800;letter-spacing:1px;font-size:13px;text-transform:uppercase}
+.metrics{display:flex;gap:2px;flex-wrap:wrap}
+.metrics button,.demo-btn{font:inherit;font-size:11px;letter-spacing:1px;
+  background:var(--paper);border:1.5px solid var(--rule);padding:4px 10px;
+  cursor:pointer;text-transform:uppercase}
+.metrics button.active{background:var(--ink);color:var(--paper)}
+.demo-btn{background:var(--panel);color:var(--mut)}
+body.demo .demo-btn{background:var(--demo);color:#fff;border-color:var(--demo)}
+#chartwrap{position:relative}
+#chartmsg{position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;color:var(--mut);letter-spacing:2px;font-size:14px;
+  text-transform:uppercase;pointer-events:none}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--mut);
+  margin-top:6px}
+.legend .sw{display:inline-block;width:22px;height:0;border-top:3px solid;
+  vertical-align:middle;margin-right:5px}
+.legend .dash{border-top-style:dashed}
+/* sections */
+section{margin-top:18px}
+.rulehead{border-bottom:3px solid var(--rule);display:flex;
+  justify-content:space-between;align-items:baseline;padding-bottom:4px;
+  margin-bottom:10px}
+.rulehead h2{font-size:15px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
+.rulehead .sub{color:var(--mut);font-size:11px}
+/* tables */
+.twrap{overflow-x:auto;border:2px solid var(--rule);background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:640px}
+th{background:var(--ink);color:var(--paper);text-align:left;font-weight:600;
+  letter-spacing:1px;font-size:10.5px;padding:6px 10px;text-transform:uppercase}
+td{padding:5px 10px;border-bottom:1px solid var(--hair);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:none}
 .up{color:var(--up)} .down{color:var(--down)}
-.delta{color:var(--ink2);font-size:12.5px;margin:-6px 0 12px 2px}
-.tablewrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:12.5px}
-th{text-align:left;color:var(--muted);font-weight:500;padding:4px 10px 4px 0;
-  border-bottom:1px solid var(--grid)}
-td{padding:4px 10px 4px 0;border-bottom:1px solid var(--grid);
-  font-variant-numeric:tabular-nums;vertical-align:top}
-.statusgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
-.stat{background:var(--page);border:1px solid var(--border);border-radius:10px;
-  padding:8px 12px}
-.stat .l{color:var(--muted);font-size:12px}
-.stat .v{font-weight:650}
-footer{color:var(--muted);font-size:12px;margin-top:18px;text-align:center}
+.mdot{display:inline-block;width:9px;height:9px;margin-right:6px}
+/* pair cards */
+.pairgrid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:2px solid var(--rule);
+  background:var(--panel);margin-bottom:14px}
+.pairhead{grid-column:1/-1;border-bottom:2px solid var(--rule);padding:7px 12px;
+  font-weight:800;letter-spacing:1px;text-transform:uppercase;font-size:12.5px;
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.pairhead .verdict{color:var(--mut);font-weight:600;font-size:11.5px}
+.half{padding:10px 12px}
+.half+.half{border-left:1.5px solid var(--hair)}
+.half .armname{font-size:10.5px;letter-spacing:2px;color:var(--mut);
+  text-transform:uppercase}
+.half .eq{font-size:20px;font-weight:800;margin:2px 0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:0 12px;font-size:12px;
+  color:var(--mut)}
+.kv b{color:var(--ink);font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.thesis{border-top:1px solid var(--hair);margin-top:7px;padding-top:6px;
+  font-size:12px}
+.inv{color:var(--mut);font-size:11px;margin-top:3px}
+/* feed */
+.feed{border:2px solid var(--rule);background:var(--panel);align-self:start;
+  position:sticky;top:96px;max-height:calc(100vh - 120px);display:flex;
+  flex-direction:column}
+.feed-head{border-bottom:2px solid var(--rule);padding:8px 12px;font-weight:800;
+  letter-spacing:2px;font-size:12px;text-transform:uppercase}
+.feed-filters{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:8px;
+  border-bottom:1.5px solid var(--hair)}
+.feed-filters select{font:inherit;font-size:11px;background:var(--paper);
+  border:1.5px solid var(--rule);padding:3px}
+.feed-list{overflow-y:auto;padding:8px}
+.fcard{border:1.5px solid var(--rule);border-left-width:5px;padding:8px 10px;
+  margin-bottom:8px;background:var(--paper);font-size:12px}
+.fcard .fh{display:flex;justify-content:space-between;font-weight:700;
+  font-size:11.5px;letter-spacing:.5px}
+.fcard .meta{color:var(--mut);font-size:10.5px;margin:2px 0}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:0;border:2px solid var(--rule);background:var(--panel)}
+.stat{padding:9px 12px;border-right:1.5px solid var(--hair);
+  border-bottom:1.5px solid var(--hair)}
+.stat .l{font-size:10px;letter-spacing:1.5px;color:var(--mut);text-transform:uppercase}
+.stat .v{font-weight:800;font-size:15px}
+footer{border-top:3px solid var(--rule);margin-top:26px;padding:14px 0 30px;
+  color:var(--mut);font-size:11.5px}
+@media (max-width:960px){
+  .main{grid-template-columns:1fr}
+  .feed{position:static;max-height:420px}
+  .strip{grid-template-columns:repeat(2,1fr)}
+  .pairgrid{grid-template-columns:1fr}
+  .half+.half{border-left:none;border-top:1.5px solid var(--hair)}
+  .brand .t1{font-size:20px}
+}
 </style>
 </head>
 <body>
-<div class="banner">NEW BTC ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED</div>
-<div class="subnotice" id="notice"></div>
-<header>
-  <h1>&#8383; BTC Arena — Raw vs Feature</h1>
+<div class="demoflag">DEMONSTRATION SCENARIO — NOT REAL ACTIVITY</div>
+<div class="prep">NEW BTC ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED</div>
+<div class="notice">No model has been called. No paper-trading pilot or official experiment has started.</div>
+<div class="top"><div class="wrap mast">
+  <div class="brand"><div class="t1">BTC ARENA</div>
+    <div class="t2">RAW <b>vs</b> FEATURE &nbsp;·&nbsp; 3 MODELS · 3 COINS · 18 PAPER ACCOUNTS</div></div>
   <nav>
-    <a href="pilot-archive/">Pilot Archive</a>
-    <a href="design/DESIGN_PACK_V1_1.md">Design Pack</a>
+    <a href="#live">LIVE</a>
+    <a href="#leaderboard">LEADERBOARD</a>
+    <a href="#pairs">RAW vs FEATURE</a>
+    <a href="#models">MODELS</a>
+    <a href="design/DESIGN_PACK_V1_1.md">METHODOLOGY</a>
+    <a href="pilot-archive/">PILOT ARCHIVE</a>
+    <a href="#about">ABOUT</a>
   </nav>
-</header>
-<div class="q" id="question"></div>
-<div class="tabs" id="tabs"></div>
-<div id="view"></div>
-<footer id="foot"></footer>
+</div></div>
+
+<div class="wrap">
+<div class="strip" id="strip"></div>
+
+<div class="main">
+<div>
+  <div id="live"></div>
+  <div class="tabs" id="tabs"></div>
+  <div class="chartbox">
+    <div class="chart-head">
+      <span class="chart-title" id="charttitle">Equity — all accounts</span>
+      <span style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="metrics" id="metricbtns"></span>
+        <button class="demo-btn" id="demobtn" onclick="toggleDemo()">View demo scenario</button>
+      </span>
+    </div>
+    <div id="chartwrap">
+      <svg id="chart" width="100%" height="330"></svg>
+      <div id="chartmsg"></div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+  <div id="tabbody"></div>
+</div>
+
+<aside class="feed" id="models">
+  <div class="feed-head">MODEL FEED</div>
+  <div class="feed-filters">
+    <select id="f_model"><option value="">All models</option>
+      <option value="haiku">Haiku 4.5</option><option value="sonnet">Sonnet 5</option>
+      <option value="opus">Opus 4.8</option></select>
+    <select id="f_coin"><option value="">All coins</option>
+      <option>BTC</option><option>ETH</option><option>SOL</option></select>
+    <select id="f_arm"><option value="">Raw + Feature</option>
+      <option value="raw">Raw</option><option value="ta">Feature</option></select>
+    <select id="f_pos"><option value="">Any position</option>
+      <option>long</option><option>short</option><option>flat</option></select>
+  </div>
+  <div class="feed-list" id="feedlist"></div>
+</aside>
+</div>
+
+<section id="about">
+<div class="rulehead"><h2>About</h2><span class="sub">the experiment in one paragraph</span></div>
+<p style="max-width:900px" id="abouttext"></p>
+</section>
+<footer class="wrap" id="foot"></footer>
+</div>
+
+<script src="prestart_payload.js"></script>
 <script src="demo_payload.js"></script>
 <script>
-const D = window.ARENA_DATA;
-const MODELCOLOR = {haiku:'var(--haiku)', sonnet:'var(--sonnet)', opus:'var(--opus)'};
-const MODELNAME = {haiku:'Haiku 4.5', sonnet:'Sonnet 5', opus:'Opus 4.8'};
-const $ = s => document.getElementById(s);
-const money = v => '$' + Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-const px = v => v == null ? 'none' : Number(v).toLocaleString('en-US',{maximumFractionDigits:2});
-$('notice').textContent = D.data_notice;
-$('question').textContent = D.question;
+const MODEL = {haiku:{name:'HAIKU 4.5',c:'var(--haiku)'},
+               sonnet:{name:'SONNET 5',c:'var(--sonnet)'},
+               opus:{name:'OPUS 4.8',c:'var(--opus)'}};
+const COINS = ['BTC','ETH','SOL'];
+const $ = id => document.getElementById(id);
+const N = v => Number(v);
+const money = v => '$' + N(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const px = v => v == null ? '—' : N(v).toLocaleString('en-US',{maximumFractionDigits:2});
+let demo = new URLSearchParams(location.search).get('demo') === '1';
+let D, activeTab = 'Aggregate', metric = 'Equity';
+const TABS = ['Aggregate','BTC','ETH','SOL','Pair comparison','System status'];
+const METRICS = ['Equity','Return','Drawdown','Fees','Turnover'];
 
-function acctCard(a){
-  const pnl = Number(a.total_return_pct);
-  const upnl = Number(a.unrealized_pnl);
-  const realized = Number(a.realized_pnl);
-  const inv = a.invalidation;
-  const pos = a.side === 'flat' ? 'FLAT — no position'
-    : `${a.side.toUpperCase()} ${a.qty} (${money(a.notional)})`;
-  return `<div class="acct">
-    <div class="head"><span class="name"><span class="dot" style="background:${MODELCOLOR[a.model]}"></span>
-      ${MODELNAME[a.model]} · ${a.arm === 'raw' ? 'Raw' : 'Feature'}</span>
-      <span class="${pnl >= 0 ? 'up' : 'down'}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}%</span></div>
+function data(){ return demo ? window.ARENA_DEMO : window.ARENA_PRESTART; }
+function allAccounts(){ return COINS.flatMap(c => D.coins[c].accounts); }
+function toggleDemo(){ demo = !demo; boot(); }
+
+function seriesMetric(a){
+  const s = a.series || [];
+  return s.map(pt => {
+    const eq = N(pt.equity);
+    if (metric === 'Equity') return eq;
+    if (metric === 'Return') return (eq / 10000 - 1) * 100;
+    if (metric === 'Fees') return N(pt.fees);
+    if (metric === 'Drawdown'){
+      return Math.min(0, (eq / 10000 - 1) * 100);   // vs start peak
+    }
+    return demo ? N(a.notional || 0) / 10000 : 0;   // Turnover (multiples)
+  });
+}
+
+function chart(){
+  const svg = $('chart');
+  const W = 1000, H = 330, ML = 92, MR = 120, MT = 14, MB = 24;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  let series = [];
+  if (activeTab === 'Aggregate' || activeTab === 'Pair comparison' || activeTab === 'System status'){
+    for (const arm of ['raw','ta']){
+      const accts = allAccounts().filter(a => a.arm === arm);
+      const n = accts[0].series.length;
+      const pts = [];
+      for (let i = 0; i < n; i++){
+        let v = 0; accts.forEach(a => v += seriesMetric(a)[i]);
+        pts.push(v / accts.length);
+      }
+      series.push({label: arm === 'raw' ? 'RAW AGG' : 'FEATURE AGG',
+                   color: 'var(--ink)', dash: arm === 'ta', pts});
+    }
+    $('charttitle').textContent = `${metric} — Raw aggregate vs Feature aggregate (avg/account)`;
+  } else {
+    for (const m of ['haiku','sonnet','opus'])
+      for (const arm of ['raw','ta']){
+        const a = D.coins[activeTab].accounts.find(x => x.model === m && x.arm === arm);
+        series.push({label: `${MODEL[m].name} ${arm === 'raw' ? 'RAW' : 'FEAT'}`,
+                     color: MODEL[m].c, dash: arm === 'ta', pts: seriesMetric(a)});
+      }
+    $('charttitle').textContent = `${metric} — ${activeTab} arena`;
+  }
+  let lo = Math.min(...series.flatMap(s => s.pts));
+  let hi = Math.max(...series.flatMap(s => s.pts));
+  if (hi === lo){ hi += metric === 'Equity' ? 120 : 1; lo -= metric === 'Equity' ? 120 : 1; }
+  const pad = (hi - lo) * .12; lo -= pad; hi += pad;
+  const X = i => ML + (W - ML - MR) * (series[0].pts.length === 1 ? 0 : i / (series[0].pts.length - 1));
+  const Y = v => MT + (H - MT - MB) * (1 - (v - lo) / (hi - lo));
+  let g = '';
+  for (let i = 0; i <= 4; i++){
+    const v = lo + (hi - lo) * i / 4, y = Y(v);
+    g += `<line x1="${ML}" y1="${y}" x2="${W-MR}" y2="${y}" stroke="var(--hair)"/>`
+       + `<text x="${ML-8}" y="${y+4}" text-anchor="end" font-size="10.5"
+           fill="var(--mut)" font-family="inherit">${metric==='Equity'||metric==='Fees'?money(v):v.toFixed(2)+(metric==='Turnover'?'x':'%')}</text>`;
+  }
+  g += `<line x1="${ML}" y1="${MT}" x2="${ML}" y2="${H-MB}" stroke="var(--rule)" stroke-width="2"/>`
+     + `<line x1="${ML}" y1="${H-MB}" x2="${W-MR}" y2="${H-MB}" stroke="var(--rule)" stroke-width="2"/>`;
+  series.forEach((s, si) => {
+    const pts = s.pts.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+    g += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.5"
+          ${s.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
+    const y = Y(s.pts[s.pts.length-1]) + (si % 2 ? 10 : -4);
+    g += `<text x="${W-MR+6}" y="${y}" font-size="9.5" font-weight="700"
+          fill="${s.color}" font-family="inherit">${s.label}</text>`;
+  });
+  svg.innerHTML = g;
+  $('chartmsg').textContent = demo ? '' : 'Waiting for pilot activity';
+  $('legend').innerHTML = (activeTab === 'Aggregate' || activeTab === 'Pair comparison' || activeTab === 'System status'
+    ? [['RAW aggregate', 'var(--ink)', false], ['FEATURE aggregate', 'var(--ink)', true]]
+    : Object.keys(MODEL).flatMap(m => [[`${MODEL[m].name} RAW`, MODEL[m].c, false],
+                                       [`${MODEL[m].name} FEATURE`, MODEL[m].c, true]]))
+    .map(([l, c, d]) => `<span><span class="sw ${d?'dash':''}" style="border-color:${c}"></span>${l}</span>`).join('');
+}
+
+function leaderboard(){
+  const rows = allAccounts().map(a => ({...a, ret: N(a.total_return_pct)}));
+  const tied = rows.every(r => r.ret === rows[0].ret);
+  rows.sort((x, y) => y.ret - x.ret);
+  return `<section id="leaderboard"><div class="rulehead"><h2>Leaderboard</h2>
+    <span class="sub">${tied ? 'all accounts tied at start — no ranking' : 'ranked by return within the demonstration scenario'}</span></div>
+    <div class="twrap"><table><tr><th>#</th><th>Coin</th><th>Model</th><th>Arm</th>
+    <th>Equity</th><th>Return</th><th>Drawdown</th><th>Fees</th><th>Status</th></tr>
+    ${rows.map((a, i) => `<tr>
+      <td>${tied ? '—' : i + 1}</td><td>${a.coin}</td>
+      <td><span class="mdot" style="background:${MODEL[a.model].c}"></span>${MODEL[a.model].name}</td>
+      <td>${a.arm === 'raw' ? 'RAW' : 'FEATURE'}</td><td>${money(a.equity)}</td>
+      <td class="${a.ret >= 0 ? 'up' : 'down'}">${a.ret >= 0 ? '+' : ''}${a.ret.toFixed(2)}%</td>
+      <td>${a.ret < 0 ? a.ret.toFixed(2) + '%' : '0.00%'}</td><td>${money(a.fees)}</td>
+      <td>${a.terminal ? 'CLOSED' : (a.status_text || (demo ? 'demo' : 'Waiting for pilot'))}</td></tr>`).join('')}
+    </table></div></section>`;
+}
+
+function pairCard(coin, m){
+  const raw = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'raw');
+  const ta = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'ta');
+  const started = demo && (raw.n_decisions + ta.n_decisions > 0);
+  const verdict = !started ? 'Awaiting first paired decision.'
+    : `direction ${raw.side === ta.side ? 'AGREE' : 'DISAGREE'} · equity gap ${money(N(raw.equity) - N(ta.equity))}`;
+  const half = a => `<div class="half" style="border-top:4px solid ${MODEL[m].c}">
+    <div class="armname">${a.arm === 'raw' ? 'RAW — candles only' : 'FEATURE — candles + neutral features'}</div>
     <div class="eq">${money(a.equity)}</div>
     <div class="kv">
-      <span>Position</span><b>${pos}</b>
-      <span>Entry</span><b>${px(a.entry)}</b>
-      <span>Stop-loss</span><b>${px(a.stop)}</b>
-      <span>Take-profit</span><b>${px(a.tp)}</b>
-      <span>Unrealized P&amp;L</span><b class="${upnl >= 0 ? 'up' : 'down'}">${money(a.unrealized_pnl)}</b>
-      <span>Realized P&amp;L</span><b class="${realized >= 0 ? 'up' : 'down'}">${money(a.realized_pnl)}</b>
-      <span>Fees</span><b>${money(a.fees)}</b>
-      <span>Decisions / trades</span><b>${a.n_decisions} / ${a.n_trades}</b>
+      <span>direction</span><b>${a.side.toUpperCase()}</b>
+      <span>position size</span><b>${a.side === 'flat' ? '$0.00' : money(a.notional)}</b>
+      <span>entry / stop / target</span><b>${px(a.entry)} / ${px(a.stop)} / ${px(a.tp)}</b>
+      <span>fees</span><b>${money(a.fees)}</b>
+      <span>decisions / trades</span><b>${a.n_decisions} / ${a.n_trades}</b>
     </div>
-    ${a.thesis ? `<div class="thesis"><b>Latest thesis:</b> ${a.thesis.replace(/</g,'&lt;')}</div>` : ''}
-    ${inv ? `<div class="inv">Invalidation: ${a.coin} ${inv.timeframe === '1h_close' ? '1h close' : 'price trades'} ${inv.operator === 'price_at_or_below' ? 'at or below' : 'at or above'} ${px(inv.level)} — ${inv.status}</div>` : ''}
-    ${a.watch ? `<div class="inv">Watch (informational): 1h close ${a.watch.operator === 'price_at_or_below' ? 'at or below' : 'at or above'} ${px(a.watch.level)}${a.watch.triggered ? ' — TRIGGERED' : ''}</div>` : ''}
-    ${a.trades.length ? `<div class="inv">Trades: ${a.trades.map(t => `${t.side} ${px(t.entry)}&rarr;${px(t.exit)} (${Number(t.pnl) >= 0 ? '+' : ''}${Number(t.pnl).toFixed(2)}, ${t.reason.replace(/_/g,' ')})`).join(' · ')}</div>` : ''}
+    ${a.thesis ? `<div class="thesis">“${a.thesis.replace(/</g,'&lt;')}”</div>` : ''}
+    ${a.invalidation ? `<div class="inv">INVALIDATION: ${a.invalidation.timeframe === '1h_close' ? '1h close' : 'price'} ${a.invalidation.operator === 'price_at_or_below' ? '≤' : '≥'} ${px(a.invalidation.level)} — ${a.invalidation.status}</div>` : ''}
   </div>`;
+  return `<div class="pairgrid"><div class="pairhead">
+    <span><span class="mdot" style="background:${MODEL[m].c}"></span>${MODEL[m].name} · ${coin}</span>
+    <span class="verdict">${verdict}</span></div>${half(raw)}${half(ta)}</div>`;
 }
 
-function coinView(coin){
-  const cd = D.coins[coin];
-  const byId = {}; cd.accounts.forEach(a => byId[a.id] = a);
-  let html = '';
-  for (const m of ['haiku','sonnet','opus']){
-    const raw = byId[`${coin.toLowerCase()}_${m}_raw`];
-    const ta = byId[`${coin.toLowerCase()}_${m}_ta`];
-    const agree = raw.side === ta.side;
-    html += `<div class="card"><h2><span class="dot" style="background:${MODELCOLOR[m]};display:inline-block;margin-right:6px"></span>${MODELNAME[m]} — ${coin} pair</h2>
-      <div class="delta">Direction: ${agree ? 'agree' : 'DISAGREE'} (Raw ${raw.side} vs Feature ${ta.side}) ·
-        equity gap ${money(Number(raw.equity) - Number(ta.equity))}</div>
-      <div class="pair">${acctCard(raw)}${acctCard(ta)}</div></div>`;
-  }
-  const rounds = cd.rounds.filter(r => r.status);
-  html += `<div class="card"><h2>${coin} round ledger</h2><div class="tablewrap"><table>
-    <tr><th>Round</th><th>Pair</th><th>Status</th><th>Reason</th></tr>
-    ${rounds.map(r => `<tr><td>${r.round_id}</td><td>${r.pair}</td><td>${r.status}</td><td>${r.reason || ''}</td></tr>`).join('')}
-    </table></div></div>`;
-  return html;
-}
-
-function aggregateView(){
-  let rows = '';
-  for (const coin of ['BTC','ETH','SOL'])
-    for (const a of D.coins[coin].accounts)
-      rows += `<tr><td>${coin}</td><td><span class="dot" style="background:${MODELCOLOR[a.model]};display:inline-block;margin-right:5px"></span>${MODELNAME[a.model]}</td>
-        <td>${a.arm === 'raw' ? 'Raw' : 'Feature'}</td><td>${money(a.equity)}</td>
-        <td class="${Number(a.total_return_pct) >= 0 ? 'up' : 'down'}">${Number(a.total_return_pct).toFixed(2)}%</td>
-        <td>${a.side}</td><td>${a.side === 'flat' ? '—' : money(a.notional)}</td>
-        <td>${money(a.fees)}</td><td>${a.terminal ? '&#128128;' : 'active'}</td></tr>`;
-  const rc = D.round_counts;
-  return `<div class="card"><h2>Experiment / system status</h2><div class="statusgrid">
+function statusView(){
+  const rc = D.round_counts || {};
+  const rounds = COINS.flatMap(c => (D.coins[c].rounds || []).filter(r => r.status));
+  return `<section><div class="rulehead"><h2>System status</h2>
+    <span class="sub">engine · integrity · rounds</span></div>
+    <div class="stat-grid">
       <div class="stat"><div class="l">Mode</div><div class="v">${D.mode}</div></div>
+      <div class="stat"><div class="l">Pilot boundaries</div><div class="v">${(D.pilot_progress||{done:0,total:24}).done} / ${(D.pilot_progress||{total:24}).total}</div></div>
       <div class="stat"><div class="l">Committed pairs</div><div class="v">${rc.PAIR_COMMITTED || 0}</div></div>
       <div class="stat"><div class="l">Aborted pairs</div><div class="v">${rc.PAIR_ABORTED || 0}</div></div>
       <div class="stat"><div class="l">Terminal splits</div><div class="v">${rc.PAIR_TERMINAL_SPLIT || 0}</div></div>
       <div class="stat"><div class="l">Integrity hash</div><div class="v" style="font-size:11px">${D.combined_hash.slice(0,16)}…</div></div>
-      <div class="stat"><div class="l">Heartbeat</div><div class="v">${D.health.stale ? 'STALE' : 'ok'}</div></div>
-    </div></div>
-    <div class="card"><h2>All 18 accounts (grouped by coin — never summed across coins)</h2>
-    <div class="tablewrap"><table><tr><th>Coin</th><th>Model</th><th>Arm</th><th>Balance</th>
-      <th>Return</th><th>Side</th><th>Size</th><th>Fees</th><th>Status</th></tr>${rows}</table></div></div>`;
+    </div>
+    ${rounds.length ? `<div class="twrap" style="margin-top:10px"><table>
+      <tr><th>Round</th><th>Pair</th><th>Status</th><th>Reason</th></tr>
+      ${rounds.map(r => `<tr><td>${r.round_id}</td><td>${r.pair}</td><td>${r.status}</td><td>${r.reason || ''}</td></tr>`).join('')}</table></div>`
+      : `<p style="color:var(--mut);margin-top:10px">No rounds yet — waiting for pilot.</p>`}
+  </section>`;
 }
 
-const TABS = ['Aggregate','BTC','ETH','SOL'];
-let active = 'Aggregate';
-function render(){
-  $('tabs').innerHTML = TABS.map(t =>
-    `<div class="tab ${t === active ? 'active' : ''}" onclick="setTab('${t}')">${t}</div>`).join('');
-  $('view').innerHTML = active === 'Aggregate' ? aggregateView() : coinView(active);
-  $('foot').textContent = `${D.label} · payload generated offline — mock/demo data only`;
+function tabbody(){
+  if (activeTab === 'Aggregate') return leaderboard();
+  if (activeTab === 'Pair comparison')
+    return `<section id="pairs"><div class="rulehead"><h2>Raw vs Feature — all nine pairs</h2>
+      <span class="sub">same model · same coin · only the briefing differs</span></div>
+      ${COINS.flatMap(c => Object.keys(MODEL).map(m => pairCard(c, m))).join('')}</section>`;
+  if (activeTab === 'System status') return statusView();
+  return `<section id="pairs"><div class="rulehead"><h2>${activeTab} pairs</h2>
+    <span class="sub">three models · Raw vs Feature</span></div>
+    ${Object.keys(MODEL).map(m => pairCard(activeTab, m)).join('')}</section>`;
 }
-window.setTab = t => { active = t; render(); };
-render();
+
+function feed(){
+  const fm = $('f_model').value, fc = $('f_coin').value,
+        fa = $('f_arm').value, fp = $('f_pos').value;
+  let cards;
+  if (!demo){
+    cards = Object.keys(MODEL).filter(m => !fm || m === fm).map(m =>
+      `<div class="fcard" style="border-left-color:${MODEL[m].c}">
+        <div class="fh"><span>${MODEL[m].name}</span><span>WAITING</span></div>
+        <div class="meta">No decisions yet — pilot not started</div></div>`);
+  } else {
+    cards = allAccounts()
+      .filter(a => (!fm || a.model === fm) && (!fc || a.coin === fc)
+                && (!fa || a.arm === fa) && (!fp || a.side === fp) && a.thesis)
+      .map(a => `<div class="fcard" style="border-left-color:${MODEL[a.model].c}">
+        <div class="fh"><span>${MODEL[a.model].name} · ${a.coin} · ${a.arm === 'raw' ? 'RAW' : 'FEATURE'}</span>
+          <span class="${a.side === 'long' ? 'up' : a.side === 'short' ? 'down' : ''}">${a.side.toUpperCase()}</span></div>
+        <div class="meta">size ${a.side === 'flat' ? '$0' : money(a.notional)} · stop ${px(a.stop)} · target ${px(a.tp)} · t=demo</div>
+        <div>“${a.thesis.replace(/</g,'&lt;')}”</div>
+        ${a.invalidation ? `<div class="meta">invalidation: ${a.invalidation.operator === 'price_at_or_below' ? '≤' : '≥'} ${px(a.invalidation.level)} — ${a.invalidation.status}</div>` : ''}
+      </div>`);
+  }
+  $('feedlist').innerHTML = cards.join('') || '<div class="meta">No entries match the filters.</div>';
+}
+
+function strip(){
+  const cells = [
+    ...COINS.map(c => [c + '/USD', demo ? 'demo data' : 'Waiting for pilot']),
+    ['Mode', 'Preparation'],
+    ['Pilot progress', `${(D.pilot_progress || {done: 0}).done} / 24`],
+    ['System health', demo ? 'demo' : 'standing by'],
+    ['Last update', demo ? 'demo scenario' : 'pre-start'],
+  ];
+  $('strip').innerHTML = cells.map(([l, v]) =>
+    `<div class="cell"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
+}
+
+function boot(){
+  D = data();
+  document.body.classList.toggle('demo', demo);
+  $('demobtn').textContent = demo ? 'Exit demo scenario' : 'View demo scenario';
+  $('tabs').innerHTML = TABS.map(t =>
+    `<div class="tab ${t === activeTab ? 'active' : ''}" onclick="setTab('${t}')">${t}</div>`).join('');
+  $('metricbtns').innerHTML = METRICS.map(m =>
+    `<button class="${m === metric ? 'active' : ''}" onclick="setMetric('${m}')">${m}</button>`).join('');
+  strip(); chart(); $('tabbody').innerHTML = tabbody(); feed();
+  $('abouttext').textContent = D.question + ' Three Claude models (Haiku 4.5, Sonnet 5, Opus 4.8) each run two isolated $10,000 paper accounts per coin: RAW sees only candles; FEATURE sees the same candles plus a fixed neutral numerical feature summary. Same rules, same prices, hourly decisions, machine-checked invalidations. Paper money only.';
+  $('foot').innerHTML = `${D.banner} · integrity ${D.combined_hash.slice(0,12)}… · <a href="pilot-archive/">old pilot archive</a> (OLD PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE) · <a href="design/DESIGN_PACK_V1_1.md">methodology</a>`;
+}
+window.setTab = t => { activeTab = t; boot(); };
+window.setMetric = m => { metric = m; boot(); };
+['f_model','f_coin','f_arm','f_pos'].forEach(id => $(id).addEventListener('change', feed));
+boot();
 </script>
 </body>
 </html>
