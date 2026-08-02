@@ -46,8 +46,13 @@ def validate(acct, dec, p_t):
     # mark-to-market losses have pushed effective leverage above 5x.
     if pos in ("long", "short") and size is not None:
         current_notional = abs(acct["qty"]) * p_t
+        # Exact delta semantics (Ruling 007): |delta| < $10 is NO_EXECUTION
+        # (neither increase nor reduction); delta >= +$10 is an executable
+        # increase and MUST pass the 5x new/increased-exposure limit;
+        # delta <= -$10 is an executable reduction, always allowed.
+        delta_notional = size - current_notional
         increasing = (cur == "flat" or pos != cur
-                      or size > current_notional + Decimal("10"))
+                      or delta_notional >= Decimal("10"))
         if increasing and size > max_notional:
             r.append(f"target notional {size} exceeds the 5x leverage limit "
                      f"({max_notional}) — TARGET_EXCEEDS_MAX_LEVERAGE")
