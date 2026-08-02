@@ -8,41 +8,41 @@
       "position": {
         "type": "string",
         "enum": ["long", "short", "flat"],
-        "description": "Target position after this round. 'flat' closes any open position. If you already hold this side, size_usd adjusts the position and stop/take-profit levels are updated."
+        "description": "Target position after this round. 'flat' closes any open position. If you already hold this side, size_usd is your exact target notional; differences of $10 or more are executed exactly."
       },
       "size_usd": {
         "type": "number",
-        "description": "Target position size as USD notional (0 if flat). Capped at 5x current equity. USD notional was chosen so size is explicit, unit-identical across coins, and directly comparable to the leverage cap."
+        "description": "Exact target position size as USD notional. Must be 0 when flat; at least 10 when long or short. A target above 5x current equity is REJECTED as invalid (not clamped). Position changes smaller than $10 notional are not executed."
       },
       "stop_loss": {
         "type": ["number", "null"],
-        "description": "Optional stop-loss price in USD. null means no stop. Enforced between rounds on 1-minute candles."
+        "description": "Stop-loss price in USD, or null. NULL REMOVES any resting stop — to keep a stop you must restate it every round. Enforced between rounds on 1-minute candles."
       },
       "take_profit": {
         "type": ["number", "null"],
-        "description": "Optional take-profit price in USD. null means none. Enforced between rounds on 1-minute candles."
+        "description": "Take-profit price in USD, or null. NULL REMOVES any resting take-profit — to keep one you must restate it every round. Enforced between rounds on 1-minute candles."
       },
       "thesis": {
         "type": "string",
-        "description": "Your reasoning for this decision in 2-5 sentences. Published on the public leaderboard and shown back to you (last 3) in future rounds."
+        "description": "Your reasoning for this decision in 2-5 sentences. Published on the public leaderboard and shown back to you (last 3) in future rounds. Notes never change your executable invalidation."
       },
       "invalidation": {
         "type": ["object", "null"],
-        "description": "REQUIRED (non-null) whenever your decision leaves you holding a long or short position; must be null when flat. The specific machine-checkable price event that would prove this thesis wrong. Evaluated mechanically by the engine; first trigger is recorded permanently.",
+        "description": "REQUIRED (non-null) only when this decision OPENS a position from flat or REVERSES direction. MUST be null when flat and when holding, increasing, or reducing an existing position (its invalidation is immutable for the lifecycle). The machine-checkable price event that would prove this position's thesis wrong; evaluated mechanically, first trigger latched permanently.",
         "properties": {
           "timeframe": {
             "type": "string",
             "enum": ["1h_close", "1m_intrabar"],
-            "description": "1h_close: evaluated on each completed hourly candle close. 1m_intrabar: evaluated on each 1-minute candle's high/low."
+            "description": "1h_close: evaluated on each completed hourly candle close. 1m_intrabar: evaluated on each 1-minute candle's low (at-or-below) or high (at-or-above)."
           },
           "operator": {
             "type": "string",
-            "enum": ["price_below", "price_above"],
-            "description": "Direction of the trigger comparison."
+            "enum": ["price_at_or_below", "price_at_or_above"],
+            "description": "Trigger fires when the evaluated price is at or beyond the level (inclusive comparison)."
           },
           "level": {
             "type": "number",
-            "description": "Trigger price in USD. Must be within 0.2x to 5x the current price."
+            "description": "Trigger price in USD. Must be within 0.2x to 5x the execution price."
           }
         },
         "required": ["timeframe", "operator", "level"],
@@ -50,7 +50,7 @@
       },
       "watch_condition": {
         "type": ["object", "null"],
-        "description": "Optional when flat; must be null when holding a position. A price event that would make you re-evaluate. Informational only — never scored as invalidation.",
+        "description": "Optional when flat; MUST be null when your decision leaves you holding a position. A price event that would make you re-evaluate. Informational only — never scored as invalidation.",
         "properties": {
           "timeframe": {
             "type": "string",
@@ -58,7 +58,7 @@
           },
           "operator": {
             "type": "string",
-            "enum": ["price_below", "price_above"]
+            "enum": ["price_at_or_below", "price_at_or_above"]
           },
           "level": {
             "type": "number"

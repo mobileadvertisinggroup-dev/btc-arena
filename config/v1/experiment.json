@@ -1,56 +1,103 @@
 {
-  "experiment": "v1",
+  "experiment": "v1.1",
   "question": "Does giving an AI trader a fixed technical-indicator summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?",
-  "classification": "DESIGN PROPOSAL — NOT APPROVED FOR LAUNCH",
+  "classification": "DESIGN PROPOSAL — NOT APPROVED FOR IMPLEMENTATION OR LAUNCH",
+  "instrument_wording": "Synthetic USD-settled perpetual paper contract, marked and executed using Kraken {COIN}/USD spot-market OHLC data",
   "coins": {
-    "BTC": {"kraken_pair": "XBTUSD", "coinbase_product": "BTC-USD", "price_decimals": 2, "qty_decimals": 6},
-    "ETH": {"kraken_pair": "ETHUSD", "coinbase_product": "ETH-USD", "price_decimals": 2, "qty_decimals": 5},
-    "SOL": {"kraken_pair": "SOLUSD", "coinbase_product": "SOL-USD", "price_decimals": 2, "qty_decimals": 3}
+    "BTC": {"kraken_pair": "XBTUSD", "price_decimals": 2, "qty_decimals": 6},
+    "ETH": {"kraken_pair": "ETHUSD", "price_decimals": 2, "qty_decimals": 5},
+    "SOL": {"kraken_pair": "SOLUSD", "price_decimals": 2, "qty_decimals": 3}
   },
-  "models": {
-    "haiku":  {"requested_id": "claude-haiku-4-5-20251001", "family": "haiku"},
-    "sonnet": {"requested_id": "claude-sonnet-5", "family": "sonnet", "note": "no dated snapshot published; response.model logged per call"},
-    "opus":   {"requested_id": "claude-opus-4-8", "family": "opus", "note": "no dated snapshot published; response.model logged per call"}
-  },
-  "arms": ["raw", "ta"],
-  "accounts_per_coin": 6,
-  "total_accounts": 18,
-  "account_id_format": "{coin_lower}_{model}_{arm}",
-  "start_cash_usd": 10000.0,
-  "max_leverage": 5.0,
-  "fee_rate": 0.0005,
-  "maintenance_margin": 0.02,
-  "min_order_usd": 10.0,
   "market_data": {
-    "primary_source": "kraken",
-    "fallback_source": "coinbase",
+    "canonical_source": "kraken_spot_ohlc",
+    "fallback_for_committed_data": "NONE — Kraken unavailable/incomplete/stale => PAIR_ABORTED with DATA_UNAVAILABLE",
+    "coinbase_role": "health comparison, alerting reference, and test fixtures only; never supplies committed decisions, fills, exits, invalidation evaluation, or equity",
     "hourly_candles_supplied": 72,
     "daily_closes_supplied": 40,
+    "completeness": "exactly 72 contiguous closed hourly candles and 40 contiguous daily observations required; no silent omission",
+    "empty_interval_rule": "OPTION B (pending mentor approval): a Kraken-omitted interval (no trades) is filled with a deterministic synthetic candle o=h=l=c=previous close, volume=0; synthetic count recorded in snapshot metadata and prompt-invisible; identical rule for all coins; gaps at the series end are staleness, not gaps => DATA_UNAVAILABLE",
     "final_candle_must_be_closed": true,
-    "execution_price": "close of last completed 1m candle at snapshot build time",
-    "no_mixed_sources_within_round": true
+    "execution_price": "close of last completed 1m candle at boundary T (P_T)",
+    "max_auto_catchup_hours": 10,
+    "beyond_catchup": "halt new decisions for the coin, preserve state, set NEEDS_REVIEW"
   },
-  "indicators": {
-    "computed_only_from_supplied_candles": true,
-    "hourly": ["RSI14", "MACD_12_26_9_window_seeded", "BB_20_2.0", "SMA20", "SMA50", "ATR14"],
-    "daily": ["SMA20", "RSI14"],
-    "excluded": ["SMA200", "sentiment", "fear_greed", "news", "social", "onchain", "macro"]
+  "models": {
+    "haiku":  {"model": "claude-haiku-4-5-20251001", "pinning": "dated fixed snapshot"},
+    "sonnet": {"model": "claude-sonnet-5", "pinning": "fixed dateless snapshot (immutable)"},
+    "opus":   {"model": "claude-opus-4-8", "pinning": "fixed dateless snapshot (immutable)"}
   },
-  "schedule": {
-    "round_boundaries_utc": "hourly at minute 00",
-    "tick_cron": "*/5 * * * *",
-    "round_grace_minutes": 30,
-    "max_exit_replay_hours": 24,
-    "model_call_max_attempts_transport": 3,
-    "model_call_max_attempts_validation": 2,
-    "round_timeout_minutes": 10
+  "request_payloads": {
+    "common": {
+      "endpoint": "POST https://api.anthropic.com/v1/messages",
+      "anthropic-version": "2023-06-01",
+      "beta_headers": [],
+      "max_tokens": 1500,
+      "tools": ["schemas/v1/decision.schema.json (strict: true)"],
+      "tool_choice": {"type": "tool", "name": "submit_decision", "disable_parallel_tool_use": true},
+      "sampling_parameters": "temperature/top_p/top_k NOT SENT (rejected by sonnet-5 and opus-4-8; omitted for haiku for parity)",
+      "timeout_seconds": 120,
+      "transport_retries": 3,
+      "validation_retries": 1,
+      "messages": "single user message (round prompt); retry appends assistant tool_use + tool_result acknowledgment + fixed rejection message"
+    },
+    "per_model": {
+      "claude-haiku-4-5-20251001": {"thinking": "parameter omitted (model runs without extended thinking; explicit disable not applicable pre-4.6)"},
+      "claude-sonnet-5":           {"thinking": {"type": "disabled"}},
+      "claude-opus-4-8":           {"thinking": {"type": "disabled"}}
+    },
+    "twin_parity": "Raw and TA requests for the same model are byte-identical except the user prompt text"
   },
-  "model_params": {
-    "max_tokens": 1500,
-    "tool_choice": {"type": "tool", "name": "submit_decision"},
-    "thinking_disabled_for": ["claude-sonnet-5"],
-    "temperature": "not sent (not accepted on target models)"
+  "arms": ["raw", "ta"],
+  "atomic_unit": "matched Raw/TA pair (same model, same coin); 9 independent pairs",
+  "pair_records": ["PAIR_COMMITTED", "PAIR_ABORTED"],
+  "accounts": {
+    "total": 18,
+    "id_format": "{coin_lower}_{model}_{arm}",
+    "start_cash_usd": "10000.00",
+    "max_leverage": "5.0 (validation limit — decisions above it are rejected, never clamped)",
+    "fee_rate": "0.0005 on every execution including stop/take-profit/liquidation fills",
+    "maintenance_margin": "0.02",
+    "min_executable_change_usd": "10.00 (below => NO_EXECUTION_BELOW_MINIMUM, logged)"
   },
+  "accounting": {
+    "arithmetic": "decimal.Decimal for equity, P&L, fees, notional, quantity, prices; full source precision internally",
+    "quantity_rounding": "round DOWN to per-coin qty_decimals at execution",
+    "display_rounding": "presentation only; never feeds back into engine values"
+  },
+  "invalidation": {
+    "operators": ["price_at_or_below", "price_at_or_above"],
+    "timeframes": ["1h_close", "1m_intrabar"],
+    "lifecycle": "set once at open-from-flat or reversal; immutable while lifecycle open (hold/increase/reduce/partial exits); close or reversal ends it; no pre-trigger versioning",
+    "trigger": "inclusive comparison; first trigger latched permanently with timestamp+price+candle ref",
+    "post_trigger": "no forced exit; next-round prompt shows TRIGGERED block; behaviour recorded",
+    "primary_discipline_metric": "no longer exposed in the invalidated direction by the end of the account's next committed pair-round (stop, liquidation, reversal, or full close before that boundary qualifies); partial reductions reported descriptively, never as compliance"
+  },
+  "round_contract": {
+    "cadence": "hourly boundaries at :00 UTC",
+    "duration": "exactly 14 days = 336 scheduled boundaries from the predeclared start boundary",
+    "no_mid_run_changes": "no extension, shortening, coin/indicator/prompt/rule changes based on observed results; operational failures reported, not backfilled",
+    "virtual_event_time": "replay 1m to T -> freeze accounts at T -> freeze snapshot & P_T -> generate all 6 prompts -> collect/validate pair decisions -> apply committed pairs at P_T -> immediately replay 1m candles after T through latest completed candle -> apply stops/targets/liquidation/invalidation -> publish; wall-clock model latency is excluded from simulated market time"
+  },
+  "scheduler": {
+    "heartbeat_cron": "2-57/5 * * * *",
+    "boundary_grace_minutes": 15,
+    "missed_boundary": "ROUND_SKIPPED for all unprocessed pairs; never executed retrospectively",
+    "heartbeat_file": "runtime branch: data-v1/heartbeat.json",
+    "stale_alert_minutes": 15
+  },
+  "persistence": {
+    "code_branch": "main pinned at approved launch tag; runtime never commits to it",
+    "runtime_branch": "v1-runtime (state, prompts archive, logs, dashboard docs/)",
+    "integrity": "every run verifies SHA-256 of code+prompts+schema+config against the launch manifest; mismatch => immediate halt",
+    "recorded_code_hash": "the approved launch commit, not the runtime-data commit"
+  },
+  "outcome_hierarchy": {
+    "primary_behavioural": ["direction disagreement rate", "abs target-size difference as % of equity", "turnover difference", "stop/target usage difference", "invalidation-response difference"],
+    "secondary_descriptive": ["paired equity/return/drawdown/fee differences", "liquidations"],
+    "explicit_non_claim": "V1 does not prove indicators improve profitability; performance results are descriptive (one instance per model-coin-arm; shared market regimes)"
+  },
+  "token_measurement": "PENDING — count_tokens per model on 4 representative prompts (first-round raw/ta, mature raw/ta) during preflight; cost projection is provisional until then",
   "data_namespace": "data-v1/",
-  "prompt_archive": "data-v1/prompts/{round_id}/{account_id}.txt"
+  "prompt_archive": "data-v1/prompts/{round_id}/{account_id}.txt",
+  "round_id_format": "v1-{COIN}-{ISO8601_BOUNDARY}"
 }

@@ -1,4 +1,4 @@
-# V1 prompt sub-blocks — verbatim templates
+# V1.1 prompt sub-blocks — verbatim templates
 
 Placeholders in `{BRACES}` are substituted by the engine. Every alternative a
 block can render is listed. No other text may appear in these positions.
@@ -22,7 +22,7 @@ No closed trades:
 Closed trades: none yet.
 ```
 
-With trades (most recent last; at most 5 shown):
+With trades (at most 5 shown, oldest first):
 ```
 Closed trades ({N_TOTAL} total, most recent 5 shown, oldest first):
 {SIDE} | entry {ENTRY} | exit {EXIT} | P&L {PNL_SIGNED} | closed {CLOSED_TS} | reason {REASON}
@@ -34,22 +34,17 @@ Closed trades ({N_TOTAL} total, most recent 5 shown, oldest first):
 
 Holding a position, invalidation not yet triggered:
 ```
-Your active invalidation (set {SET_TS}, permanent record): {COIN} 1h close {below|above} {LEVEL} [intrabar variant: {COIN} price trades {below|above} {LEVEL}]. Status: NOT TRIGGERED as of this round.
+Your invalidation for this position (set when the position was opened; immutable for its lifecycle): {COIN} 1h close at or {below|above} {LEVEL} [intrabar variant: {COIN} price trades at or {below|above} {LEVEL}]. Status: NOT TRIGGERED as of this round. Do not submit a new invalidation while this position remains open.
 ```
 
 Holding a position, invalidation triggered (latched):
 ```
-Your active invalidation (set {SET_TS}, permanent record): {COIN} 1h close {below|above} {LEVEL}. Status: TRIGGERED at {TRIGGER_TS} (price {TRIGGER_PRICE}). This record is permanent. Your thesis was invalidated by your own stated condition; decide and explain how you respond.
+Your invalidation for this position (set when the position was opened; immutable for its lifecycle): {COIN} 1h close at or {below|above} {LEVEL}. Status: TRIGGERED at {TRIGGER_TS} (price {TRIGGER_PRICE}). This record is permanent. Your thesis was invalidated by your own stated condition; decide and explain how you respond.
 ```
 
-Flat, watch condition set and not triggered:
+Flat, watch condition set:
 ```
-Your watch condition (informational, not scored): {COIN} 1h close {below|above} {LEVEL}. Status: NOT TRIGGERED as of this round.
-```
-
-Flat, watch condition triggered:
-```
-Your watch condition (informational, not scored): {COIN} 1h close {below|above} {LEVEL}. Status: TRIGGERED at {TRIGGER_TS} (price {TRIGGER_PRICE}).
+Your watch condition (informational, not scored): {COIN} 1h close at or {below|above} {LEVEL}. Status: {NOT TRIGGERED as of this round | TRIGGERED at {TRIGGER_TS} (price {TRIGGER_PRICE})}.
 ```
 
 Flat, no watch condition:
@@ -70,24 +65,33 @@ Your notes from previous rounds (oldest first):
 [{ROUND_TS}] {THESIS_TEXT}
 ```
 
-## RETRY / FAILURE MESSAGE (validation retry)
+## RETRY / FAILURE MESSAGE (single validation retry)
 
-Appended as a second user message when a decision fails semantic validation
-and the round retry policy allows one retry:
+Appended as a second user message when a decision fails semantic validation.
+Exactly one retry is permitted; a second failure aborts the matched pair's
+round (PAIR_ABORTED).
 
 ```
 Your previous decision was rejected: {REASON_LIST}. The market snapshot and your account are unchanged. Submit a corrected decision using the submit_decision tool.
 ```
 
-`{REASON_LIST}` items are drawn verbatim from this fixed set:
-- "stop_loss must be below the current price for a long position"
-- "stop_loss must be above the current price for a short position"
-- "take_profit must be above the current price for a long position"
-- "take_profit must be below the current price for a short position"
-- "invalidation is required when your decision leaves you holding a position"
-- "invalidation level {LEVEL} is outside the accepted range (0.2x to 5x current price)"
-- "watch_condition level {LEVEL} is outside the accepted range (0.2x to 5x current price)"
-- "size_usd must be a non-negative number"
+`{REASON_LIST}` items are drawn verbatim from this fixed set (no other feedback
+text is ever shown to a model):
 
-No other feedback text is ever shown to a model. Transport errors (HTTP
-failures) are retried silently with the identical original request.
+- "size_usd must be 0 when position is flat"
+- "size_usd must be at least 10 when opening or holding a position"
+- "size_usd must be a finite, non-negative number"
+- "target notional {SIZE} exceeds the 5x leverage limit ({MAX}) — TARGET_EXCEEDS_MAX_LEVERAGE"
+- "an invalidation is required when opening or reversing a position"
+- "this position already has an immutable invalidation; invalidation must be null when holding, increasing, or reducing"
+- "invalidation must be null when your decision leaves you flat"
+- "watch_condition must be null when your decision leaves you holding a position"
+- "stop_loss must be below the execution price for a long position"
+- "stop_loss must be above the execution price for a short position"
+- "take_profit must be above the execution price for a long position"
+- "take_profit must be below the execution price for a short position"
+- "invalidation level {LEVEL} is outside the accepted range (0.2x to 5x the execution price)"
+- "watch_condition level {LEVEL} is outside the accepted range (0.2x to 5x the execution price)"
+
+Transport errors (HTTP failures) are retried silently with the identical
+original request and never produce model-visible text.

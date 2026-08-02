@@ -1,8 +1,8 @@
 ROUND {ROUND_ID}
 Round time: {ROUND_TS} UTC. All market data below ends at the most recently closed candle at or before this time.
-Instrument: {COIN}/USD linear perpetual (paper). This account trades only {COIN}.
+Instrument: synthetic {COIN}/USD perpetual paper contract, marked to Kraken {COIN}/USD spot. This account trades only {COIN}.
 
-=== MARKET DATA ({SOURCE}) ===
+=== MARKET DATA (Kraken {COIN}/USD spot) ===
 Execution price for this round (close of the last completed 1-minute candle): {PRICE}
 24h change: {CHG_24H}%
 
