@@ -1,11 +1,11 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-02T16:32:41Z",
- "last_tick_at": "2026-08-02T16:57:37Z",
- "last_price": 63132.2,
+ "last_tick_at": "2026-08-02T17:10:16Z",
+ "last_price": 63090.0,
  "traders": {
   "haiku": {
-   "display": "Haiku 4.5",
+   "display": "Moudir (Haiku 4.5)",
    "api_model": "claude-haiku-4-5",
    "equity": 9992.5,
    "qty": 0.23758736681446185,
@@ -24,7 +24,7 @@
    ]
   },
   "sonnet": {
-   "display": "Sonnet 5",
+   "display": "Jamil (Sonnet 5)",
    "api_model": "claude-sonnet-5",
    "equity": 10000.0,
    "qty": 0.0,
@@ -43,7 +43,7 @@
    ]
   },
   "opus": {
-   "display": "Opus 4.8",
+   "display": "Ziad (Opus 4.8)",
    "api_model": "claude-opus-4-8",
    "equity": 10000.0,
    "qty": 0.0,
