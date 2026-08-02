@@ -1,3 +1,4 @@
+# BTC Arena tick — re-saved to (re)register the schedule
 name: arena-tick
 on:
   schedule:
