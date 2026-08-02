@@ -1,0 +1,33 @@
+246dc373458d ruling006: refreshed evidence (logs, junit, coverage, ruff, hashes, se
+0db165db947d ruling006: leverage/gap/coordinator/metrics tests (117), F-class lint 
+3a4e18501f72 ruling006: leverage A-F semantics, gap wording, single authoritative c
+4d85f6d60ed3 audit: raw logs, junit, coverage, ruff, hashes, diff bundle, determini
+300c14d7e474 audit: network block, edge/oracle/crash/fuzz/golden/schema/gap tests (
+22f9cc22ec74 audit: checkpointed recovery state machine, record schemas, persistenc
+0be3e6f04681 chore: ignore __pycache__
+89fee459471d evidence: deterministic 18-account mock boundary samples (commit/abort
+805bd56227eb tests: hermetic suite (66 cases) + deterministic seeded fixtures, zero
+7e2a1fad9cfa engine: pair-atomic round coordination with wave rotation, atomic pers
+71169095fcff engine: deterministic prompt rendering, semantic decision validation, 
+1012402c8afa engine: config+integrity hashes, accounts/state, immutable lifecycle, 
+1d077030f20e V1.3 owner amendment: neutral minimal feature pack (8 outputs), Featur
+14928d47b03f V1.2 final addendum per Mentor Ruling 003: CHG_24H removed, strict can
+1b709d3b899d V1.1 design pack per Mentor Ruling 002: pair atomicity, immutable inva
+ed53be6d68e1 V1 design pack: prompts, decision schema, experiment config (PROPOSAL 
+28bf1fd78675 nudge schedule registration
+8bfc3f4ea916 tick 2026-08-02T17:40:18Z
+e80223669fa9 tick 2026-08-02T17:26:57Z
+0adb16802e1f rename traders: Moudir/Jamil/Ziad
+72d88b3c770c tick 2026-08-02T17:10:16Z
+6874816a814b rename traders: Moudir/Jamil/Ziad
+31a16d8de9bf tick 2026-08-02T16:57:37Z
+694a9459bbc2 add README
+3df6851dcc74 add .gitignore
+27367c722c06 add docs/index.html
+d54d16a6abe8 add dashboard.html
+19733e62c92b add data/decisions.jsonl
+23a518201f56 add data/equity.jsonl
+f52d5ec6a725 add data/state.json
+54b53beac8ca add .github/workflows/tick.yml
+9e8c1272fe82 add arena.py
+25ae9d8299d8 Initial commit

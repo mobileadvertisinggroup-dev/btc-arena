@@ -5,3 +5,5 @@ __pycache__/
 *.pyc
 .coverage
 evidence/season/
+offline_audit_bundle_v1.tar.gz
+MANIFEST.sha256.json
