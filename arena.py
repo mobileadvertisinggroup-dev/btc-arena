@@ -45,9 +45,9 @@ DECISION_INTERVAL_MIN = 55   # run a round if >=55 min since the last one
 MIN_ORDER_USD = 10.0
 
 TRADERS = [
-    {"id": "haiku",  "display": "Haiku 4.5",  "api_model": "claude-haiku-4-5"},
-    {"id": "sonnet", "display": "Sonnet 5",   "api_model": "claude-sonnet-5"},
-    {"id": "opus",   "display": "Opus 4.8",   "api_model": "claude-opus-4-8"},
+    {"id": "haiku",  "display": "Moudir (Haiku 4.5)", "api_model": "claude-haiku-4-5"},
+    {"id": "sonnet", "display": "Jamil (Sonnet 5)",   "api_model": "claude-sonnet-5"},
+    {"id": "opus",   "display": "Ziad (Opus 4.8)",    "api_model": "claude-opus-4-8"},
 ]
 
 MOCK = os.environ.get("BTC_ARENA_MOCK") == "1"
@@ -176,8 +176,14 @@ def default_state():
 def load_state():
     if os.path.exists(STATE_PATH):
         with open(STATE_PATH) as f:
-            return json.load(f)
-    return default_state()
+            state = json.load(f)
+    else:
+        state = default_state()
+    # display names follow the TRADERS config so renames apply to a live game
+    for tc in TRADERS:
+        if tc["id"] in state["traders"]:
+            state["traders"][tc["id"]]["display"] = tc["display"]
+    return state
 
 
 def save_state(state):
@@ -841,7 +847,7 @@ document.getElementById('legend').innerHTML = D.traders.map(t =>
   // start line
   g += `<line x1="${ML}" y1="${Y(D.start_cash)}" x2="${W-MR}" y2="${Y(D.start_cash)}" stroke="var(--axis)" stroke-width="1" stroke-dasharray="4 4"/>`;
   // series
-  const names = { haiku: 'Haiku', sonnet: 'Sonnet', opus: 'Opus' };
+  const names = { haiku: 'Moudir', sonnet: 'Jamil', opus: 'Ziad' };
   for (const k of keys) {
     const pts = rows.filter(r => typeof r[k] === 'number')
       .map(r => `${X(new Date(r.t).getTime()).toFixed(1)},${Y(r[k]).toFixed(1)}`);
