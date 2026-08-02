@@ -1,4 +1,4 @@
-"""Archive the 24-hour pilot and prepare FRESH official accounts (Rule 5).
+"""Archive the 12-hour pilot and prepare FRESH official accounts (Rule 5).
 
 Guarded: requires --confirm. Never reuses pilot balances/trades/positions/
 reasoning. Does NOT start the official experiment.
@@ -12,7 +12,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-PILOT_STORE = os.path.join(ROOT, "data-pilot-24h")
+PILOT_STORE = os.path.join(ROOT, "data-pilot-12h")
 OFFICIAL_STORE = os.path.join(ROOT, "data-v1")
 
 
@@ -34,9 +34,9 @@ def main():
         shutil.copy(payload_src, os.path.join(arch, "final_payload.js"))
     with open(os.path.join(arch, "index.html"), "w") as f:
         f.write('<!doctype html><meta charset="utf-8">'
-                '<title>24h Pilot Archive</title>'
+                '<title>12h Pilot Archive</title>'
                 '<div style="background:#d03b3b;color:#fff;font-weight:700;'
-                'padding:12px;text-align:center">ARCHIVED 24-HOUR PILOT — '
+                'padding:12px;text-align:center">ARCHIVED 12-HOUR PILOT — '
                 'PAPER MONEY — NOT OFFICIAL EXPERIMENTAL EVIDENCE</div>'
                 f'<p>Archived {stamp}. Raw data in <code>data/</code>; final '
                 'dashboard payload in <code>final_payload.js</code>.</p>'

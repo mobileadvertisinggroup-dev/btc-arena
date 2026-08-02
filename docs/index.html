@@ -299,7 +299,7 @@ function strip(){
   });
   const info = [
     ['MODE', 'Preparation'],
-    ['PILOT PROGRESS', `${(D.pilot_progress || {done:0}).done} / 24`],
+    ['PILOT PROGRESS', `${(D.pilot_progress || {done:0}).done} / 12`],
     ['ACCOUNTS', demo ? 'demo scenario' : 'inactive — waiting'],
   ].map(([l, v]) => `<div class="cell"><div class="l">${l}</div><div class="v">${v}</div></div>`);
   $('strip').innerHTML = mkt.join('') + info.join('')

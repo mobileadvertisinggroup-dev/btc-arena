@@ -90,7 +90,7 @@ pre["mode"] = "PREPARATION"
 pre["banner"] = "AKRA ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED"
 pre["data_notice"] = ("No model has been called. No paper-trading pilot or "
                       "official experiment has started.")
-pre["pilot_progress"] = {"done": 0, "total": 24}
+pre["pilot_progress"] = {"done": 0, "total": 12}
 for coin in ("BTC", "ETH", "SOL"):
     for a in pre["coins"][coin]["accounts"]:
         a["status_text"] = "Waiting for pilot"
