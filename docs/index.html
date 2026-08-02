@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="120">
+<title>BTC Arena</title>
+<style>
+:root {
+  --surface: #fcfcfb; --page: #f9f9f7;
+  --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+  --haiku: #2a78d6; --sonnet: #1baf7a; --opus: #eda100;
+  --up: #006300; --down: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #1a1a19; --page: #0d0d0d;
+    --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --haiku: #3987e5; --sonnet: #199e70; --opus: #c98500;
+    --up: #0ca30c; --down: #e66767;
+  }
+}
+* { box-sizing: border-box; margin: 0; }
+body { background: var(--page); color: var(--ink);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding: 20px; max-width: 1100px; margin: 0 auto; }
+h1 { font-size: 20px; font-weight: 650; }
+.sub { color: var(--ink2); font-size: 13px; margin-top: 2px; }
+.banner { background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 14px; margin-top: 14px;
+  color: var(--ink2); font-size: 13px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
+  gap: 12px; margin-top: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px; }
+.tile .name { display: flex; align-items: center; gap: 8px;
+  font-weight: 600; font-size: 14px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.tile .eq { font-size: 26px; font-weight: 650; margin-top: 6px; }
+.tile .pnl { font-size: 14px; font-weight: 600; }
+.pos { color: var(--ink2); font-size: 12.5px; margin-top: 6px; }
+.up { color: var(--up); } .down { color: var(--down); }
+.card { background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px; margin-top: 16px; }
+.card h2 { font-size: 14px; font-weight: 650; margin-bottom: 10px; }
+.legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--ink2);
+  margin-bottom: 8px; flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+#chartwrap { position: relative; }
+#tip { position: absolute; pointer-events: none; display: none;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; font-size: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.12); white-space: nowrap; z-index: 2; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th { text-align: left; color: var(--muted); font-weight: 500;
+  padding: 4px 10px 4px 0; border-bottom: 1px solid var(--grid); }
+td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--grid);
+  vertical-align: top; font-variant-numeric: tabular-nums; }
+.feed .item { border-bottom: 1px solid var(--grid); padding: 10px 0; }
+.feed .item:last-child { border-bottom: none; }
+.feed .head { display: flex; gap: 8px; align-items: baseline;
+  flex-wrap: wrap; font-size: 12.5px; color: var(--ink2); }
+.feed .who { font-weight: 600; color: var(--ink); display: inline-flex;
+  align-items: center; gap: 6px; }
+.feed .reason { margin-top: 4px; font-size: 13px; }
+.feed .exec { margin-top: 3px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>&#8383; BTC Arena — Haiku vs Sonnet vs Opus</h1>
+<div class="sub" id="subtitle"></div>
+<div id="banner"></div>
+<div class="tiles" id="tiles"></div>
+<div class="card">
+  <h2>Equity — $10,000 start, live BTC prices</h2>
+  <div class="legend" id="legend"></div>
+  <div id="chartwrap"><svg id="chart" width="100%" height="320"></svg>
+    <div id="tip"></div></div>
+</div>
+<div class="card feed"><h2>Decision feed (what each AI was thinking)</h2>
+  <div id="feed"></div></div>
+<div class="card"><h2>Closed trades</h2>
+  <div class="tablewrap"><table id="trades"><thead><tr>
+    <th>Trader</th><th>Side</th><th>Entry</th><th>Exit</th>
+    <th>P&amp;L</th><th>Reason</th><th>Closed</th>
+  </tr></thead><tbody></tbody></table></div></div>
+<script>
+const D = {"generated_at": "2026-08-02T16:52:19Z", "price": 63192.0, "started_at": "2026-08-02T13:45:02Z", "last_decision_at": "2026-08-02T16:32:41Z", "has_key": true, "start_cash": 10000.0, "traders": [{"id": "haiku", "display": "Haiku 4.5", "equity": 10006.12, "pnl_pct": 0.06, "side": "long", "notional": 15014.0, "entry": 63134.67, "stop": 62800.0, "tp": 64200.0, "liquidated": false, "n_decisions": 1, "n_trades": 0, "trades": []}, {"id": "sonnet", "display": "Sonnet 5", "equity": 10000.0, "pnl_pct": 0.0, "side": "flat", "notional": 0, "entry": null, "stop": null, "tp": null, "liquidated": false, "n_decisions": 1, "n_trades": 0, "trades": []}, {"id": "opus", "display": "Opus 4.8", "equity": 10000.0, "pnl_pct": 0.0, "side": "flat", "notional": 0, "entry": null, "stop": null, "tp": null, "liquidated": false, "n_decisions": 1, "n_trades": 0, "trades": []}], "equity": [{"t": "2026-08-02T13:45:04Z", "price": 63093.05, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T13:45:35Z", "price": 63096.45, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T13:50:45Z", "price": 63126.0, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T13:55:47Z", "price": 63112.0, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T14:00:57Z", "price": 63116.01, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T14:06:08Z", "price": 63064.0, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T14:11:20Z", "price": 63064.73, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T14:16:23Z", "price": 63115.05, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T14:21:33Z", "price": 63132.0, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T14:26:34Z", "price": 63110.16, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T14:31:36Z", "price": 63110.67, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T14:36:37Z", "price": 63162.01, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T14:41:39Z", "price": 63140.38, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T14:46:41Z", "price": 63148.44, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T14:51:42Z", "price": 63116.81, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T14:56:44Z", "price": 63066.32, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T15:01:46Z", "price": 63078.0, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T15:06:47Z", "price": 63081.99, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T15:11:49Z", "price": 63100.0, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T15:16:51Z", "price": 63124.77, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T15:21:53Z", "price": 63115.55, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T15:26:55Z", "price": 63125.99, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T15:31:57Z", "price": 63141.99, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T15:36:58Z", "price": 63152.3, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T15:42:00Z", "price": 63132.02, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T15:47:02Z", "price": 63149.99, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T15:52:03Z", "price": 63126.0, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T15:57:05Z", "price": 63109.13, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T16:02:07Z", "price": 63102.06, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T16:07:09Z", "price": 63106.99, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T16:12:10Z", "price": 63107.01, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T16:17:12Z", "price": 63084.0, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T16:22:14Z", "price": 63111.24, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T16:27:15Z", "price": 63096.79, "haiku": 10000.0, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T16:32:41Z", "price": 63134.67, "haiku": 9992.5, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T16:37:16Z", "price": 63159.31, "haiku": 9998.35, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T16:42:17Z", "price": 63246.99, "haiku": 10019.19, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T16:47:18Z", "price": 63214.83, "haiku": 10011.55, "sonnet": 10000.0, "opus": 10000.0}, {"t": "2026-08-02T16:52:19Z", "price": 63192.0, "haiku": 10006.12, "sonnet": 10000.0, "opus": 10000.0}], "decisions": [{"t": "2026-08-02T16:32:41Z", "trader": "opus", "price": 63134.67, "decision": {"position": "flat", "size_usd": 0, "stop_loss": null, "take_profit": null}, "reasoning": "Price is stuck in a tight consolidation range (~63000-63200) after a pullback from the 63600 intraday high. The 30-day daily closes show sideways-to-down chop between 62800-65400 with no clear trend, and hourly volume is light. There's no compelling edge either direction right now \u2014 I'd rather preserve capital and wait for a clean breakout or a better risk/reward setup than pay fees to enter a range-bound market.", "executed": "stayed flat", "equity_after": 10000.0, "usage": {"input_tokens": 1937, "output_tokens": 270}}, {"t": "2026-08-02T16:32:36Z", "trader": "sonnet", "price": 63134.67, "decision": {"position": "flat", "size_usd": 0, "stop_loss": null, "take_profit": null}, "reasoning": "Price is consolidating in a tight range (62900-63600) after the early Aug 2 spike, with no clear directional momentum - last several hours show declining volume and choppy price action near 63100-63200. The daily closes over 30 days show broader range-bound behavior between 62800-66500 with no strong trend currently. Given the lack of clear edge and tight range, I'll stay flat and wait for a clearer breakout or pullback setup rather than force a trade.", "executed": "stayed flat", "equity_after": 10000.0, "usage": {"input_tokens": 2001, "output_tokens": 277}}, {"t": "2026-08-02T16:32:25Z", "trader": "haiku", "price": 63134.67, "decision": {"position": "long", "size_usd": 15000, "stop_loss": 62800, "take_profit": 64200}, "reasoning": "BTC has recovered from recent lows (~62,335) and is trading near multi-day resistance around 63,135. Strong hourly rally from 02:00 (62,959 to 63,452) shows bullish momentum, though recent pullback to 63,135 suggests consolidation. Daily structure remains constructive with support near 62,800. Entering long with 1.5x leverage to capture potential breakout above 63,200, with stops at recent support and targets at psychological resistance.", "executed": "opened long $15000 @ 63134.67; stop=62800.0 tp=64200.0", "equity_after": 9992.5, "usage": {"input_tokens": 1895, "output_tokens": 221}}]};
+const COLORS = { haiku: 'var(--haiku)', sonnet: 'var(--sonnet)', opus: 'var(--opus)' };
+const fmt$ = v => '$' + v.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+const fmt2 = v => '$' + v.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const ftime = s => new Date(s).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+
+document.getElementById('subtitle').textContent =
+  'BTC ' + (D.price ? fmt$(D.price) : '—') +
+  ' · updated ' + ftime(D.generated_at) +
+  (D.last_decision_at ? ' · last decision round ' + ftime(D.last_decision_at) : '') +
+  ' · started ' + ftime(D.started_at);
+
+if (!D.has_key) {
+  document.getElementById('banner').innerHTML =
+    '<div class="banner">&#9888;&#65039; Waiting for an Anthropic API key — the arena is ticking prices but the traders are idle. Add the key to btc-arena/.env to start the game.</div>';
+}
+
+// standings tiles, ranked
+const ranked = [...D.traders].sort((a,b) => b.equity - a.equity);
+document.getElementById('tiles').innerHTML = ranked.map((t,i) => {
+  const cls = t.pnl_pct >= 0 ? 'up' : 'down';
+  let pos = t.liquidated ? '&#128128; LIQUIDATED — out of the game'
+    : t.side === 'flat' ? 'Flat — no position'
+    : t.side.toUpperCase() + ' ' + fmt$(t.notional) + ' @ ' + fmt$(t.entry)
+      + (t.stop ? ' · stop ' + fmt$(t.stop) : ' · no stop')
+      + (t.tp ? ' · tp ' + fmt$(t.tp) : '');
+  return `<div class="tile">
+    <div class="name"><span class="dot" style="background:${COLORS[t.id]}"></span>
+      ${['&#129351;','&#129352;','&#129353;'][i] || ''} ${t.display}</div>
+    <div class="eq">${fmt2(t.equity)}</div>
+    <div class="pnl ${cls}">${t.pnl_pct >= 0 ? '+' : ''}${t.pnl_pct.toFixed(2)}%</div>
+    <div class="pos">${pos}</div>
+    <div class="pos">${t.n_decisions} decisions · ${t.n_trades} closed trades</div>
+  </div>`;
+}).join('');
+
+document.getElementById('legend').innerHTML = D.traders.map(t =>
+  `<span><span class="dot" style="background:${COLORS[t.id]}"></span>${t.display}</span>`
+).join('') + '<span style="color:var(--muted)">dashed = $10,000 start</span>';
+
+// equity chart
+(function chart() {
+  const rows = D.equity;
+  const svg = document.getElementById('chart');
+  if (rows.length < 2) {
+    svg.outerHTML = '<div class="pos">Not enough data yet — the chart appears after a few ticks.</div>';
+    return;
+  }
+  const W = 1060, H = 320, ML = 56, MR = 70, MT = 12, MB = 26;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const keys = ['haiku','sonnet','opus'];
+  const t0 = new Date(rows[0].t).getTime(), t1 = new Date(rows[rows.length-1].t).getTime();
+  let lo = Infinity, hi = -Infinity;
+  for (const r of rows) for (const k of keys) {
+    if (typeof r[k] === 'number') { lo = Math.min(lo, r[k]); hi = Math.max(hi, r[k]); }
+  }
+  lo = Math.min(lo, D.start_cash); hi = Math.max(hi, D.start_cash);
+  const pad = Math.max((hi - lo) * 0.08, 40); lo -= pad; hi += pad;
+  const X = t => ML + (W - ML - MR) * (t - t0) / Math.max(1, t1 - t0);
+  const Y = v => MT + (H - MT - MB) * (1 - (v - lo) / (hi - lo));
+  let g = '';
+  // gridlines + y labels
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const v = lo + (hi - lo) * i / steps, y = Y(v);
+    g += `<line x1="${ML}" y1="${y}" x2="${W-MR}" y2="${y}" stroke="var(--grid)" stroke-width="1"/>`;
+    g += `<text x="${ML-8}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt$(v)}</text>`;
+  }
+  // x labels
+  for (let i = 0; i <= 4; i++) {
+    const t = t0 + (t1 - t0) * i / 4;
+    g += `<text x="${X(t)}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)">${new Date(t).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</text>`;
+  }
+  // start line
+  g += `<line x1="${ML}" y1="${Y(D.start_cash)}" x2="${W-MR}" y2="${Y(D.start_cash)}" stroke="var(--axis)" stroke-width="1" stroke-dasharray="4 4"/>`;
+  // series
+  const names = { haiku: 'Haiku', sonnet: 'Sonnet', opus: 'Opus' };
+  for (const k of keys) {
+    const pts = rows.filter(r => typeof r[k] === 'number')
+      .map(r => `${X(new Date(r.t).getTime()).toFixed(1)},${Y(r[k]).toFixed(1)}`);
+    g += `<polyline points="${pts.join(' ')}" fill="none" stroke="${COLORS[k]}" stroke-width="2" stroke-linejoin="round"/>`;
+    const lastRow = rows[rows.length-1];
+    g += `<text x="${W-MR+6}" y="${Y(lastRow[k])+4}" font-size="11.5" font-weight="600" fill="${COLORS[k]}">${names[k]}</text>`;
+  }
+  g += `<line id="xhair" x1="0" y1="${MT}" x2="0" y2="${H-MB}" stroke="var(--axis)" stroke-width="1" visibility="hidden"/>`;
+  svg.innerHTML = g;
+  // hover crosshair + tooltip
+  const tip = document.getElementById('tip');
+  svg.addEventListener('mousemove', ev => {
+    const rect = svg.getBoundingClientRect();
+    const px = (ev.clientX - rect.left) / rect.width * W;
+    if (px < ML || px > W - MR) { tip.style.display = 'none'; return; }
+    const tt = t0 + (px - ML) / (W - ML - MR) * (t1 - t0);
+    let best = 0, bd = Infinity;
+    rows.forEach((r, i) => { const d = Math.abs(new Date(r.t).getTime() - tt);
+      if (d < bd) { bd = d; best = i; } });
+    const r = rows[best];
+    const xh = document.getElementById('xhair');
+    const cx = X(new Date(r.t).getTime());
+    xh.setAttribute('x1', cx); xh.setAttribute('x2', cx);
+    xh.setAttribute('visibility', 'visible');
+    tip.innerHTML = `<b>${ftime(r.t)}</b> · BTC ${fmt$(r.price)}<br>` +
+      keys.map(k => `<span style="color:${COLORS[k]}">&#9679;</span> ${names[k]}: ${fmt2(r[k])}`).join('<br>');
+    tip.style.display = 'block';
+    const left = Math.min(ev.clientX - rect.left + 14, rect.width - 190);
+    tip.style.left = left + 'px';
+    tip.style.top = '18px';
+  });
+  svg.addEventListener('mouseleave', () => {
+    tip.style.display = 'none';
+    document.getElementById('xhair').setAttribute('visibility', 'hidden');
+  });
+})();
+
+// decision feed
+const nameOf = id => (D.traders.find(t => t.id === id) || {display: id}).display;
+document.getElementById('feed').innerHTML = D.decisions.length === 0
+  ? '<div class="pos">No decisions yet.</div>'
+  : D.decisions.map(d => {
+    if (d.error) return `<div class="item"><div class="head">
+      <span class="who"><span class="dot" style="background:${COLORS[d.trader]}"></span>${nameOf(d.trader)}</span>
+      <span>${ftime(d.t)}</span></div>
+      <div class="exec">&#9888;&#65039; model call failed: ${d.error}</div></div>`;
+    const dec = d.decision || {};
+    return `<div class="item"><div class="head">
+      <span class="who"><span class="dot" style="background:${COLORS[d.trader]}"></span>${nameOf(d.trader)}</span>
+      <span>${ftime(d.t)}</span><span>BTC ${fmt$(d.price)}</span>
+      <span><b>${(dec.position||'').toUpperCase()}</b>${dec.size_usd ? ' ' + fmt$(dec.size_usd) : ''}</span>
+      <span>equity ${fmt2(d.equity_after)}</span></div>
+      <div class="reason">${(d.reasoning||'').replace(/</g,'&lt;')}</div>
+      <div class="exec">${(d.executed||'').replace(/</g,'&lt;')}</div></div>`;
+  }).join('');
+
+// trades table
+const tbody = document.querySelector('#trades tbody');
+const allTrades = [];
+for (const t of D.traders) for (const tr of t.trades) allTrades.push({...tr, who: t.display, id: t.id});
+allTrades.sort((a,b) => (a.closed_at < b.closed_at ? 1 : -1));
+tbody.innerHTML = allTrades.length === 0
+  ? '<tr><td colspan="7" style="color:var(--muted)">No closed trades yet.</td></tr>'
+  : allTrades.map(tr => `<tr>
+    <td><span class="dot" style="background:${COLORS[tr.id]};display:inline-block;vertical-align:middle;margin-right:6px"></span>${tr.who}</td>
+    <td>${tr.side}</td><td>${fmt$(tr.entry)}</td><td>${fmt$(tr.exit)}</td>
+    <td class="${tr.pnl >= 0 ? 'up' : 'down'}">${tr.pnl >= 0 ? '+' : ''}${tr.pnl.toFixed(2)}</td>
+    <td>${tr.reason.replace(/_/g,' ')}</td><td>${ftime(tr.closed_at)}</td></tr>`).join('');
+</script>
+</body>
+</html>
