@@ -89,6 +89,9 @@ def _validate_account(aid, a):
         raise StateCorruption(f"invalid account identity fields: {aid}")
     if aid != expected:
         raise StateCorruption(f"account identity mismatch: {aid}")
+    if a.get("id") != aid:
+        raise StateCorruption(
+            f"internal account id invalid: key={aid} id={a.get('id')!r}")
     for k in STATE_KEYS_DEC:
         v = a.get(k)
         if v is None:
@@ -134,6 +137,9 @@ def load_state(path, expect_full_roster=False, _allow_unchecksummed=False):
     elif stored != _checksum(enc, meta_core):
         raise StateCorruption("state checksum mismatch")
     try:
+        ids = [a.get("id") for a in enc.values()]
+        if len(set(ids)) != len(ids):
+            raise StateCorruption("duplicate internal account ids")
         for aid, a in enc.items():
             _validate_account(aid, a)
     except StateCorruption:

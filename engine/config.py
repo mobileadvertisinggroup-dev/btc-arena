@@ -87,12 +87,43 @@ LAUNCH_MANIFEST_NAME = "launch_manifest.json"
 
 
 def write_launch_manifest(store):
-    """Explicit provisioning step: freeze the CURRENT tree as the approved
-    launch manifest for a store. Must never be called mid-experiment — the
-    coordinator only LOADS this file and verifies against it."""
+    """TEST/TOOLING PROVISIONING ONLY: freeze the CURRENT tree as the approved
+    launch manifest for a store. PRODUCTION activation must NEVER use this —
+    it would let whatever tree exists at activation time approve itself
+    (Ruling 010.1). Production paths use provision_store() with an externally
+    supplied mentor-approved digest. The coordinator only LOADS the manifest
+    and verifies against it."""
     path = os.path.join(store, LAUNCH_MANIFEST_NAME)
     with open(path, "w") as f:
         json.dump(build_manifest(), f, indent=1)
+    return path
+
+
+def check_approved_digest(approved_digest):
+    """Ruling 010.1: production activation requires an EXTERNALLY supplied
+    mentor-approved combined-manifest digest. The current tree's combined
+    manifest must equal it exactly, checked BEFORE any state initialization,
+    prompt rendering, network access, or model call. Returns the verified
+    current manifest; mismatch/absence => Integrity Halt A."""
+    current = build_manifest()
+    if not isinstance(approved_digest, str) or not approved_digest.strip() \
+            or current["combined"] != approved_digest.strip().lower():
+        raise IntegrityError(
+            "current tree does not match the externally approved "
+            f"combined-manifest digest (current={current['combined']}, "
+            f"approved={approved_digest!r})")
+    return current
+
+
+def provision_store(store, approved_digest):
+    """The ONLY way production code installs a store's launch manifest: verify
+    the current tree against the external approved digest, and only then copy
+    the verified manifest into the store. Nothing is written on mismatch."""
+    current = check_approved_digest(approved_digest)
+    os.makedirs(store, exist_ok=True)
+    path = os.path.join(store, LAUNCH_MANIFEST_NAME)
+    with open(path, "w") as f:
+        json.dump(current, f, indent=1)
     return path
 
 

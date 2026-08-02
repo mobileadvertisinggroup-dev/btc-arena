@@ -1,23 +1,36 @@
 """12-HOUR VISIBLE PAPER-TRADING PILOT — PREPARED, NOT ACTIVATED.
 
-NOT AUDITED FOR LAUNCH. Hard-guarded: refuses to run unless BOTH
-  1. env  ARENA_PILOT_APPROVED=YES-AUDIT-PASSED   (set only after ChatGPT's
-     independent source audit approves activation), and
-  2. the literal flag  --activate  is passed.
+NOT AUDITED FOR LAUNCH. Hard-guarded: refuses to run unless ALL of
+  1. env  ARENA_PILOT_APPROVED=YES-AUDIT-PASSED  (set only after ChatGPT's
+     independent source audit approves activation),
+  2. env  ARENA_APPROVED_MANIFEST_SHA256=<64-hex mentor-approved combined
+     digest> — issued EXTERNALLY by the independent auditor. The current
+     tree's combined manifest must hash to exactly this value BEFORE any
+     state initialization, prompt rendering, network access, or model call
+     (engine.config.check_approved_digest); otherwise Integrity Halt A with
+     zero model calls. The tree can never approve itself (Ruling 010.1).
+  3. the literal flag  --activate,
+  4. env  ANTHROPIC_API_KEY.
 
-When (later) activated it will: fetch real current Kraken OHLC, ask the real
-Claude models (Haiku/Sonnet/Opus, Raw vs Feature) for hourly decisions on
-temporary $10,000 paper accounts for 12 boundaries, drive the audited
-coordinator (engine.recovery), and publish the dashboard payload labeled:
+When activated: 12 hourly boundaries on a PERSISTED schedule, real Kraken
+OHLC, real Claude models (Haiku/Sonnet/Opus, Raw vs Feature) on temporary
+$10,000 paper accounts, the audited coordinator (engine.recovery) driven by
+engine.pilot with wired crash recovery (a restart resumes the SAME schedule —
+never 12 new boundaries), and post-commit publication of the live dashboard
+payload (engine.publisher) labeled:
 
-  24-HOUR PILOT — REAL AI DECISIONS — PAPER MONEY — NOT OFFICIAL EXPERIMENTAL EVIDENCE
+  12-HOUR PILOT — REAL AI DECISIONS — PAPER MONEY — NOT OFFICIAL EXPERIMENTAL EVIDENCE
 
 "Real AI decisions" = the Claude models actually decide; no real money.
-Pilot accounts are TEMPORARY: they are archived and never reused (see
-scripts/archive_pilot_reset.py).
+Publication: docs/live_payload.js is written atomically and pushed to the
+public GitHub Pages site (env ARENA_DEPLOY_TOKEN). Publication failure never
+re-executes a trading round; it is persisted as FAILED and retried
+(publication only) at next startup. Pilot accounts are TEMPORARY: archived
+and never reused (see scripts/archive_pilot_reset.py).
 """
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -25,8 +38,6 @@ import urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-PILOT_BANNER = ("12-HOUR PILOT — REAL AI DECISIONS — PAPER MONEY — "
-                "NOT OFFICIAL EXPERIMENTAL EVIDENCE")
 PILOT_STORE = os.path.join(ROOT, "data-pilot-12h")
 KRAKEN = {"BTC": "XBTUSD", "ETH": "ETHUSD", "SOL": "SOLUSD"}
 
@@ -39,9 +50,16 @@ def guard():
               "--activate flag,\ngranted only after independent audit "
               "approval. No model call was made.")
         sys.exit(2)
+    digest = os.environ.get("ARENA_APPROVED_MANIFEST_SHA256", "").strip().lower()
+    if not re.fullmatch(r"[0-9a-f]{64}", digest):
+        print("REFUSED: ARENA_APPROVED_MANIFEST_SHA256 not set to the "
+              "mentor-approved 64-hex combined-manifest digest. The tree "
+              "cannot approve itself. No model call was made.")
+        sys.exit(2)
     if not os.environ.get("ANTHROPIC_API_KEY"):
         print("REFUSED: ANTHROPIC_API_KEY not set.")
         sys.exit(2)
+    return digest
 
 
 def kraken_ohlc(pair, interval_min):
@@ -52,6 +70,19 @@ def kraken_ohlc(pair, interval_min):
     return [{"t": int(x[0]), "o": float(x[1]), "h": float(x[2]),
              "l": float(x[3]), "c": float(x[4]), "v": float(x[6])}
             for x in raw["result"][key]]
+
+
+def fetch_market(coin, T, first):
+    """Kraken canonical data -> (snapshot, replay_spec) for one boundary."""
+    from engine import marketdata
+    pair = KRAKEN[coin]
+    k1m = kraken_ohlc(pair, 1)
+    k1h = kraken_ohlc(pair, 60)
+    k1d = kraken_ohlc(pair, 1440)
+    snap = marketdata.build_snapshot(coin, k1m, k1h, k1d, T)
+    spec = {"start": T if first else T - 3600, "end": T,
+            "candles": marketdata.to_dec(k1m)}
+    return snap, spec
 
 
 def live_caller_factory(cfg):
@@ -91,52 +122,56 @@ def live_caller_factory(cfg):
     return caller
 
 
+def git_publish(text):
+    """Production publisher: atomically write docs/live_payload.js, commit,
+    push to the public GitHub Pages branch, and return the payload as read
+    back from the committed working tree (verified by engine.publisher).
+    Any failure raises PublicationError => persisted FAILED status; the
+    engine and its committed rounds are never affected."""
+    from engine import publisher as publisher_mod
+    out = os.path.join(ROOT, "docs", "live_payload.js")
+    tmp = out + ".tmp"
+    with open(tmp, "w") as f:
+        f.write(text)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, out)
+    token = os.environ.get("ARENA_DEPLOY_TOKEN")
+    if not token:
+        raise publisher_mod.PublicationError(
+            "ARENA_DEPLOY_TOKEN not set: payload written locally but the "
+            "public site was NOT updated")
+    try:
+        from dulwich import porcelain
+        porcelain.add(ROOT, paths=[out])
+        porcelain.commit(ROOT, message=b"pilot: live dashboard payload update",
+                         author=b"arena-pilot <pilot@btc-arena.local>",
+                         committer=b"arena-pilot <pilot@btc-arena.local>")
+        porcelain.push(
+            ROOT,
+            f"https://x-access-token:{token}@github.com/"
+            "mobileadvertisinggroup-dev/btc-arena.git",
+            "v1-clean-experiment")
+    except Exception as e:
+        raise publisher_mod.PublicationError(f"pages push failed: {e}"[:300])
+    return open(out).read()
+
+
 def main():
-    guard()
-    from engine import config, state, marketdata, recovery, persistence, dashboard
-    cfg = config.load_config()
-    manifest = config.build_manifest()
-    os.makedirs(PILOT_STORE, exist_ok=True)
-    spath = os.path.join(PILOT_STORE, "state.json")
-    if not os.path.exists(spath):
-        persistence.save_state(spath, state.init_accounts(), {"boundary": None})
-        config.write_launch_manifest(PILOT_STORE)
-    caller = live_caller_factory(cfg)
+    digest = guard()
+    from engine import config, pilot, publisher
+    # INTEGRITY GATE FIRST (Ruling 010.1): externally approved digest must
+    # match the current tree BEFORE any state initialization or network use.
+    # provision() is idempotent: a restart keeps the SAME persisted schedule.
     start = (int(time.time()) // 3600 + 1) * 3600
-    print(f"PILOT ACTIVE — 12 boundaries from T0={start}")
-    for i in range(12):
-        T = start + i * 3600
-        while time.time() < T + 120:                    # off-minute grace
-            time.sleep(30)
-        snaps, spec = {}, {}
-        for coin, pair in KRAKEN.items():
-            try:
-                k1m = kraken_ohlc(pair, 1)
-                k1h = kraken_ohlc(pair, 60)
-                k1d = kraken_ohlc(pair, 1440)
-                snaps[coin] = marketdata.build_snapshot(coin, k1m, k1h, k1d, T)
-                spec[coin] = {"start": T - 3600 if i else T, "end": T,
-                              "candles": marketdata.to_dec(k1m)}
-            except Exception as e:
-                print(f"{coin}: DATA_UNAVAILABLE ({e})")
-                snaps[coin] = None
-        ledger, _, _ = recovery.run_checkpointed(T, snaps, caller, cfg,
-                                                 PILOT_STORE, replay_spec=spec)
-        accounts, meta = persistence.load_state(spath)
-        pl = dashboard.payload(accounts, ledger, snaps,
-                               {"ts": int(time.time()),
-                                "code_hash": manifest["combined"]},
-                               manifest, cfg)
-        pl["mode"] = "PILOT_12H"
-        pl["banner"] = PILOT_BANNER
-        pl["data_notice"] = PILOT_BANNER
-        with open(os.path.join(ROOT, "docs", "demo_payload.js"), "w") as f:
-            f.write("window.ARENA_DATA = ")
-            json.dump(pl, f, default=str)
-            f.write(";\n")
-        print(f"boundary {i + 1}/12 done: "
-              f"{[e.get('status') for e in ledger if e.get('status')]}")
-    print("PILOT COMPLETE. Now run scripts/archive_pilot_reset.py --confirm")
+    sched = pilot.provision(PILOT_STORE, digest, start)
+    cfg = config.load_config()
+    print(f"PILOT ACTIVE — {sched['total']} boundaries from "
+          f"T0={sched['start']} | {publisher.BANNER}")
+    sched = pilot.run_pilot(PILOT_STORE, cfg, live_caller_factory(cfg),
+                            fetch_market, git_publish, time.time, time.sleep)
+    print(f"PILOT COMPLETE: {len(sched['completed'])}/{sched['total']} "
+          "boundaries. Now run scripts/archive_pilot_reset.py --confirm")
 
 
 if __name__ == "__main__":

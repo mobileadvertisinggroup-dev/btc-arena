@@ -241,6 +241,7 @@ footer{border-top:3px solid var(--rule);margin-top:30px;padding:16px 0 34px;
 
 <script src="prestart_payload.js"></script>
 <script src="demo_payload.js"></script>
+<script src="live_payload.js"></script><!-- absent until a pilot publishes; 404 is harmless -->
 <script>
 const MODEL = {haiku:{name:'Haiku 4.5',c:'var(--haiku)',mono:'H'},
                sonnet:{name:'Sonnet 5',c:'var(--sonnet)',mono:'S'},
@@ -257,7 +258,7 @@ let panelTab = {chat:'MODEL CHAT',trades:'COMPLETED TRADES',open:'OPEN POSITIONS
                 pairs:'PAIR DETAILS'}[qp.get('panel')] || 'MODEL CHAT';
 const PANELS = ['MODEL CHAT','COMPLETED TRADES','OPEN POSITIONS','PAIR DETAILS'];
 const METRICS = ['Equity','Return','Drawdown','Fees','Turnover'];
-function data(){ return demo ? window.ARENA_DEMO : window.ARENA_PRESTART; }
+function data(){ return demo ? window.ARENA_DEMO : (window.ARENA_LIVE || window.ARENA_PRESTART); }
 let D = data();
 function allAccounts(){ return COINS.flatMap(c => D.coins[c].accounts); }
 function icon(m){ return `<span class="icon ${m}">${MODEL[m].mono}</span>`; }
