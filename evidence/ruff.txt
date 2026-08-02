@@ -1,0 +1,137 @@
+engine/dashboard.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+engine/dashboard.py:2:31: F401 [*] `.config` imported but unused
+engine/decisions.py:7:46: FURB157 [*] Verbose expression in `Decimal` constructor
+engine/decisions.py:14:12: BLE001 Do not catch blind exception: `Exception`
+engine/decisions.py:42:73: FURB157 [*] Verbose expression in `Decimal` constructor
+engine/execution.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+engine/execution.py:36:27: FURB157 [*] Verbose expression in `Decimal` constructor
+engine/execution.py:42:29: FURB157 [*] Verbose expression in `Decimal` constructor
+engine/features.py:3:1: I001 [*] Import block is un-sorted or un-formatted
+engine/marketdata.py:23:17: RUF007 Prefer `itertools.pairwise()` over `zip()` when iterating over successive pairs
+engine/persistence.py:62:9: FURB122 [*] Use of `f.write` in a for loop
+engine/prompts.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+engine/recovery.py:21:1: I001 [*] Import block is un-sorted or un-formatted
+engine/replay.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+engine/replay.py:2:21: F401 [*] `decimal.Decimal` imported but unused
+engine/replay.py:90:13: SIM102 Use a single `if` statement instead of nested `if` statements
+engine/rounds.py:7:1: I001 [*] Import block is un-sorted or un-formatted
+engine/state.py:10:24: FURB157 [*] Verbose expression in `Decimal` constructor
+engine/state.py:27:24: FURB157 [*] Verbose expression in `Decimal` constructor
+engine/state.py:31:31: FURB157 [*] Verbose expression in `Decimal` constructor
+engine/state.py:65:44: FURB157 [*] Verbose expression in `Decimal` constructor
+engine/state.py:66:40: FURB157 [*] Verbose expression in `Decimal` constructor
+scripts/mock_run.py:37:41: FURB157 [*] Verbose expression in `Decimal` constructor
+scripts/mock_season.py:108:15: RUF059 Unpacked variable `meta` is never used
+scripts/mock_season.py:109:40: SIM115 Use a context manager for opening files
+tests/conftest.py:9:1: I001 [*] Import block is un-sorted or un-formatted
+tests/conftest.py:9:55: RUF100 [*] Unused `noqa` directive (non-enabled: `E402`)
+tests/conftest.py:23:5: I001 [*] Import block is un-sorted or un-formatted
+tests/fixtures/gen_fixtures.py:42:9: F841 Local variable `out` is assigned to but never used
+tests/test_config_and_prompts.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_config_and_prompts.py:4:21: F401 [*] `decimal.Decimal` imported but unused
+tests/test_config_and_prompts.py:8:22: F401 [*] `conftest.T0` imported but unused
+tests/test_config_and_prompts.py:8:26: F401 [*] `conftest.flat_decision` imported but unused
+tests/test_config_and_prompts.py:9:28: F401 [*] `engine.state` imported but unused
+tests/test_config_and_prompts.py:9:44: F401 [*] `engine.features` imported but unused
+tests/test_config_and_prompts.py:20:19: SIM115 Use a context manager for opening files
+tests/test_config_and_prompts.py:60:67: FURB167 [*] Use of regular expression alias `re.S`
+tests/test_config_and_prompts.py:81:9: RUF059 Unpacked variable `sys_p` is never used
+tests/test_config_and_prompts.py:112:68: FURB167 [*] Use of regular expression alias `re.S`
+tests/test_coverage_gaps.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_coverage_gaps.py:12:70: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_coverage_gaps.py:46:44: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_coverage_gaps.py:53:41: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_coverage_gaps.py:68:45: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_coverage_gaps.py:74:36: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_coverage_gaps.py:78:57: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_coverage_gaps.py:93:44: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_coverage_gaps.py:94:26: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_coverage_gaps.py:99:52: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_crash_recovery.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_crash_recovery.py:3:21: F401 [*] `decimal.Decimal` imported but unused
+tests/test_crash_recovery.py:7:42: F401 [*] `conftest.flat_decision` imported but unused
+tests/test_crash_recovery.py:51:5: RUF059 Unpacked variable `accounts_mid` is never used
+tests/test_crash_recovery.py:142:9: RUF059 Unpacked variable `m1` is never used
+tests/test_crash_recovery.py:144:9: RUF059 Unpacked variable `m2` is never used
+tests/test_decisions_and_execution.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_decisions_and_execution.py:25:19: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_decisions_and_execution.py:105:5: F841 Local variable `e0` is assigned to but never used
+tests/test_decisions_and_execution.py:109:44: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_decisions_and_execution.py:127:44: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_decisions_and_execution.py:127:79: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:5:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_edge_and_oracles.py:8:75: F401 [*] `engine.marketdata` imported but unused
+tests/test_edge_and_oracles.py:51:47: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:52:28: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:69:13: RUF059 Unpacked variable `archive` is never used
+tests/test_edge_and_oracles.py:70:10: RUF015 Prefer `next(e for e in ledger if e["pair"] == "btc_haiku")` over single element slice
+tests/test_edge_and_oracles.py:120:48: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:147:44: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:152:45: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:157:45: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:164:22: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:164:37: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:165:24: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:168:28: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:169:34: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:170:18: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:172:30: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:173:29: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:174:29: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_edge_and_oracles.py:175:28: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_features_and_marketdata.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_features_and_marketdata.py:40:32: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_features_and_marketdata.py:47:32: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_features_and_marketdata.py:48:5: RUF059 Unpacked variable `cur` is never used
+tests/test_features_and_marketdata.py:48:10: RUF059 Unpacked variable `base` is never used
+tests/test_features_and_marketdata.py:54:50: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_features_and_marketdata.py:57:42: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_features_and_marketdata.py:64:48: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_features_and_marketdata.py:65:48: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_features_and_marketdata.py:77:12: C408 Unnecessary `dict()` call (rewrite as a literal)
+tests/test_features_and_marketdata.py:80:43: C408 Unnecessary `dict()` call (rewrite as a literal)
+tests/test_features_and_marketdata.py:81:41: C408 Unnecessary `dict()` call (rewrite as a literal)
+tests/test_features_and_marketdata.py:88:36: C408 Unnecessary `dict()` call (rewrite as a literal)
+tests/test_features_and_marketdata.py:89:36: C408 Unnecessary `dict()` call (rewrite as a literal)
+tests/test_features_and_marketdata.py:90:36: C408 Unnecessary `dict()` call (rewrite as a literal)
+tests/test_fuzz_properties.py:8:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_fuzz_properties.py:16:23: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_fuzz_properties.py:16:48: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_fuzz_properties.py:16:72: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_fuzz_properties.py:50:26: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_fuzz_properties.py:67:84: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_fuzz_properties.py:76:83: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_fuzz_properties.py:78:84: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_fuzz_properties.py:92:35: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_goldens_and_schemas.py:12:8: F401 [*] `pytest` imported but unused
+tests/test_goldens_and_schemas.py:15:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_goldens_and_schemas.py:15:57: RUF100 [*] Unused `noqa` directive (non-enabled: `E402`)
+tests/test_goldens_and_schemas.py:16:71: RUF100 [*] Unused `noqa` directive (non-enabled: `E402`)
+tests/test_goldens_and_schemas.py:75:16: SIM115 Use a context manager for opening files
+tests/test_goldens_and_schemas.py:93:69: FURB167 [*] Use of regular expression alias `re.S`
+tests/test_goldens_and_schemas.py:134:5: I001 [*] Import block is un-sorted or un-formatted
+tests/test_goldens_and_schemas.py:134:12: F401 [*] `copy` imported but unused
+tests/test_goldens_and_schemas.py:156:5: I001 [*] Import block is un-sorted or un-formatted
+tests/test_replay_and_liquidation.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_replay_and_liquidation.py:60:26: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_replay_and_liquidation.py:70:22: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_replay_and_liquidation.py:86:46: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_replay_and_liquidation.py:88:24: FURB157 [*] Verbose expression in `Decimal` constructor
+tests/test_rounds_persistence_dashboard.py:2:1: I001 [*] Import block is un-sorted or un-formatted
+tests/test_rounds_persistence_dashboard.py:3:21: F401 [*] `decimal.Decimal` imported but unused
+tests/test_rounds_persistence_dashboard.py:5:8: F401 [*] `pytest` imported but unused
+tests/test_rounds_persistence_dashboard.py:9:30: F401 [*] `engine.marketdata` imported but unused
+tests/test_rounds_persistence_dashboard.py:20:13: RUF059 Unpacked variable `archive` is never used
+tests/test_rounds_persistence_dashboard.py:20:32: RUF059 Unpacked variable `caller` is never used
+tests/test_rounds_persistence_dashboard.py:34:5: RUF059 Unpacked variable `ledger` is never used
+tests/test_rounds_persistence_dashboard.py:34:13: RUF059 Unpacked variable `archive` is never used
+tests/test_rounds_persistence_dashboard.py:45:25: RUF059 Unpacked variable `caller` is never used
+tests/test_rounds_persistence_dashboard.py:62:13: RUF059 Unpacked variable `archive` is never used
+tests/test_rounds_persistence_dashboard.py:62:25: RUF059 Unpacked variable `caller` is never used
+tests/test_rounds_persistence_dashboard.py:63:10: RUF015 Prefer `next(e for e in ledger if e["status"] == "PAIR_ABORTED")` over single element slice
+tests/test_rounds_persistence_dashboard.py:104:13: RUF059 Unpacked variable `archive` is never used
+tests/test_rounds_persistence_dashboard.py:105:13: RUF015 Prefer `next(...)` over single element slice
+tests/test_rounds_persistence_dashboard.py:122:5: RUF059 Unpacked variable `sys_p` is never used
+tests/test_rounds_persistence_dashboard.py:158:25: RUF059 Unpacked variable `caller` is never used
+Found 135 errors.
+[*] 100 fixable with the `--fix` option (30 hidden fixes can be enabled with the `--unsafe-fixes` option).

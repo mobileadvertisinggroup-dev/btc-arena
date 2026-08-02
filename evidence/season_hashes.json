@@ -1,0 +1,35 @@
+{
+ "run1": {
+  "state": "86acddd2767d46d84f480cc6d9e38a2caa9a9e8567ccb462e71970642ce27696",
+  "ledger": "3952a87a8169a53f9b0f2a043b61de95c51b6dffa13af7f2b93cbf6e5dfa6542",
+  "prompts": "7dadf26c3ce8b61cd14958478897cd2d80328ddb1a68b02ce84d24453e5a6f4e",
+  "metrics": "b15c11727d1ba86dfd0b489ca1c5651617889272439cdafb84fc57c246dd770c",
+  "dashboard": "cfe9170e6f82c45e47d8e61409188718dbc21f9b7687a00c9dfa8c647b76c2d6",
+  "counts": {
+   "PAIR_COMMITTED": 592,
+   "PAIR_ABORTED": 20,
+   "PAIR_TERMINAL_SPLIT": 36
+  },
+  "terminal": [
+   "sol_haiku_raw"
+  ],
+  "n_attempts": 1285
+ },
+ "run2": {
+  "state": "86acddd2767d46d84f480cc6d9e38a2caa9a9e8567ccb462e71970642ce27696",
+  "ledger": "3952a87a8169a53f9b0f2a043b61de95c51b6dffa13af7f2b93cbf6e5dfa6542",
+  "prompts": "7dadf26c3ce8b61cd14958478897cd2d80328ddb1a68b02ce84d24453e5a6f4e",
+  "metrics": "b15c11727d1ba86dfd0b489ca1c5651617889272439cdafb84fc57c246dd770c",
+  "dashboard": "cfe9170e6f82c45e47d8e61409188718dbc21f9b7687a00c9dfa8c647b76c2d6",
+  "counts": {
+   "PAIR_COMMITTED": 592,
+   "PAIR_ABORTED": 20,
+   "PAIR_TERMINAL_SPLIT": 36
+  },
+  "terminal": [
+   "sol_haiku_raw"
+  ],
+  "n_attempts": 1285
+ },
+ "identical": true
+}
