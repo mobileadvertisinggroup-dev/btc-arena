@@ -63,6 +63,7 @@ import tempfile
 caller = ScriptedCaller(script)
 _store = tempfile.mkdtemp(prefix="arena-mockrun-")
 persistence.save_state(_store + "/state.json", accounts, {"boundary": None})
+config.write_launch_manifest(_store)
 from engine import recovery
 ledger, archive, parchive = recovery.run_checkpointed(
     T0, snapshots, caller, cfg, _store)

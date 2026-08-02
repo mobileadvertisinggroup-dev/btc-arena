@@ -4,7 +4,7 @@ import json
 import pytest
 
 from conftest import T0, ScriptedCaller, long_decision, load_fix
-from engine import state, persistence, recovery, marketdata
+from engine import config, state, persistence, recovery, marketdata
 
 CRASH_POINTS = ["after_prompts", "after_first_attempt", "after_validate",
                 "after_execute", "after_finalize", "after_one_pair",
@@ -15,6 +15,7 @@ def fresh_store(tmp_path, accounts=None):
     store = str(tmp_path)
     persistence.save_state(store + "/state.json", accounts or state.init_accounts(),
                            {"boundary": None})
+    config.write_launch_manifest(store)
     return store
 
 

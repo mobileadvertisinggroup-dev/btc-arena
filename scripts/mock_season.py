@@ -92,6 +92,7 @@ def run_season(store):
     os.makedirs(store, exist_ok=True)
     persistence.save_state(store + "/state.json", state.init_accounts(),
                            {"boundary": None})
+    config.write_launch_manifest(store)
     all_ledger = []
     last_snaps = None
     for idx in range(N_BOUNDARIES):

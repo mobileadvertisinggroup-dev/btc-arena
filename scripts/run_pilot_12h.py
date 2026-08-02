@@ -100,6 +100,7 @@ def main():
     spath = os.path.join(PILOT_STORE, "state.json")
     if not os.path.exists(spath):
         persistence.save_state(spath, state.init_accounts(), {"boundary": None})
+        config.write_launch_manifest(PILOT_STORE)
     caller = live_caller_factory(cfg)
     start = (int(time.time()) // 3600 + 1) * 3600
     print(f"PILOT ACTIVE — 12 boundaries from T0={start}")

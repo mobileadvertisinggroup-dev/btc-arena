@@ -49,6 +49,8 @@ def main():
     persistence.save_state(os.path.join(OFFICIAL_STORE, "state.json"), fresh,
                            {"boundary": None, "official": True,
                             "created": stamp})
+    from engine import config
+    config.write_launch_manifest(OFFICIAL_STORE)
     print(f"pilot archived -> {arch}")
     print(f"18 fresh official accounts written -> {OFFICIAL_STORE}/state.json")
     print("Official 14-day experiment NOT started (separate authorization).")

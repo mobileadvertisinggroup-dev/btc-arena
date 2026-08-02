@@ -22,6 +22,7 @@ HOUR, MIN = 3600, 60
 def store_with(accounts, tmp=None):
     store = tmp or tempfile.mkdtemp(prefix="arena-r8-")
     persistence.save_state(store + "/state.json", accounts, {"boundary": None})
+    config.write_launch_manifest(store)
     return store
 
 

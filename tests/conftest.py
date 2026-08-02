@@ -114,6 +114,7 @@ def run_prod(accounts, snapshots, cfg, caller=None, clock=None, candles=None,
         caller = ScriptedCaller(caller or {})
     store = store or tempfile.mkdtemp(prefix="arena-prod-")
     persistence.save_state(store + "/state.json", accounts, {"boundary": None})
+    config.write_launch_manifest(store)
     if replay_spec is None and candles is not None:
         replay_spec = {coin: {"start": cs[0]["t"] if cs else T0,
                               "end": (cs[-1]["t"] + 60) if cs else T0,

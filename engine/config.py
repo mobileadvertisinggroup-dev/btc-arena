@@ -81,3 +81,29 @@ def load_config():
 
 def load_schema():
     return load_json("schemas/v1/decision.schema.json")
+
+
+LAUNCH_MANIFEST_NAME = "launch_manifest.json"
+
+
+def write_launch_manifest(store):
+    """Explicit provisioning step: freeze the CURRENT tree as the approved
+    launch manifest for a store. Must never be called mid-experiment — the
+    coordinator only LOADS this file and verifies against it."""
+    path = os.path.join(store, LAUNCH_MANIFEST_NAME)
+    with open(path, "w") as f:
+        json.dump(build_manifest(), f, indent=1)
+    return path
+
+
+def load_launch_manifest(store):
+    """Load the immutable approved manifest. Missing/unreadable => halt."""
+    path = os.path.join(store, LAUNCH_MANIFEST_NAME)
+    try:
+        with open(path) as f:
+            m = json.load(f, object_pairs_hook=_reject_dupes)
+    except Exception as e:
+        raise IntegrityError(f"approved launch manifest unavailable: {e}")
+    if "files" not in m or "combined" not in m:
+        raise IntegrityError("approved launch manifest malformed")
+    return m

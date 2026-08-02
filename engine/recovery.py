@@ -53,10 +53,16 @@ def _seed(T):
 def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                      replay_spec=None, clock=None):
     """Returns (ledger_entries, attempt_records, archived_user_prompts)."""
+    # RUNTIME INTEGRITY GATE (Ruling 009.1): load the immutable APPROVED
+    # launch manifest (never rebuilt from the working tree) and verify every
+    # engine/script/config/prompt/schema byte BEFORE touching state, prompts,
+    # or any model caller. Mismatch => Integrity Halt A, zero model calls.
+    approved = config_mod.load_launch_manifest(store)
+    config_mod.verify_integrity(approved)
     state.verify_params(cfg)
     clock = clock or time.monotonic
     spath = os.path.join(store, "state.json")
-    accounts, meta = persistence.load_state(spath)
+    accounts, meta = persistence.load_state(spath, expect_full_roster=True)
     if meta.get("boundary") != T:
         meta = {"boundary": T, "finalized_pairs": {},
                 "replay_watermark": meta.get("replay_watermark", {}),
@@ -330,8 +336,10 @@ def _attempt_validator():
 
 def recover(store):
     """Mark the persisted boundary as recovering (rule: abort non-finalized)."""
+    approved = config_mod.load_launch_manifest(store)
+    config_mod.verify_integrity(approved)
     spath = os.path.join(store, "state.json")
-    accounts, meta = persistence.load_state(spath)
+    accounts, meta = persistence.load_state(spath, expect_full_roster=True)
     if not meta.get("boundary_complete"):
         meta["_recovering"] = True
         persistence.save_state(spath, accounts, meta)

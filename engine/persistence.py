@@ -83,7 +83,11 @@ def save_state(path, accounts, meta):
 
 def _validate_account(aid, a):
     coin, model, arm = a.get("coin"), a.get("model"), a.get("arm")
-    if aid != state_mod.account_id(coin, model, arm):
+    try:
+        expected = state_mod.account_id(coin, model, arm)
+    except (KeyError, TypeError, AttributeError):
+        raise StateCorruption(f"invalid account identity fields: {aid}")
+    if aid != expected:
         raise StateCorruption(f"account identity mismatch: {aid}")
     for k in STATE_KEYS_DEC:
         v = a.get(k)
@@ -98,6 +102,8 @@ def _validate_account(aid, a):
     if Decimal(a["E"]) < 0:
         raise StateCorruption(f"{aid}.E negative")
     q = Decimal(a["qty"])
+    if coin not in state_mod.QTY_DECIMALS:
+        raise StateCorruption(f"unknown coin in account {aid}")
     quant = Decimal(1).scaleb(-state_mod.QTY_DECIMALS[coin])
     if q != q.quantize(quant):
         raise StateCorruption(f"{aid}.qty violates precision")
@@ -107,7 +113,10 @@ def _validate_account(aid, a):
         raise StateCorruption(f"{aid}: open position without entry")
 
 
-def load_state(path, expect_full_roster=False):
+def load_state(path, expect_full_roster=False, _allow_unchecksummed=False):
+    """Strict production loader (Ruling 009.2): a valid checksum is REQUIRED.
+    `_allow_unchecksummed` exists solely for the isolated migration helper
+    `load_state_unverified` and must never be used on a running experiment."""
     try:
         with open(path) as f:
             payload = json.load(f, object_pairs_hook=_reject_dupes)
@@ -119,10 +128,18 @@ def load_state(path, expect_full_roster=False):
     enc = payload.get("accounts", {})
     stored = meta.get("_checksum")
     meta_core = {k: v for k, v in meta.items() if k != "_checksum"}
-    if stored is not None and stored != _checksum(enc, meta_core):
+    if stored is None:
+        if not _allow_unchecksummed:
+            raise StateCorruption("state checksum missing")
+    elif stored != _checksum(enc, meta_core):
         raise StateCorruption("state checksum mismatch")
-    for aid, a in enc.items():
-        _validate_account(aid, a)
+    try:
+        for aid, a in enc.items():
+            _validate_account(aid, a)
+    except StateCorruption:
+        raise
+    except (KeyError, TypeError, AttributeError) as e:
+        raise StateCorruption(f"malformed account record: {e!r}")
     if expect_full_roster:
         want = {state_mod.account_id(c, m, ar) for c in state_mod.COINS
                 for m in state_mod.MODELS for ar in state_mod.ARMS}
@@ -130,6 +147,12 @@ def load_state(path, expect_full_roster=False):
             raise StateCorruption("missing or extra accounts in state")
     accounts = {k: _dec(dict(a)) for k, a in enc.items()}
     return accounts, meta
+
+
+def load_state_unverified(path):
+    """MIGRATION/INITIALIZATION TOOLING ONLY — never used by the coordinator
+    or any running experiment. Skips the checksum requirement (nothing else)."""
+    return load_state(path, _allow_unchecksummed=True)
 
 
 # ---------------- durable attempt archive (Ruling 008.11) ----------------

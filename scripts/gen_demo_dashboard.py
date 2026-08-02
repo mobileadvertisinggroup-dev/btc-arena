@@ -54,6 +54,7 @@ for coin in ("BTC", "ETH", "SOL"):
 accounts = state.init_accounts()
 store = tempfile.mkdtemp(prefix="arena-demo-")
 persistence.save_state(store + "/state.json", accounts, {"boundary": None})
+config.write_launch_manifest(store)
 after = {c: [x for x in marketdata.to_dec(load_fix(c, "1m"))
              if T0 <= x["t"] < T0 + 2 * 3600] for c in ("BTC", "ETH", "SOL")}
 spec = {c: {"start": T0, "end": T0 + 2 * 3600, "candles": after[c]} for c in after}
