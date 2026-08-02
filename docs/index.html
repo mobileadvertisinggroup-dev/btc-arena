@@ -6,173 +6,179 @@
 <title>AKRA ARENA — RAW vs FEATURE</title>
 <style>
 :root{
-  --paper:#f1f1ef; --panel:#fbfbfa; --ink:#121212; --mut:#63635f;
-  --rule:#121212; --hair:#dadad6;
+  --paper:#f2f2f0; --panel:#fcfcfb; --ink:#141414; --mut:#66665f;
+  --rule:#141414; --hair:#e0e0db;
   --haiku:#2a78d6; --sonnet:#158f63; --opus:#c47600;
-  --up:#0a6b0a; --down:#b3261e; --demo:#b3261e;
+  --up:#0a7a2f; --down:#c22f26; --demo:#b3261e; --stale:#a86a00;
 }
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
 body{background:var(--paper);color:var(--ink);
-  font:13.5px/1.5 ui-monospace,"SF Mono",Menlo,Consolas,"Courier New",monospace}
+  font:14.5px/1.55 ui-monospace,"SF Mono",Menlo,Consolas,"Courier New",monospace}
 a{color:var(--ink)}
-.wrap{max-width:1280px;margin:0 auto;padding:0 18px}
+.wrap{max-width:1360px;margin:0 auto;padding:0 22px}
+/* banners */
+.prep{background:var(--ink);color:var(--paper);text-align:center;font-weight:700;
+  letter-spacing:1.5px;padding:10px 12px;font-size:13px}
+.notice{text-align:center;color:var(--mut);font-size:12.5px;padding:7px 12px;
+  background:var(--panel);border-bottom:1px solid var(--hair)}
+.demoflag{display:none;background:var(--demo);color:#fff;text-align:center;
+  font-weight:800;letter-spacing:2px;padding:9px;position:sticky;top:0;z-index:40}
+body.demo .demoflag{display:block}
 /* masthead */
 .top{border-bottom:3px solid var(--rule);background:var(--paper);
-  position:sticky;top:0;z-index:20}
+  position:sticky;top:0;z-index:30}
 .mast{display:flex;justify-content:space-between;align-items:center;
-  padding:10px 0;gap:12px;flex-wrap:wrap}
-.brand{line-height:1.05}
-.brand .t1{font-size:26px;font-weight:800;letter-spacing:2px}
-.brand .t2{font-size:12px;letter-spacing:4px;color:var(--mut)}
+  padding:14px 0;gap:14px;flex-wrap:wrap}
+.brand .t1{font-size:32px;font-weight:800;letter-spacing:3px;line-height:1}
+.brand .t2{font-size:12.5px;letter-spacing:3px;color:var(--mut);margin-top:4px}
 .brand .t2 b{color:var(--ink)}
-nav{display:flex;gap:2px;flex-wrap:wrap}
-nav a{font-size:11.5px;letter-spacing:1px;text-decoration:none;
-  padding:5px 10px;border:1.5px solid transparent}
-nav a:hover{border-color:var(--rule)}
-nav .soon{color:var(--mut)}
-nav .soon::after{content:" ·SOON";font-size:9px}
-/* banners */
-.prep{background:var(--ink);color:var(--paper);text-align:center;
-  font-weight:700;letter-spacing:1.5px;padding:9px 12px;font-size:13px}
-.notice{border-bottom:1.5px solid var(--rule);text-align:center;
-  color:var(--mut);font-size:12px;padding:6px 12px;background:var(--panel)}
-.demoflag{display:none;background:var(--demo);color:#fff;text-align:center;
-  font-weight:800;letter-spacing:2px;padding:8px;position:sticky;top:0;z-index:30}
-body.demo .demoflag{display:block}
-/* market strip */
-.strip{display:grid;grid-template-columns:repeat(7,1fr);border:2px solid var(--rule);
-  border-top:none;background:var(--ink);color:var(--paper)}
-.cell{padding:10px 14px;border-right:1px solid #3a3a38}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav a{font-size:12px;letter-spacing:1px;text-decoration:none;padding:6px 11px}
+nav a:hover{background:var(--ink);color:var(--paper)}
+/* DISPLAY-ONLY MARKET TICKER — NON-AUTHORITATIVE (styles) */
+.strip{display:grid;grid-template-columns:repeat(3,1.35fr) repeat(3,1fr);
+  border:2px solid var(--rule);border-top:none;background:var(--ink);
+  color:var(--paper)}
+.cell{padding:12px 16px;border-right:1px solid #3a3a38}
 .cell:last-child{border-right:none}
-.cell .l{font-size:9.5px;letter-spacing:2px;color:#9a9a94;text-transform:uppercase}
-.cell .v{font-weight:800;font-size:15px;letter-spacing:.5px}
-.cell.mkt .v{font-size:17px}
-.cell.mkt .l::before{content:"● ";color:#5a8f5a}
+.cell .l{font-size:10px;letter-spacing:2px;color:#9c9c95}
+.cell .v{font-weight:800;font-size:16px;margin-top:2px}
+.cell.mkt .v{font-size:22px;letter-spacing:.5px}
+.cell.mkt .sub{font-size:10.5px;color:#9c9c95;margin-top:1px}
+.cell.mkt .dot{display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:#57b657;margin-right:7px;vertical-align:2px}
+.cell.mkt.stale .dot{background:var(--stale)}
+.cell.mkt.dead .dot{background:#777}
+.ticker-note{grid-column:1/-1;border-top:1px solid #3a3a38;color:#9c9c95;
+  font-size:10.5px;padding:5px 16px}
 /* layout */
-.main{display:grid;grid-template-columns:1fr 330px;gap:18px;margin:18px 0}
-/* tabs */
-.tabs{display:flex;flex-wrap:wrap;border:2px solid var(--rule);background:var(--panel)}
-.tab{padding:8px 16px;cursor:pointer;font-weight:700;font-size:12px;
-  letter-spacing:1px;border-right:1.5px solid var(--hair);color:var(--mut);
-  text-transform:uppercase}
-.tab.active{background:var(--ink);color:var(--paper)}
-/* chart */
-.chartbox{border:2px solid var(--rule);border-top:none;background:var(--panel)}
+.main{display:grid;grid-template-columns:1.72fr 1fr;gap:22px;margin:22px 0;
+  align-items:start}
+/* main-stage chart */
+.stage{border:2px solid var(--rule);background:var(--panel)}
 .stagebar{background:var(--ink);color:var(--paper);display:flex;
-  justify-content:space-between;align-items:center;padding:7px 12px;
-  flex-wrap:wrap;gap:6px}
-.stagebar .chart-title{color:var(--paper)}
-.chart-inner{padding:12px}
-.chart-head{display:flex;justify-content:space-between;align-items:center;
-  flex-wrap:wrap;gap:8px;margin-bottom:6px}
-.chart-title{font-weight:800;letter-spacing:1px;font-size:13px;text-transform:uppercase}
-.metrics{display:flex;gap:2px;flex-wrap:wrap}
-.metrics button,.demo-btn{font:inherit;font-size:11px;letter-spacing:1px;
-  background:var(--paper);border:1.5px solid var(--rule);padding:4px 10px;
-  cursor:pointer;text-transform:uppercase}
-.metrics button.active{background:var(--ink);color:var(--paper)}
-.demo-btn{background:var(--panel);color:var(--mut)}
-body.demo .demo-btn{background:var(--demo);color:#fff;border-color:var(--demo)}
+  justify-content:space-between;align-items:center;padding:10px 16px;
+  flex-wrap:wrap;gap:8px}
+.stagebar .title{font-weight:800;letter-spacing:1.5px;font-size:15px}
+.stagebar .tf{font-size:11px;color:#9c9c95;letter-spacing:1px}
+.metrics{display:flex;gap:4px;flex-wrap:wrap}
+.metrics button,.demo-btn{font:inherit;font-size:11.5px;letter-spacing:1px;
+  background:transparent;color:#cfcfc9;border:1.5px solid #4a4a47;
+  padding:5px 12px;cursor:pointer}
+.metrics button.active{background:var(--paper);color:var(--ink);
+  border-color:var(--paper);font-weight:700}
+.demo-btn{color:#9c9c95}
+body.demo .demo-btn{background:var(--demo);border-color:var(--demo);color:#fff}
+.coin-tabs{display:flex;border-bottom:2px solid var(--rule);background:var(--panel)}
+.coin-tabs .tab{padding:10px 22px;cursor:pointer;font-weight:700;font-size:13px;
+  letter-spacing:1.5px;color:var(--mut)}
+.coin-tabs .tab.active{background:var(--ink);color:var(--paper)}
+.chart-inner{padding:16px}
 #chartwrap{position:relative}
 #chartmsg{position:absolute;inset:0;display:flex;align-items:center;
-  justify-content:center;color:var(--mut);letter-spacing:2px;font-size:14px;
-  text-transform:uppercase;pointer-events:none}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--mut);
-  margin-top:6px}
-.legend .sw{display:inline-block;width:22px;height:0;border-top:3px solid;
-  vertical-align:middle;margin-right:5px}
+  justify-content:center;color:var(--mut);letter-spacing:3px;font-size:16px;
+  pointer-events:none}
+#tip{position:absolute;display:none;background:var(--ink);color:var(--paper);
+  font-size:12px;padding:7px 10px;pointer-events:none;z-index:5;white-space:nowrap}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--mut);
+  margin-top:10px}
+.legend .sw{display:inline-block;width:26px;height:0;border-top:3px solid;
+  vertical-align:middle;margin-right:6px}
 .legend .dash{border-top-style:dashed}
-/* sections */
-section{margin-top:18px}
+/* right panel */
+.panel{border:2px solid var(--rule);background:var(--panel);display:flex;
+  flex-direction:column;max-height:calc(100vh - 130px);position:sticky;top:104px}
+.panel-tabs{display:flex;border-bottom:2px solid var(--rule)}
+.panel-tabs .ptab{flex:1;text-align:center;padding:11px 4px;cursor:pointer;
+  font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--mut);
+  border-right:1px solid var(--hair)}
+.panel-tabs .ptab:last-child{border-right:none}
+.panel-tabs .ptab.active{background:var(--ink);color:var(--paper)}
+.panel-filters{display:flex;gap:6px;padding:10px 12px;border-bottom:1px solid var(--hair)}
+.panel-filters select{font:inherit;font-size:12px;background:var(--paper);
+  border:1px solid var(--hair);padding:4px 6px;flex:1}
+.plist{overflow-y:auto;padding:14px}
+/* cards */
+.mcard{border:1px solid var(--hair);border-left:6px solid;background:#fff;
+  margin-bottom:14px;cursor:pointer}
+.mcard .mhead{display:flex;align-items:center;gap:10px;padding:12px 14px 0}
+.icon{width:26px;height:26px;flex:none;display:flex;align-items:center;
+  justify-content:center;color:#fff;font-weight:800;font-size:13px}
+.icon.haiku{background:var(--haiku);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.icon.sonnet{background:var(--sonnet);border-radius:50%}
+.icon.opus{background:var(--opus)}
+.mcard .who{font-size:15px;font-weight:800}
+.mcard .sub{font-size:11.5px;color:var(--mut)}
+.mcard .stpill{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:1px;
+  padding:3px 9px;border:1.5px solid}
+.stpill.waiting{color:var(--mut);border-color:var(--mut)}
+.stpill.thinking{color:var(--stale);border-color:var(--stale);
+  animation:pulse 1.2s infinite}
+.stpill.decision{color:var(--up);border-color:var(--up)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.mcard .thesis{font-size:15px;line-height:1.6;padding:10px 14px 12px}
+.dstrip{display:flex;gap:14px;flex-wrap:wrap;border-top:1px solid var(--hair);
+  padding:9px 14px;font-size:12.5px;color:var(--mut);align-items:center}
+.dstrip .dir{font-weight:800;font-size:13px;padding:2px 10px;color:#fff}
+.dir.long{background:var(--up)} .dir.short{background:var(--down)}
+.dir.flat{background:var(--mut)}
+.dstrip b{color:var(--ink)}
+.expand-hint{font-size:10.5px;color:var(--mut);text-align:right;padding:0 14px 8px}
+.xtra{display:none;border-top:1px dashed var(--hair);padding:10px 14px;
+  font-size:12.5px;color:var(--mut)}
+.xtra b{color:var(--ink)}
+.mcard.open .xtra{display:block}
+/* trade cards */
+.tcard{border:1px solid var(--hair);border-left:6px solid;background:#fff;
+  margin-bottom:14px;padding:12px 14px}
+.tcard .row1{display:flex;align-items:center;gap:10px}
+.tcard .pnl{margin-left:auto;font-size:19px;font-weight:800}
+.tcard .route{font-size:14px;font-weight:700;margin:7px 0 2px}
+.tcard .grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;
+  font-size:12.5px;color:var(--mut);margin-top:6px}
+.tcard .grid b{color:var(--ink)}
+.pnl.up{color:var(--up)} .pnl.down{color:var(--down)} .pnl.zero{color:var(--mut)}
+/* sections below */
+section{margin-top:26px}
 .rulehead{border-bottom:3px solid var(--rule);display:flex;
-  justify-content:space-between;align-items:baseline;padding-bottom:4px;
-  margin-bottom:10px}
-.rulehead h2{font-size:15px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
-.rulehead .sub{color:var(--mut);font-size:11px}
-/* tables */
+  justify-content:space-between;align-items:baseline;padding-bottom:6px;
+  margin-bottom:14px}
+.rulehead h2{font-size:17px;font-weight:800;letter-spacing:2px}
+.rulehead .sub{color:var(--mut);font-size:12px}
 .twrap{overflow-x:auto;border:2px solid var(--rule);background:var(--panel)}
-table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:640px}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:680px}
 th{background:var(--ink);color:var(--paper);text-align:left;font-weight:600;
-  letter-spacing:1px;font-size:10.5px;padding:6px 10px;text-transform:uppercase}
-td{padding:5px 10px;border-bottom:1px solid var(--hair);
+  letter-spacing:1px;font-size:11px;padding:8px 12px}
+td{padding:7px 12px;border-bottom:1px solid var(--hair);
   font-variant-numeric:tabular-nums;white-space:nowrap}
 tr:last-child td{border-bottom:none}
 .up{color:var(--up)} .down{color:var(--down)}
-.mdot{display:inline-block;width:9px;height:9px;margin-right:6px}
-/* pair cards */
-.pairgrid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:2px solid var(--rule);
-  background:var(--panel);margin-bottom:14px}
-.pairhead{grid-column:1/-1;border-bottom:2px solid var(--rule);padding:7px 12px;
-  font-weight:800;letter-spacing:1px;text-transform:uppercase;font-size:12.5px;
-  display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
-.pairhead .verdict{color:var(--mut);font-weight:600;font-size:11.5px}
-.half{padding:10px 12px}
-.half+.half{border-left:1.5px solid var(--hair)}
-.half .armname{font-size:10.5px;letter-spacing:2px;color:var(--mut);
-  text-transform:uppercase}
-.half .eq{font-size:20px;font-weight:800;margin:2px 0}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:0 12px;font-size:12px;
-  color:var(--mut)}
-.kv b{color:var(--ink);font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
-.thesis{border-top:1px solid var(--hair);margin-top:7px;padding-top:6px;
-  font-size:12px}
-.inv{color:var(--mut);font-size:11px;margin-top:3px}
-/* feed */
-.feed{border:2px solid var(--rule);background:var(--panel);align-self:start;
-  position:sticky;top:96px;max-height:calc(100vh - 120px);display:flex;
-  flex-direction:column}
-.feed-head{border-bottom:2px solid var(--rule);padding:8px 12px;font-weight:800;
-  letter-spacing:2px;font-size:12px;text-transform:uppercase}
-.feed-filters{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:8px;
-  border-bottom:1.5px solid var(--hair)}
-.feed-filters select{font:inherit;font-size:11px;background:var(--paper);
-  border:1.5px solid var(--rule);padding:3px}
-.feed-list{overflow-y:auto;padding:8px}
-.fcard{border:1.5px solid var(--rule);border-left-width:5px;padding:8px 10px;
-  margin-bottom:8px;background:var(--paper);font-size:12px}
-.fcard .fh{display:flex;justify-content:space-between;font-weight:700;
-  font-size:11.5px;letter-spacing:.5px}
-.fcard .meta{color:var(--mut);font-size:10.5px;margin:2px 0}
-.st{font-size:9.5px;font-weight:800;letter-spacing:1.5px;padding:2px 7px;
-  border:1.5px solid var(--rule)}
-.st.waiting{color:var(--mut);border-color:var(--mut)}
-.st.thinking{color:#8a5a00;border-color:#8a5a00;animation:pulse 1.2s infinite}
-.st.decision{color:var(--up);border-color:var(--up)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
-  gap:0;border:2px solid var(--rule);background:var(--panel)}
-.stat{padding:9px 12px;border-right:1.5px solid var(--hair);
-  border-bottom:1.5px solid var(--hair)}
-.stat .l{font-size:10px;letter-spacing:1.5px;color:var(--mut);text-transform:uppercase}
-.stat .v{font-weight:800;font-size:15px}
-footer{border-top:3px solid var(--rule);margin-top:26px;padding:14px 0 30px;
-  color:var(--mut);font-size:11.5px}
-@media (max-width:960px){
+.mdot{display:inline-block;width:10px;height:10px;margin-right:7px}
+footer{border-top:3px solid var(--rule);margin-top:30px;padding:16px 0 34px;
+  color:var(--mut);font-size:12px}
+@media (max-width:1020px){
   .main{grid-template-columns:1fr}
-  .feed{position:static;max-height:420px}
-  .strip{grid-template-columns:repeat(2,1fr)}
-  .pairgrid{grid-template-columns:1fr}
-  .half+.half{border-left:none;border-top:1.5px solid var(--hair)}
-  .brand .t1{font-size:20px}
+  .panel{position:static;max-height:560px}
+  .strip{grid-template-columns:repeat(3,1fr)}
+  .brand .t1{font-size:24px}
+  .cell.mkt .v{font-size:17px}
 }
 </style>
 </head>
 <body>
 <div class="demoflag">DEMONSTRATION SCENARIO — NOT REAL ACTIVITY</div>
-<div class="prep">NEW BTC ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED</div>
-<div class="notice">No model has been called. No paper-trading pilot or official experiment has started.</div>
+<div class="prep">AKRA ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED</div>
+<div class="notice">No model has been called. No paper-trading pilot or official experiment has started. Ticker prices are live display data only — trading accounts are inactive.</div>
 <div class="top"><div class="wrap mast">
   <div class="brand"><div class="t1">AKRA ARENA</div>
-    <div class="t2">RAW <b>vs</b> FEATURE &nbsp;·&nbsp; 3 MODELS · 3 COINS · 18 ACCOUNTS</div></div>
+    <div class="t2">RAW <b>vs</b> FEATURE · 3 MODELS · 3 COINS · 18 ACCOUNTS</div></div>
   <nav>
-    <a href="#live">LIVE</a>
-    <a href="#leaderboard">LEADERBOARD</a>
-    <a href="#pairs">RAW vs FEATURE</a>
-    <a href="#models">MODELS</a>
+    <a href="#stage">LIVE</a><a href="#leaderboard">LEADERBOARD</a>
+    <a href="#pairs-note" onclick="setPanel('PAIR DETAILS')">RAW vs FEATURE</a>
+    <a href="#panel" onclick="setPanel('MODEL CHAT')">MODELS</a>
     <a href="design/DESIGN_PACK_V1_1.md">METHODOLOGY</a>
-    <a href="pilot-archive/">PILOT ARCHIVE</a>
-    <a href="#about">ABOUT</a>
+    <a href="pilot-archive/">PILOT ARCHIVE</a><a href="#about">ABOUT</a>
   </nav>
 </div></div>
 
@@ -180,273 +186,365 @@ footer{border-top:3px solid var(--rule);margin-top:26px;padding:14px 0 30px;
 <div class="strip" id="strip"></div>
 
 <div class="main">
-<div>
-  <div id="live"></div>
-  <div class="tabs" id="tabs"></div>
-  <div class="chartbox">
-    <div class="stagebar">
-      <span class="chart-title" id="charttitle">Equity — all accounts</span>
-      <span style="display:flex;gap:6px;flex-wrap:wrap">
-        <span class="metrics" id="metricbtns"></span>
-        <button class="demo-btn" id="demobtn" onclick="toggleDemo()">View demo scenario</button>
-      </span>
-    </div>
-    <div class="chart-inner">
-      <div id="chartwrap">
-        <svg id="chart" width="100%" height="360"></svg>
-        <div id="chartmsg"></div>
-      </div>
-      <div class="legend" id="legend"></div>
-    </div>
+<div class="stage" id="stage">
+  <div class="stagebar">
+    <span><span class="title" id="charttitle">EQUITY</span>
+      <span class="tf" id="charttf"></span></span>
+    <span style="display:flex;gap:6px;flex-wrap:wrap">
+      <span class="metrics" id="metricbtns"></span>
+      <button class="demo-btn" id="demobtn" onclick="toggleDemo()">View demo scenario</button>
+    </span>
   </div>
-  <div id="tabbody"></div>
+  <div class="coin-tabs" id="cointabs"></div>
+  <div class="chart-inner">
+    <div id="chartwrap">
+      <svg id="chart" width="100%" height="430"></svg>
+      <div id="chartmsg"></div><div id="tip"></div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
 </div>
 
-<aside class="feed" id="models">
-  <div class="feed-head">MODEL FEED</div>
-  <div class="feed-filters">
+<aside class="panel" id="panel">
+  <div class="panel-tabs" id="ptabs"></div>
+  <div class="panel-filters">
     <select id="f_model"><option value="">All models</option>
-      <option value="haiku">Haiku 4.5</option><option value="sonnet">Sonnet 5</option>
-      <option value="opus">Opus 4.8</option></select>
+      <option value="haiku">Haiku</option><option value="sonnet">Sonnet</option>
+      <option value="opus">Opus</option></select>
     <select id="f_coin"><option value="">All coins</option>
       <option>BTC</option><option>ETH</option><option>SOL</option></select>
     <select id="f_arm"><option value="">Raw + Feature</option>
       <option value="raw">Raw</option><option value="ta">Feature</option></select>
-    <select id="f_pos"><option value="">Any position</option>
-      <option>long</option><option>short</option><option>flat</option></select>
   </div>
-  <div class="feed-list" id="feedlist"></div>
+  <div class="plist" id="plist"></div>
 </aside>
 </div>
 
+<section id="leaderboard"></section>
 <section id="about">
-<div class="rulehead"><h2>About</h2><span class="sub">the experiment in one paragraph</span></div>
-<p style="max-width:900px" id="abouttext"></p>
+<div class="rulehead"><h2>ABOUT</h2><span class="sub">the experiment in one paragraph</span></div>
+<p style="max-width:920px;font-size:14.5px" id="abouttext"></p>
 </section>
-<footer class="wrap" id="foot"></footer>
+<footer id="foot"></footer>
 </div>
 
 <script src="prestart_payload.js"></script>
 <script src="demo_payload.js"></script>
 <script>
-const MODEL = {haiku:{name:'HAIKU 4.5',c:'var(--haiku)'},
-               sonnet:{name:'SONNET 5',c:'var(--sonnet)'},
-               opus:{name:'OPUS 4.8',c:'var(--opus)'}};
+const MODEL = {haiku:{name:'Haiku 4.5',c:'var(--haiku)',mono:'H'},
+               sonnet:{name:'Sonnet 5',c:'var(--sonnet)',mono:'S'},
+               opus:{name:'Opus 4.8',c:'var(--opus)',mono:'O'}};
 const COINS = ['BTC','ETH','SOL'];
 const $ = id => document.getElementById(id);
 const N = v => Number(v);
 const money = v => '$' + N(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const px = v => v == null ? '—' : N(v).toLocaleString('en-US',{maximumFractionDigits:2});
-let demo = new URLSearchParams(location.search).get('demo') === '1';
-let D, activeTab = 'Aggregate', metric = 'Equity';
-const TABS = ['Aggregate','BTC','ETH','SOL','Pair comparison','System status'];
+const qp = new URLSearchParams(location.search);
+let demo = qp.get('demo') === '1';
+let coinTab = 'AGGREGATE', metric = 'Equity';
+let panelTab = {chat:'MODEL CHAT',trades:'COMPLETED TRADES',open:'OPEN POSITIONS',
+                pairs:'PAIR DETAILS'}[qp.get('panel')] || 'MODEL CHAT';
+const PANELS = ['MODEL CHAT','COMPLETED TRADES','OPEN POSITIONS','PAIR DETAILS'];
 const METRICS = ['Equity','Return','Drawdown','Fees','Turnover'];
-
 function data(){ return demo ? window.ARENA_DEMO : window.ARENA_PRESTART; }
+let D = data();
 function allAccounts(){ return COINS.flatMap(c => D.coins[c].accounts); }
+function icon(m){ return `<span class="icon ${m}">${MODEL[m].mono}</span>`; }
 function toggleDemo(){ demo = !demo; boot(); }
 
+/* ================= DISPLAY-ONLY MARKET TICKER — NON-AUTHORITATIVE =========
+   Read-only website display feed. Source: Coinbase public spot price API
+   (api.coinbase.com/v2/prices/{COIN}-USD/spot), refreshed every 30 seconds.
+   These values are NEVER written anywhere: not into account equity, trades,
+   execution prices, runtime state, or the canonical (Kraken) market-data
+   pipeline — the experiment engine is offline Python and cannot see this
+   page. Failure here shows "Price feed unavailable" and affects nothing. */
+const ticker = {BTC:{}, ETH:{}, SOL:{}};
+async function pollTicker(){
+  for (const c of COINS){
+    try{
+      const r = await fetch(`https://api.coinbase.com/v2/prices/${c}-USD/spot`);
+      const j = await r.json();
+      const v = Number(j.data && j.data.amount);
+      if (isFinite(v) && v > 0){ ticker[c] = {price: v, at: Date.now()}; }
+    }catch(e){ /* keep last value; staleness indicator handles it */ }
+  }
+  strip();
+}
+setInterval(pollTicker, 30000);
+setInterval(strip, 5000);
+
+function strip(){
+  const now = Date.now();
+  const mkt = COINS.map(c => {
+    const t = ticker[c];
+    if (!t.price) return `<div class="cell mkt dead"><div class="l"><span class="dot"></span>${c}/USD · LIVE DISPLAY</div>
+      <div class="v">Price feed unavailable</div><div class="sub">display only — non-authoritative</div></div>`;
+    const age = (now - t.at) / 1000;
+    const stale = age > 90;
+    return `<div class="cell mkt ${stale ? 'stale' : ''}"><div class="l"><span class="dot"></span>${c}/USD · LIVE DISPLAY</div>
+      <div class="v">${money(t.price)}</div>
+      <div class="sub">updated ${new Date(t.at).toLocaleTimeString()}${stale ? ' · STALE' : ''}</div></div>`;
+  });
+  const info = [
+    ['MODE', 'Preparation'],
+    ['PILOT PROGRESS', `${(D.pilot_progress || {done:0}).done} / 24`],
+    ['ACCOUNTS', demo ? 'demo scenario' : 'inactive — waiting'],
+  ].map(([l, v]) => `<div class="cell"><div class="l">${l}</div><div class="v">${v}</div></div>`);
+  $('strip').innerHTML = mkt.join('') + info.join('')
+    + `<div class="ticker-note">DISPLAY-ONLY MARKET TICKER — NON-AUTHORITATIVE · Coinbase spot · 30s refresh · these prices do not touch experiment accounts</div>`;
+}
+
+/* ---------------- chart ---------------- */
 function seriesMetric(a){
-  const s = a.series || [];
-  return s.map(pt => {
+  return (a.series || []).map(pt => {
     const eq = N(pt.equity);
     if (metric === 'Equity') return eq;
     if (metric === 'Return') return (eq / 10000 - 1) * 100;
     if (metric === 'Fees') return N(pt.fees);
-    if (metric === 'Drawdown'){
-      return Math.min(0, (eq / 10000 - 1) * 100);   // vs start peak
-    }
-    return demo ? N(a.notional || 0) / 10000 : 0;   // Turnover (multiples)
+    if (metric === 'Drawdown') return Math.min(0, (eq / 10000 - 1) * 100);
+    return demo ? N(a.notional || 0) / 10000 : 0;   // Turnover multiples
   });
 }
-
+let chartRows = [];
 function chart(){
   const svg = $('chart');
-  const W = 1000, H = 360, ML = 92, MR = 120, MT = 14, MB = 24;
+  const W = 1000, H = 430, ML = 96, MR = 150, MT = 18, MB = 30;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   let series = [];
-  if (activeTab === 'Aggregate' || activeTab === 'Pair comparison' || activeTab === 'System status'){
+  if (coinTab === 'AGGREGATE'){
     for (const arm of ['raw','ta']){
       const accts = allAccounts().filter(a => a.arm === arm);
-      const n = accts[0].series.length;
-      const pts = [];
+      const n = accts[0].series.length, pts = [];
       for (let i = 0; i < n; i++){
         let v = 0; accts.forEach(a => v += seriesMetric(a)[i]);
         pts.push(v / accts.length);
       }
-      series.push({label: arm === 'raw' ? 'RAW AGG' : 'FEATURE AGG',
-                   color: 'var(--ink)', dash: arm === 'ta', pts});
+      series.push({label: arm === 'raw' ? 'RAW' : 'FEATURE', color: 'var(--ink)',
+                   dash: arm === 'ta', pts});
     }
-    $('charttitle').textContent = `${metric} — Raw aggregate vs Feature aggregate (avg/account)`;
   } else {
     for (const m of ['haiku','sonnet','opus'])
       for (const arm of ['raw','ta']){
-        const a = D.coins[activeTab].accounts.find(x => x.model === m && x.arm === arm);
-        series.push({label: `${MODEL[m].name} ${arm === 'raw' ? 'RAW' : 'FEAT'}`,
+        const a = D.coins[coinTab].accounts.find(x => x.model === m && x.arm === arm);
+        series.push({label: `${MODEL[m].name.split(' ')[0]} ${arm === 'raw' ? 'Raw' : 'Feat'}`,
                      color: MODEL[m].c, dash: arm === 'ta', pts: seriesMetric(a)});
       }
-    $('charttitle').textContent = `${metric} — ${activeTab} arena`;
   }
+  chartRows = series;
   let lo = Math.min(...series.flatMap(s => s.pts));
   let hi = Math.max(...series.flatMap(s => s.pts));
-  if (hi === lo){ hi += metric === 'Equity' ? 120 : 1; lo -= metric === 'Equity' ? 120 : 1; }
+  if (hi === lo){ hi += metric === 'Equity' ? 130 : 1; lo -= metric === 'Equity' ? 130 : 1; }
   const pad = (hi - lo) * .12; lo -= pad; hi += pad;
-  const X = i => ML + (W - ML - MR) * (series[0].pts.length === 1 ? 0 : i / (series[0].pts.length - 1));
+  const nx = series[0].pts.length;
+  const X = i => ML + (W - ML - MR) * (nx === 1 ? 0 : i / (nx - 1));
   const Y = v => MT + (H - MT - MB) * (1 - (v - lo) / (hi - lo));
+  const fmtV = v => metric === 'Equity' || metric === 'Fees'
+    ? money(v) : v.toFixed(2) + (metric === 'Turnover' ? 'x' : '%');
   let g = '';
-  for (let i = 0; i <= 4; i++){
-    const v = lo + (hi - lo) * i / 4, y = Y(v);
+  for (let i = 0; i <= 5; i++){
+    const v = lo + (hi - lo) * i / 5, y = Y(v);
     g += `<line x1="${ML}" y1="${y}" x2="${W-MR}" y2="${y}" stroke="var(--hair)"/>`
-       + `<text x="${ML-8}" y="${y+4}" text-anchor="end" font-size="10.5"
-           fill="var(--mut)" font-family="inherit">${metric==='Equity'||metric==='Fees'?money(v):v.toFixed(2)+(metric==='Turnover'?'x':'%')}</text>`;
+       + `<text x="${ML-10}" y="${y+4}" text-anchor="end" font-size="12"
+           fill="var(--mut)" font-family="inherit">${fmtV(v)}</text>`;
   }
   g += `<line x1="${ML}" y1="${MT}" x2="${ML}" y2="${H-MB}" stroke="var(--rule)" stroke-width="2"/>`
-     + `<line x1="${ML}" y1="${H-MB}" x2="${W-MR}" y2="${H-MB}" stroke="var(--rule)" stroke-width="2"/>`;
-  series.forEach((s, si) => {
+     + `<line x1="${ML}" y1="${H-MB}" x2="${W-MR}" y2="${H-MB}" stroke="var(--rule)" stroke-width="2"/>`
+     + `<text x="${ML}" y="${H-8}" font-size="11" fill="var(--mut)" font-family="inherit">${demo ? 'start' : ''}</text>`
+     + `<text x="${W-MR}" y="${H-8}" text-anchor="end" font-size="11" fill="var(--mut)" font-family="inherit">${demo ? 'demo now' : ''}</text>`;
+  // endpoint labels with collision avoidance
+  const ends = series.map((s, i) => ({i, y: Y(s.pts[s.pts.length-1]), s}))
+                     .sort((a, b) => a.y - b.y);
+  let lastY = -99;
+  ends.forEach(e => { e.ly = Math.max(e.y, lastY + 14); lastY = e.ly; });
+  series.forEach(s => {
     const pts = s.pts.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
     g += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.5"
-          ${s.dash ? 'stroke-dasharray="7 5"' : ''}/>`;
-    const y = Y(s.pts[s.pts.length-1]) + (si % 2 ? 10 : -4);
-    g += `<text x="${W-MR+6}" y="${y}" font-size="9.5" font-weight="700"
-          fill="${s.color}" font-family="inherit">${s.label}</text>`;
+          ${s.dash ? 'stroke-dasharray="8 6"' : ''}/>`;
+  });
+  ends.forEach(e => {
+    g += `<text x="${W-MR+8}" y="${e.ly+4}" font-size="11.5" font-weight="700"
+          fill="${e.s.color}" font-family="inherit">${e.s.label}${e.s.dash ? ' ┄' : ''}</text>`;
   });
   svg.innerHTML = g;
-  $('chartmsg').textContent = demo ? '' : 'Waiting for pilot activity';
-  $('legend').innerHTML = (activeTab === 'Aggregate' || activeTab === 'Pair comparison' || activeTab === 'System status'
-    ? [['RAW aggregate', 'var(--ink)', false], ['FEATURE aggregate', 'var(--ink)', true]]
-    : Object.keys(MODEL).flatMap(m => [[`${MODEL[m].name} RAW`, MODEL[m].c, false],
-                                       [`${MODEL[m].name} FEATURE`, MODEL[m].c, true]]))
-    .map(([l, c, d]) => `<span><span class="sw ${d?'dash':''}" style="border-color:${c}"></span>${l}</span>`).join('');
+  $('chartmsg').textContent = demo ? '' : 'WAITING FOR PILOT ACTIVITY';
+  $('charttitle').textContent = metric.toUpperCase();
+  $('charttf').textContent = (coinTab === 'AGGREGATE' ? ' · Raw vs Feature aggregate' : ` · ${coinTab} arena`)
+    + (demo ? ' · demo timeframe' : ' · timeframe: pre-start');
+  $('legend').innerHTML = series.map(s =>
+    `<span><span class="sw ${s.dash?'dash':''}" style="border-color:${s.color}"></span>${s.label}</span>`).join('');
+  svg.onmousemove = ev => {
+    const r = svg.getBoundingClientRect();
+    const fx = (ev.clientX - r.left) / r.width * W;
+    if (fx < ML || fx > W - MR){ $('tip').style.display = 'none'; return; }
+    const i = Math.round((fx - ML) / (W - ML - MR) * (nx - 1));
+    const t = $('tip');
+    t.innerHTML = `<b>${demo ? (i === 0 ? 'start' : 'demo now') : 'pre-start'}</b><br>`
+      + chartRows.map(s => `${s.label}: ${fmtV(s.pts[Math.min(i, s.pts.length-1)])}`).join('<br>');
+    t.style.display = 'block';
+    t.style.left = Math.min(ev.clientX - r.left + 16, r.width - 180) + 'px';
+    t.style.top = '14px';
+  };
+  svg.onmouseleave = () => $('tip').style.display = 'none';
 }
 
+/* ---------------- right panel ---------------- */
+function filt(a){
+  const fm = $('f_model').value, fc = $('f_coin').value, fa = $('f_arm').value;
+  return (!fm || a.model === fm) && (!fc || a.coin === fc) && (!fa || a.arm === fa);
+}
+function chatCards(){
+  if (!demo)
+    return Object.keys(MODEL).filter(m => !$('f_model').value || m === $('f_model').value)
+      .map(m => `<div class="mcard" style="border-left-color:${MODEL[m].c}">
+        <div class="mhead">${icon(m)}<div><div class="who">${MODEL[m].name}</div>
+          <div class="sub">all coins · Raw + Feature</div></div>
+        <span class="stpill waiting">WAITING</span></div>
+        <div class="thesis" style="color:var(--mut)">No decisions yet — the paper-trading pilot has not started.</div>
+      </div>`).join('');
+  return allAccounts().filter(a => filt(a) && a.thesis).map(a => {
+    const st = a.feed_state === 'thinking' ? 'thinking' : 'decision';
+    return `<div class="mcard" style="border-left-color:${MODEL[a.model].c}"
+      onclick="this.classList.toggle('open')">
+      <div class="mhead">${icon(a.model)}
+        <div><div class="who">${MODEL[a.model].name}</div>
+          <div class="sub">${a.coin} · ${a.arm === 'raw' ? 'Raw' : 'Feature'} · t=demo</div></div>
+        <span class="stpill ${st}">${st === 'thinking' ? 'THINKING…' : 'DECISION RECEIVED'}</span></div>
+      <div class="thesis">“${a.thesis.replace(/</g,'&lt;')}”</div>
+      <div class="dstrip"><span class="dir ${a.side}">${a.side.toUpperCase()}</span>
+        <span>size <b>${a.side === 'flat' ? '$0' : money(a.notional)}</b></span>
+        <span>stop <b>${px(a.stop)}</b></span><span>target <b>${px(a.tp)}</b></span></div>
+      <div class="expand-hint">click to expand ▾</div>
+      <div class="xtra">
+        ${a.invalidation ? `invalidation: <b>${a.invalidation.operator === 'price_at_or_below' ? '≤' : '≥'} ${px(a.invalidation.level)} (${a.invalidation.timeframe})</b> — ${a.invalidation.status}<br>` : ''}
+        ${a.watch ? `watch: <b>${a.watch.operator === 'price_at_or_below' ? '≤' : '≥'} ${px(a.watch.level)}</b><br>` : ''}
+        account equity: <b>${money(a.equity)}</b> · fees: <b>${money(a.fees)}</b><br>
+        attempts: <b>first attempt valid</b> · pair status: <b>PAIR_COMMITTED (demo)</b>
+      </div></div>`;
+  }).join('') || '<div class="sub">No entries match the filters.</div>';
+}
+function tradeCards(){
+  const trades = allAccounts().filter(filt).flatMap(a =>
+    (a.trades || []).map(t => ({...t, a})));
+  if (!trades.length)
+    return `<div class="mcard" style="border-left-color:var(--mut)">
+      <div class="thesis" style="color:var(--mut)">No completed trades${demo ? ' in this demo scenario view' : ' — waiting for pilot'}.</div></div>`;
+  return trades.map(t => {
+    const pnl = N(t.pnl);
+    const cls = pnl > 0 ? 'up' : pnl < 0 ? 'down' : 'zero';
+    return `<div class="tcard" style="border-left-color:${MODEL[t.a.model].c}">
+      <div class="row1">${icon(t.a.model)}
+        <div><div class="who" style="font-size:14.5px;font-weight:800">${MODEL[t.a.model].name}</div>
+        <div class="sub">${t.a.coin} · ${t.a.arm === 'raw' ? 'Raw' : 'Feature'} · ${t.side.toUpperCase()}</div></div>
+        <div class="pnl ${cls}">${pnl >= 0 ? '+' : ''}${money(pnl)}</div></div>
+      <div class="route">${px(t.entry)} → ${px(t.exit)}</div>
+      <div class="grid">
+        <span>quantity</span><b>${t.qty}</b>
+        <span>open notional</span><b>${money(N(t.qty) * N(t.entry))}</b>
+        <span>close notional</span><b>${money(N(t.qty) * N(t.exit))}</b>
+        <span>holding time</span><b>${demo ? 'intra-demo' : '—'}</b>
+        <span>fees</span><b>${money(t.fee)}</b>
+        <span>exit reason</span><b>${t.reason.replace(/_/g,' ')}</b>
+      </div></div>`;
+  }).join('');
+}
+function openCards(){
+  const open = allAccounts().filter(a => filt(a) && a.side !== 'flat');
+  if (!open.length)
+    return `<div class="mcard" style="border-left-color:var(--mut)">
+      <div class="thesis" style="color:var(--mut)">No open positions — ${demo ? 'demo scenario' : 'waiting for pilot'}.</div></div>`;
+  return open.map(a => {
+    const mark = N(a.notional) / Math.abs(N(a.qty));
+    const u = N(a.unrealized_pnl);
+    return `<div class="tcard" style="border-left-color:${MODEL[a.model].c}">
+      <div class="row1">${icon(a.model)}
+        <div><div class="who" style="font-size:14.5px;font-weight:800">${MODEL[a.model].name}</div>
+        <div class="sub">${a.coin} · ${a.arm === 'raw' ? 'Raw' : 'Feature'}</div></div>
+        <div class="pnl ${u > 0 ? 'up' : u < 0 ? 'down' : 'zero'}">${u >= 0 ? '+' : ''}${money(u)}</div></div>
+      <div class="route"><span class="dir ${a.side}" style="font-size:12px;padding:2px 9px;color:#fff">${a.side.toUpperCase()}</span>
+        &nbsp;entry ${px(a.entry)} · mark ${px(mark)}</div>
+      <div class="grid">
+        <span>size</span><b>${money(a.notional)}</b>
+        <span>stop</span><b>${px(a.stop)}</b>
+        <span>target</span><b>${px(a.tp)}</b>
+        <span>age</span><b>${demo ? 'intra-demo' : '—'}</b>
+        <span>invalidation</span><b>${a.invalidation ? a.invalidation.status : '—'}</b>
+      </div></div>`;
+  }).join('');
+}
+function pairCards(){
+  const fm = $('f_model').value, fc = $('f_coin').value;
+  let out = '';
+  for (const coin of COINS){
+    if (fc && coin !== fc) continue;
+    for (const m of Object.keys(MODEL)){
+      if (fm && m !== fm) continue;
+      const raw = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'raw');
+      const ta = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'ta');
+      const started = demo && (raw.n_decisions + ta.n_decisions > 0);
+      out += `<div class="tcard" style="border-left-color:${MODEL[m].c}">
+        <div class="row1">${icon(m)}<div><div class="who" style="font-size:14.5px;font-weight:800">${MODEL[m].name} · ${coin}</div>
+          <div class="sub">${started ? (raw.side === ta.side ? 'direction AGREE' : 'direction DISAGREE') : 'Awaiting first paired decision.'}</div></div></div>
+        <div class="grid" style="margin-top:8px">
+          <span>Raw equity</span><b>${money(raw.equity)}</b>
+          <span>Feature equity</span><b>${money(ta.equity)}</b>
+          <span>Raw direction</span><b>${raw.side}</b>
+          <span>Feature direction</span><b>${ta.side}</b>
+          <span>size gap</span><b>${money(Math.abs(N(raw.notional) - N(ta.notional)))}</b>
+          <span>equity gap</span><b>${money(N(raw.equity) - N(ta.equity))}</b>
+          <span>fee gap</span><b>${money(Math.abs(N(raw.fees) - N(ta.fees)))}</b>
+          <span>trades</span><b>${raw.n_trades} / ${ta.n_trades}</b>
+        </div>
+        ${started && raw.thesis ? `<div class="sub" style="margin-top:7px">RAW: “${raw.thesis.slice(0,90)}…”</div>` : ''}
+        ${started && ta.thesis ? `<div class="sub">FEAT: “${ta.thesis.slice(0,90)}…”</div>` : ''}
+      </div>`;
+    }
+  }
+  return out;
+}
+function panel(){
+  $('ptabs').innerHTML = PANELS.map(p =>
+    `<div class="ptab ${p === panelTab ? 'active' : ''}" onclick="setPanel('${p}')">${p}</div>`).join('');
+  $('plist').innerHTML = panelTab === 'MODEL CHAT' ? chatCards()
+    : panelTab === 'COMPLETED TRADES' ? tradeCards()
+    : panelTab === 'OPEN POSITIONS' ? openCards() : pairCards();
+}
+window.setPanel = p => { panelTab = p; panel(); };
+
+/* ---------------- leaderboard + boot ---------------- */
 function leaderboard(){
   const rows = allAccounts().map(a => ({...a, ret: N(a.total_return_pct)}));
   const tied = rows.every(r => r.ret === rows[0].ret);
   rows.sort((x, y) => y.ret - x.ret);
-  return `<section id="leaderboard"><div class="rulehead"><h2>Leaderboard</h2>
-    <span class="sub">${tied ? 'all accounts tied at start — no ranking' : 'ranked by return within the demonstration scenario'}</span></div>
+  $('leaderboard').innerHTML = `<div class="rulehead"><h2>LEADERBOARD</h2>
+    <span class="sub">${tied ? 'all accounts tied at start — no ranking' : 'ranked by return (demonstration scenario)'}</span></div>
     <div class="twrap"><table><tr><th>#</th><th>Coin</th><th>Model</th><th>Arm</th>
     <th>Equity</th><th>Return</th><th>Drawdown</th><th>Fees</th><th>Status</th></tr>
-    ${rows.map((a, i) => `<tr>
-      <td>${tied ? '—' : i + 1}</td><td>${a.coin}</td>
+    ${rows.map((a, i) => `<tr><td>${tied ? '—' : i + 1}</td><td>${a.coin}</td>
       <td><span class="mdot" style="background:${MODEL[a.model].c}"></span>${MODEL[a.model].name}</td>
-      <td>${a.arm === 'raw' ? 'RAW' : 'FEATURE'}</td><td>${money(a.equity)}</td>
+      <td>${a.arm === 'raw' ? 'Raw' : 'Feature'}</td><td>${money(a.equity)}</td>
       <td class="${a.ret >= 0 ? 'up' : 'down'}">${a.ret >= 0 ? '+' : ''}${a.ret.toFixed(2)}%</td>
       <td>${a.ret < 0 ? a.ret.toFixed(2) + '%' : '0.00%'}</td><td>${money(a.fees)}</td>
       <td>${a.terminal ? 'CLOSED' : (a.status_text || (demo ? 'demo' : 'Waiting for pilot'))}</td></tr>`).join('')}
-    </table></div></section>`;
+    </table></div>`;
 }
-
-function pairCard(coin, m){
-  const raw = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'raw');
-  const ta = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'ta');
-  const started = demo && (raw.n_decisions + ta.n_decisions > 0);
-  const verdict = !started ? 'Awaiting first paired decision.'
-    : `direction ${raw.side === ta.side ? 'AGREE' : 'DISAGREE'} · equity gap ${money(N(raw.equity) - N(ta.equity))}`;
-  const half = a => `<div class="half" style="border-top:4px solid ${MODEL[m].c}">
-    <div class="armname">${a.arm === 'raw' ? 'RAW — candles only' : 'FEATURE — candles + neutral features'}</div>
-    <div class="eq">${money(a.equity)}</div>
-    <div class="kv">
-      <span>direction</span><b>${a.side.toUpperCase()}</b>
-      <span>position size</span><b>${a.side === 'flat' ? '$0.00' : money(a.notional)}</b>
-      <span>entry / stop / target</span><b>${px(a.entry)} / ${px(a.stop)} / ${px(a.tp)}</b>
-      <span>fees</span><b>${money(a.fees)}</b>
-      <span>decisions / trades</span><b>${a.n_decisions} / ${a.n_trades}</b>
-    </div>
-    ${a.thesis ? `<div class="thesis">“${a.thesis.replace(/</g,'&lt;')}”</div>` : ''}
-    ${a.invalidation ? `<div class="inv">INVALIDATION: ${a.invalidation.timeframe === '1h_close' ? '1h close' : 'price'} ${a.invalidation.operator === 'price_at_or_below' ? '≤' : '≥'} ${px(a.invalidation.level)} — ${a.invalidation.status}</div>` : ''}
-  </div>`;
-  return `<div class="pairgrid"><div class="pairhead">
-    <span><span class="mdot" style="background:${MODEL[m].c}"></span>${MODEL[m].name} · ${coin}</span>
-    <span class="verdict">${verdict}</span></div>${half(raw)}${half(ta)}</div>`;
-}
-
-function statusView(){
-  const rc = D.round_counts || {};
-  const rounds = COINS.flatMap(c => (D.coins[c].rounds || []).filter(r => r.status));
-  return `<section><div class="rulehead"><h2>System status</h2>
-    <span class="sub">engine · integrity · rounds</span></div>
-    <div class="stat-grid">
-      <div class="stat"><div class="l">Mode</div><div class="v">${D.mode}</div></div>
-      <div class="stat"><div class="l">Pilot boundaries</div><div class="v">${(D.pilot_progress||{done:0,total:24}).done} / ${(D.pilot_progress||{total:24}).total}</div></div>
-      <div class="stat"><div class="l">Committed pairs</div><div class="v">${rc.PAIR_COMMITTED || 0}</div></div>
-      <div class="stat"><div class="l">Aborted pairs</div><div class="v">${rc.PAIR_ABORTED || 0}</div></div>
-      <div class="stat"><div class="l">Terminal splits</div><div class="v">${rc.PAIR_TERMINAL_SPLIT || 0}</div></div>
-      <div class="stat"><div class="l">Integrity hash</div><div class="v" style="font-size:11px">${D.combined_hash.slice(0,16)}…</div></div>
-    </div>
-    ${rounds.length ? `<div class="twrap" style="margin-top:10px"><table>
-      <tr><th>Round</th><th>Pair</th><th>Status</th><th>Reason</th></tr>
-      ${rounds.map(r => `<tr><td>${r.round_id}</td><td>${r.pair}</td><td>${r.status}</td><td>${r.reason || ''}</td></tr>`).join('')}</table></div>`
-      : `<p style="color:var(--mut);margin-top:10px">No rounds yet — waiting for pilot.</p>`}
-  </section>`;
-}
-
-function tabbody(){
-  if (activeTab === 'Aggregate') return leaderboard();
-  if (activeTab === 'Pair comparison')
-    return `<section id="pairs"><div class="rulehead"><h2>Raw vs Feature — all nine pairs</h2>
-      <span class="sub">same model · same coin · only the briefing differs</span></div>
-      ${COINS.flatMap(c => Object.keys(MODEL).map(m => pairCard(c, m))).join('')}</section>`;
-  if (activeTab === 'System status') return statusView();
-  return `<section id="pairs"><div class="rulehead"><h2>${activeTab} pairs</h2>
-    <span class="sub">three models · Raw vs Feature</span></div>
-    ${Object.keys(MODEL).map(m => pairCard(activeTab, m)).join('')}</section>`;
-}
-
-function feed(){
-  const fm = $('f_model').value, fc = $('f_coin').value,
-        fa = $('f_arm').value, fp = $('f_pos').value;
-  let cards;
-  if (!demo){
-    cards = Object.keys(MODEL).filter(m => !fm || m === fm).map(m =>
-      `<div class="fcard" style="border-left-color:${MODEL[m].c}">
-        <div class="fh"><span>${MODEL[m].name}</span><span class="st waiting">WAITING</span></div>
-        <div class="meta">No decisions yet — pilot not started</div></div>`);
-  } else {
-    cards = allAccounts()
-      .filter(a => (!fm || a.model === fm) && (!fc || a.coin === fc)
-                && (!fa || a.arm === fa) && (!fp || a.side === fp) && a.thesis)
-      .map(a => `<div class="fcard" style="border-left-color:${MODEL[a.model].c}">
-        <div class="fh"><span>${MODEL[a.model].name} · ${a.coin} · ${a.arm === 'raw' ? 'RAW' : 'FEATURE'}</span>
-          <span class="st ${a.feed_state === 'thinking' ? 'thinking' : 'decision'}">${a.feed_state === 'thinking' ? 'THINKING…' : 'DECISION'}</span></div>
-        <div class="fh" style="font-weight:800"><span></span>
-          <span class="${a.side === 'long' ? 'up' : a.side === 'short' ? 'down' : ''}">${a.side.toUpperCase()}</span></div>
-        <div class="meta">size ${a.side === 'flat' ? '$0' : money(a.notional)} · stop ${px(a.stop)} · target ${px(a.tp)} · t=demo</div>
-        <div>“${a.thesis.replace(/</g,'&lt;')}”</div>
-        ${a.invalidation ? `<div class="meta">invalidation: ${a.invalidation.operator === 'price_at_or_below' ? '≤' : '≥'} ${px(a.invalidation.level)} — ${a.invalidation.status}</div>` : ''}
-      </div>`);
-  }
-  $('feedlist').innerHTML = cards.join('') || '<div class="meta">No entries match the filters.</div>';
-}
-
-function strip(){
-  const cells = [
-    ...COINS.map(c => [c + '/USD', demo ? 'demo value' : 'Waiting for pilot', 'mkt']),
-    ['Mode', 'Preparation'],
-    ['Pilot progress', `${(D.pilot_progress || {done: 0}).done} / 24`],
-    ['System health', demo ? 'demo' : 'standing by'],
-    ['Last update', demo ? 'demo scenario' : 'pre-start'],
-  ];
-  $('strip').innerHTML = cells.map(([l, v, k]) =>
-    `<div class="cell ${k || ''}"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
-}
-
 function boot(){
   D = data();
   document.body.classList.toggle('demo', demo);
   $('demobtn').textContent = demo ? 'Exit demo scenario' : 'View demo scenario';
-  $('tabs').innerHTML = TABS.map(t =>
-    `<div class="tab ${t === activeTab ? 'active' : ''}" onclick="setTab('${t}')">${t}</div>`).join('');
+  $('cointabs').innerHTML = ['AGGREGATE', ...COINS].map(t =>
+    `<div class="tab ${t === coinTab ? 'active' : ''}" onclick="setCoin('${t}')">${t}</div>`).join('');
   $('metricbtns').innerHTML = METRICS.map(m =>
     `<button class="${m === metric ? 'active' : ''}" onclick="setMetric('${m}')">${m}</button>`).join('');
-  strip(); chart(); $('tabbody').innerHTML = tabbody(); feed();
+  strip(); chart(); panel(); leaderboard();
   $('abouttext').textContent = D.question + ' Three Claude models (Haiku 4.5, Sonnet 5, Opus 4.8) each run two isolated $10,000 paper accounts per coin: RAW sees only candles; FEATURE sees the same candles plus a fixed neutral numerical feature summary. Same rules, same prices, hourly decisions, machine-checked invalidations. Paper money only.';
   $('foot').innerHTML = `${D.banner} · integrity ${D.combined_hash.slice(0,12)}… · <a href="pilot-archive/">old pilot archive</a> (OLD PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE) · <a href="design/DESIGN_PACK_V1_1.md">methodology</a>`;
 }
-window.setTab = t => { activeTab = t; boot(); };
-window.setMetric = m => { metric = m; boot(); };
-['f_model','f_coin','f_arm','f_pos'].forEach(id => $(id).addEventListener('change', feed));
+window.setCoin = t => { coinTab = t; chart(); };
+window.setMetric = m => { metric = m; chart(); };
+['f_model','f_coin','f_arm'].forEach(id => $(id).addEventListener('change', panel));
 boot();
+pollTicker();
 </script>
 </body>
 </html>

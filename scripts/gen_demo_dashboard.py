@@ -65,7 +65,7 @@ pl = dashboard.payload(accounts, ledger, snapshots,
                        {"ts": T0 + 7200, "code_hash": manifest["combined"]},
                        manifest, cfg)
 pl["mode"] = "PREPARATION"
-pl["banner"] = "NEW BTC ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED"
+pl["banner"] = "AKRA ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED"
 pl["data_notice"] = ("ALL DATA ON THIS PAGE IS MOCK/DEMO DATA generated "
                      "offline from fixtures. No model has been called; no "
                      "experiment has started.")
@@ -87,7 +87,7 @@ fresh = state.init_accounts()
 pre = dashboard.payload(fresh, [], {c: None for c in ("BTC", "ETH", "SOL")},
                         None, manifest, cfg)
 pre["mode"] = "PREPARATION"
-pre["banner"] = "NEW BTC ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED"
+pre["banner"] = "AKRA ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED"
 pre["data_notice"] = ("No model has been called. No paper-trading pilot or "
                       "official experiment has started.")
 pre["pilot_progress"] = {"done": 0, "total": 24}
