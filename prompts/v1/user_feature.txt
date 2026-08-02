@@ -11,16 +11,19 @@ Hourly candles, last 72, oldest first (UTC-time open high low close volume-in-{C
 Daily closes, last 40, oldest first:
 {DAILY_CLOSES}
 
-=== TECHNICAL INDICATORS ===
-All values are computed only from the candles shown above. Hourly timeframe unless marked daily.
-RSI(14): {RSI_H}
-MACD(12,26,9): line {MACD_LINE}  signal {MACD_SIGNAL}  histogram {MACD_HIST}
-Bollinger(20, 2.0): upper {BB_UP}  middle {BB_MID}  lower {BB_LOW}
-SMA(20): {SMA20_H}
-SMA(50): {SMA50_H}
-ATR(14): {ATR_H}
-Daily SMA(20): {SMA20_D}
-Daily RSI(14): {RSI_D}
+Volume is base-asset trading volume reported by the Kraken spot market for each candle. It is not global crypto-market volume or perpetual-futures volume.
+
+=== FEATURE SUMMARY ===
+All values below are computed only from the candles shown above.
+RSI(14), hourly: {RSI14_H}
+SMA(20), hourly: {SMA20_H}
+SMA(50), hourly: {SMA50_H}
+ATR(14), hourly: {ATR14_H}
+Latest completed 1h volume: {CURRENT_VOLUME_H} {COIN}
+Mean volume of previous 24 completed 1h candles: {MEAN_VOLUME_PREV24_H} {COIN}
+Latest volume / previous-24h mean: {VOLUME_RATIO_24}
+Rolling VWAP(24h): {VWAP24_H}
+Price minus VWAP: {PRICE_MINUS_VWAP_PCT}%
 
 === YOUR ACCOUNT ===
 Equity: ${EQUITY}

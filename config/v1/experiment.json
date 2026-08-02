@@ -1,12 +1,27 @@
 {
-  "experiment": "v1.2",
-  "question": "Does giving an AI trader a fixed technical-indicator summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?",
+  "experiment": "v1.3",
+  "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?",
   "classification": "DESIGN PROPOSAL — trading engine implementation NOT yet authorized",
   "instrument_wording": "Synthetic USD-settled perpetual paper contract, marked and executed using Kraken {COIN}/USD spot-market OHLC data",
   "coins": {
-    "BTC": {"kraken_pair": "XBTUSD", "price_decimals": 2, "qty_decimals": 6},
-    "ETH": {"kraken_pair": "ETHUSD", "price_decimals": 2, "qty_decimals": 5},
-    "SOL": {"kraken_pair": "SOLUSD", "price_decimals": 2, "qty_decimals": 3}
+    "BTC": {
+      "kraken_pair": "XBTUSD",
+      "price_decimals": 2,
+      "qty_decimals": 6,
+      "volume_decimals": 1
+    },
+    "ETH": {
+      "kraken_pair": "ETHUSD",
+      "price_decimals": 2,
+      "qty_decimals": 5,
+      "volume_decimals": 1
+    },
+    "SOL": {
+      "kraken_pair": "SOLUSD",
+      "price_decimals": 2,
+      "qty_decimals": 3,
+      "volume_decimals": 1
+    }
   },
   "market_data": {
     "canonical_source": "kraken_spot_ohlc",
@@ -21,9 +36,18 @@
     "beyond_catchup": "INTEGRITY HALT C: that coin's V1 arena is terminated for the remainder of the run; last trustworthy state preserved; other coin arenas continue normally"
   },
   "models": {
-    "haiku":  {"model": "claude-haiku-4-5-20251001", "pinning": "dated fixed snapshot"},
-    "sonnet": {"model": "claude-sonnet-5", "pinning": "fixed dateless snapshot (immutable)"},
-    "opus":   {"model": "claude-opus-4-8", "pinning": "fixed dateless snapshot (immutable)"}
+    "haiku": {
+      "model": "claude-haiku-4-5-20251001",
+      "pinning": "dated fixed snapshot"
+    },
+    "sonnet": {
+      "model": "claude-sonnet-5",
+      "pinning": "fixed dateless snapshot (immutable)"
+    },
+    "opus": {
+      "model": "claude-opus-4-8",
+      "pinning": "fixed dateless snapshot (immutable)"
+    }
   },
   "request_payloads": {
     "common": {
@@ -31,8 +55,14 @@
       "anthropic-version": "2023-06-01",
       "beta_headers": [],
       "max_tokens": 1500,
-      "tools": ["schemas/v1/decision.schema.json (strict: true)"],
-      "tool_choice": {"type": "tool", "name": "submit_decision", "disable_parallel_tool_use": true},
+      "tools": [
+        "schemas/v1/decision.schema.json (strict: true)"
+      ],
+      "tool_choice": {
+        "type": "tool",
+        "name": "submit_decision",
+        "disable_parallel_tool_use": true
+      },
       "sampling_parameters": "temperature/top_p/top_k NOT SENT",
       "timeout_seconds": 120,
       "transport_retries": 3,
@@ -40,9 +70,19 @@
       "messages": "single user message (round prompt); validation retry appends assistant tool_use + tool_result acknowledgment + fixed rejection message"
     },
     "per_model": {
-      "claude-haiku-4-5-20251001": {"thinking": "parameter omitted (model runs without extended thinking)"},
-      "claude-sonnet-5":           {"thinking": {"type": "disabled"}},
-      "claude-opus-4-8":           {"thinking": {"type": "disabled"}}
+      "claude-haiku-4-5-20251001": {
+        "thinking": "parameter omitted (model runs without extended thinking)"
+      },
+      "claude-sonnet-5": {
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "claude-opus-4-8": {
+        "thinking": {
+          "type": "disabled"
+        }
+      }
     },
     "twin_parity": "Raw and TA requests for the same model are byte-identical except the user prompt text"
   },
@@ -61,9 +101,16 @@
     "global_collection_deadline": "T+12 minutes, hard; transport retries must complete inside it",
     "concurrency_lock": "preflight verifies 6-way concurrency against rate limits; the final value is locked before launch and cannot change during V1"
   },
-  "arms": ["raw", "ta"],
+  "arms": [
+    "raw",
+    "ta"
+  ],
   "atomic_unit": "matched Raw/TA pair (same model, same coin); 9 independent pairs",
-  "pair_records": ["PAIR_COMMITTED", "PAIR_ABORTED", "PAIR_TERMINAL_SPLIT"],
+  "pair_records": [
+    "PAIR_COMMITTED",
+    "PAIR_ABORTED",
+    "PAIR_TERMINAL_SPLIT"
+  ],
   "pair_abort_semantics": {
     "meaning": "zero DECISION-GENERATED state change at T for both twins",
     "no_new_discretionary_execution": true,
@@ -100,7 +147,7 @@
     "equity_at_price": "Equity(p) = E + u(p)",
     "maintenance_requirement": "m(p) = Decimal('0.02') * abs(q) * p",
     "liquidation_condition": "Equity(p) <= m(p)",
-    "long_threshold":  "L = (q*entry - E) / ((1 - Decimal('0.02')) * q)   [q > 0; liquidate when p <= L]",
+    "long_threshold": "L = (q*entry - E) / ((1 - Decimal('0.02')) * q)   [q > 0; liquidate when p <= L]",
     "short_threshold": "L = (q*entry - E) / ((1 + Decimal('0.02')) * q)   [q < 0; liquidate when p >= L]",
     "quantity_precision_note": "thresholds are computed with the executed rounded-down q, so precision affects L exactly as it affects the position",
     "gap_fill": "if the 1m candle OPEN already satisfies the liquidation condition, fill at the open (worse price); otherwise fill at the threshold L",
@@ -128,8 +175,14 @@
     "D_lifecycle_end": "after stop, target, liquidation, decision close, or reversal ends a lifecycle, later candles cannot trigger that lifecycle's invalidation"
   },
   "invalidation": {
-    "operators": ["price_at_or_below", "price_at_or_above"],
-    "timeframes": ["1h_close", "1m_intrabar"],
+    "operators": [
+      "price_at_or_below",
+      "price_at_or_above"
+    ],
+    "timeframes": [
+      "1h_close",
+      "1m_intrabar"
+    ],
     "lifecycle": "set once at open-from-flat or reversal; immutable while the lifecycle is open (hold/increase/reduce/partial exits); close or reversal ends it",
     "trigger": "inclusive comparison; first trigger latched permanently with timestamp, price, and candle reference",
     "post_trigger": "no forced exit; next-round prompt shows the TRIGGERED block; behaviour recorded",
@@ -138,10 +191,35 @@
   "attempt_archive": {
     "path": "data-v1/attempts/{round_id}/{account_id}_attempt{n}.json",
     "every_attempt_recorded": true,
-    "fields": ["account_id", "pair_id", "round_id", "attempt_number", "generated_prompt_hash", "request_hash", "requested_model", "returned_model", "raw_response", "parsed_tool_input", "schema_result", "semantic_validation_result", "fixed_rejection_reasons", "transport_error_category", "latency_ms", "token_usage", "became_executed_decision"]
+    "fields": [
+      "account_id",
+      "pair_id",
+      "round_id",
+      "attempt_number",
+      "generated_prompt_hash",
+      "request_hash",
+      "requested_model",
+      "returned_model",
+      "raw_response",
+      "parsed_tool_input",
+      "schema_result",
+      "semantic_validation_result",
+      "fixed_rejection_reasons",
+      "transport_error_category",
+      "latency_ms",
+      "token_usage",
+      "became_executed_decision"
+    ]
   },
   "metrics": {
-    "reliability_behavioural_outcome": ["first-attempt validity rate", "validation-retry rate", "successful-correction rate", "transport-retry rate", "pair-abort rate", "which arm caused each pair abort"],
+    "reliability_behavioural_outcome": [
+      "first-attempt validity rate",
+      "validation-retry rate",
+      "successful-correction rate",
+      "transport-retry rate",
+      "pair-abort rate",
+      "which arm caused each pair abort"
+    ],
     "operative_decision": "the executed corrected decision is the operative decision for behavioural analysis; formatting/semantic reliability reported separately, never hidden",
     "denominators": {
       "direction_disagreement": "pair-committed rounds where both twins were active and produced executable target positions",
@@ -151,10 +229,17 @@
       "turnover": "cumulative executed notional / time-weighted average equity",
       "exclusions": "aborted, skipped, pre-launch, and post-terminal rounds never enter paired behavioural denominators; their counts and reasons are reported separately"
     },
-    "statistics_policy": "no p-values or claims of statistical significance in V1; report counts, rates, paired descriptive differences, and uncertainty limitations"
+    "statistics_policy": "no p-values or claims of statistical significance in V1; report counts, rates, paired descriptive differences, and uncertainty limitations",
+    "feature_reference_frequency": "descriptive: whether the thesis explicitly names a supplied feature (RSI, SMA, ATR, volume ratio, VWAP); mentioning a feature is never inferred to prove causation"
   },
   "halt_policy": {
-    "normal_no_halt": ["semantic validation failure", "pair abort", "temporary transport failure", "one missing decision boundary", "temporary Kraken unavailability that recovers before replay integrity is lost"],
+    "normal_no_halt": [
+      "semantic validation failure",
+      "pair abort",
+      "temporary transport failure",
+      "one missing decision boundary",
+      "temporary Kraken unavailability that recovers before replay integrity is lost"
+    ],
     "integrity_halts": {
       "A_hash_mismatch": "code/config/prompt/schema hash mismatch => entire experiment halts PERMANENTLY; no same-run repair or resumption",
       "B_state_corruption": "state corruption or non-atomic persistence failure => entire experiment halts PERMANENTLY",
@@ -165,7 +250,14 @@
   },
   "dashboard": {
     "visibility": "public from the first committed boundary",
-    "required_elements": ["clear V1 experiment label", "frozen experiment question", "code/config/prompt hashes", "scheduler and data health", "committed/aborted/skipped/terminal statuses", "clearly labeled link to the archived pilot page"],
+    "required_elements": [
+      "clear V1 experiment label",
+      "frozen experiment question",
+      "code/config/prompt hashes",
+      "scheduler and data health",
+      "committed/aborted/skipped/terminal statuses",
+      "clearly labeled link to the archived pilot page"
+    ],
     "pilot_label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"
   },
   "round_contract": {
@@ -189,12 +281,120 @@
     "recorded_code_hash": "the approved launch commit, not the runtime-data commit"
   },
   "outcome_hierarchy": {
-    "primary_behavioural": ["direction disagreement rate", "abs target-size difference in equity multiples", "turnover difference", "stop/target usage difference", "invalidation-response difference"],
-    "secondary_descriptive": ["paired equity/return/drawdown/fee differences", "liquidations"],
+    "primary_behavioural": [
+      "direction disagreement rate",
+      "abs target-size difference in equity multiples",
+      "turnover difference",
+      "stop/target usage difference",
+      "invalidation-response difference"
+    ],
+    "secondary_descriptive": [
+      "paired equity/return/drawdown/fee differences",
+      "liquidations"
+    ],
     "explicit_non_claim": "V1 does not prove indicators improve profitability; performance results are descriptive"
   },
   "token_measurement": "PENDING — count_tokens per model on 4 representative prompts (first-round raw/ta, mature raw/ta) during preflight; cost projection provisional until measured",
   "data_namespace": "data-v1/",
   "prompt_archive": "data-v1/prompts/{round_id}/{account_id}.txt",
-  "round_id_format": "v1-{COIN}-{ISO8601_BOUNDARY}"
+  "round_id_format": "v1-{COIN}-{ISO8601_BOUNDARY}",
+  "arm_naming": "scientific/public name for the treatment arm: 'Feature arm'; internal account-ID suffix remains _ta (legacy, permitted) to avoid migration churn",
+  "feature_pack": {
+    "principle": "the Feature arm may receive precomputed mathematical summaries, but never semantic judgments, trading guidance, recommended thresholds, or suggested actions",
+    "outputs": {
+      "RSI14_H": {
+        "calc": "Wilder RSI(14): seed avg gain/loss = mean of first 14 close diffs of the visible 72-hour window, then avg=(avg*13+cur)/14",
+        "inputs": "72 visible hourly closes only",
+        "rounding": "1 decimal",
+        "insufficient": "n/a"
+      },
+      "SMA20_H": {
+        "calc": "arithmetic mean of latest 20 completed hourly closes",
+        "inputs": "visible hourly closes only",
+        "rounding": "coin price_decimals"
+      },
+      "SMA50_H": {
+        "calc": "arithmetic mean of latest 50 completed hourly closes",
+        "inputs": "visible hourly closes only",
+        "rounding": "coin price_decimals"
+      },
+      "ATR14_H": {
+        "calc": "TR=max(h-l, abs(h-prev_c), abs(l-prev_c)); seed=mean of first 14 TRs; Wilder smoothing",
+        "inputs": "visible hourly OHLC only",
+        "rounding": "coin price_decimals"
+      },
+      "CURRENT_VOLUME_H": {
+        "calc": "base-asset volume of the most recently completed Kraken hourly candle",
+        "rounding": "volume_decimals"
+      },
+      "MEAN_VOLUME_PREV24_H": {
+        "calc": "mean volume of the 24 completed hourly candles immediately preceding the latest candle (latest excluded)",
+        "inputs": "visible OHLCV rows only",
+        "rounding": "volume_decimals"
+      },
+      "VOLUME_RATIO_24": {
+        "calc": "latest completed hourly volume / mean of previous 24 completed hourly volumes",
+        "rounding": "2 decimals",
+        "zero_baseline": "n/a",
+        "no_interpretation_suffix": true
+      },
+      "VWAP24_H": {
+        "calc": "typical=(high+low+close)/3; VWAP=sum(typical*volume)/sum(volume) over latest 24 completed hourly candles INCLUDING the latest",
+        "rounding": "coin price_decimals",
+        "zero_volume": "n/a"
+      },
+      "PRICE_MINUS_VWAP_PCT": {
+        "calc": "(P_T - VWAP24)/VWAP24*100",
+        "rounding": "2 decimals, explicit sign",
+        "zero_volume": "n/a"
+      }
+    },
+    "prohibited_language": [
+      "bullish",
+      "bearish",
+      "strong",
+      "weak",
+      "normal",
+      "abnormal",
+      "high participation",
+      "low participation",
+      "overbought",
+      "oversold",
+      "confirmation",
+      "divergence",
+      "breakout signal",
+      "buy",
+      "sell",
+      "favorable",
+      "unfavorable",
+      "stretched",
+      "extended",
+      "arrows",
+      "traffic-light colors",
+      "scores",
+      "rankings",
+      "labels",
+      "signal classifications",
+      "threshold meanings"
+    ],
+    "removed_from_v1": [
+      "MACD",
+      "Bollinger Bands",
+      "MFI",
+      "Daily SMA",
+      "Daily RSI",
+      "Fear & Greed",
+      "sentiment",
+      "any signal classification",
+      "any feature not explicitly listed"
+    ],
+    "parameter_disclosure": "RSI 14, SMA 20, SMA 50, ATR 14, and 24-hour volume/VWAP windows are predeclared design choices; they are not claimed to be universally optimal; no parameter will be changed during V1; V1 tests this exact fixed feature pack, not 'technical indicators in general'",
+    "scientific_limitation": "V1 measures the effect of this specific predeclared numerical feature pack. It does not establish that these parameters are optimal or that technical indicators generally improve trading."
+  },
+  "prompt_templates": {
+    "raw": "prompts/v1/user_raw.txt",
+    "feature": "prompts/v1/user_feature.txt",
+    "note": "user_ta.txt removed in v1.3"
+  },
+  "decision_schema_note": "schemas/v1/decision.schema.json contains NO intended_horizon field; actual holding duration is measured from lifecycle open to close"
 }

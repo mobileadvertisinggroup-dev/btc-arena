@@ -11,6 +11,8 @@ Hourly candles, last 72, oldest first (UTC-time open high low close volume-in-{C
 Daily closes, last 40, oldest first:
 {DAILY_CLOSES}
 
+Volume is base-asset trading volume reported by the Kraken spot market for each candle. It is not global crypto-market volume or perpetual-futures volume.
+
 === YOUR ACCOUNT ===
 Equity: ${EQUITY}
 Position: {POSITION_BLOCK}
