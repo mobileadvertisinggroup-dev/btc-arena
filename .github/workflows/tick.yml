@@ -1,0 +1,36 @@
+name: arena-tick
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: arena
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run arena tick
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BTC_ARENA_PREFER: kraken
+        run: python3 arena.py tick
+      - name: Publish dashboard and commit state
+        run: |
+          mkdir -p docs
+          cp dashboard.html docs/index.html
+          git config user.name "arena-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A data docs dashboard.html
+          if ! git diff --cached --quiet; then
+            git commit -m "tick $(date -u +%FT%TZ)"
+            git pull --rebase origin main
+            git push
+          fi
