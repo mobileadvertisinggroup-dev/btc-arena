@@ -1,7 +1,7 @@
 Name                    Stmts   Miss Branch BrPart  Cover   Missing
 -------------------------------------------------------------------
 engine/__init__.py          0      0      0      0   100%
-engine/config.py           61      2     12      2    95%   26, 108
+engine/config.py           73      2     14      2    95%   26, 139
 engine/dashboard.py        18      1      4      1    91%   11
 engine/decisions.py        80      0     46      0   100%
 engine/execution.py        95      0     26      1    99%   119->124
@@ -9,11 +9,13 @@ engine/features.py         64      3     22      3    93%   37, 51, 64
 engine/lifecycle.py        23      0     10      0   100%
 engine/marketdata.py       57      5     26      5    88%   30, 44, 46, 52, 54
 engine/metrics.py          85      0     32      0   100%
-engine/persistence.py     223     16     82     12    91%   55->54, 88-89, 98-99, 101, 103, 106, 109, 111, 113, 141-142, 193, 209->208, 220, 271, 275
+engine/persistence.py     228     17     86     13    90%   55->54, 88-89, 91, 101-102, 104, 106, 109, 112, 114, 116, 147-148, 199, 215->214, 226, 277, 281
+engine/pilot.py            62      4     18      5    89%   37->39, 39->44, 66, 72->75, 97, 103-104
 engine/prompts.py          74      0     22      0   100%
+engine/publisher.py       102      6     12      2    93%   82-83, 114, 138-139, 160
 engine/recovery.py        226      5     86      8    96%   95->97, 151, 200->206, 248, 276, 311, 317, 343->346
 engine/replay.py           73      0     46      3    97%   91->32, 101->103, 109->96
 engine/rounds.py           87      5     28      5    91%   109, 128, 130, 132, 136
 engine/state.py            48      0     14      0   100%
 -------------------------------------------------------------------
-TOTAL                    1214     37    456     40    95%
+TOTAL                    1395     48    492     48    95%

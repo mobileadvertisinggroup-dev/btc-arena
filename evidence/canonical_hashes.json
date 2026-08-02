@@ -2,7 +2,7 @@
  "files": {
   "config/v1/experiment.json": "f7da51051a7031c26e5b5905979eeb33a4473739c901f766f25638472f39ef70",
   "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032",
-  "engine/config.py": "77d6646d157a4eed259438c5708d3383390a51cb06660142aa9ac3f52d390d30",
+  "engine/config.py": "347087098d812f27102863e8ce6a3ca3015be412ffb889f87c4aa2c911670026",
   "engine/dashboard.py": "7ac152fc0ece6f8619c0940a0be4b72220974441195c61da5a9f5de5314029c8",
   "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5",
   "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc",
@@ -10,8 +10,10 @@
   "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872",
   "engine/marketdata.py": "0b035211e44d0b3978dfbd56230c342dfb2bf77a9f3b310211748b8dede19a28",
   "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9",
-  "engine/persistence.py": "7a10208c32d459c0537b630f9b7feb3e841e898f7f6f8b70428d92dc917ed65d",
+  "engine/persistence.py": "0ea8013e46d855fdfca1446b27d44eebec94b0741fb606a3500840c7a9740005",
+  "engine/pilot.py": "0c51369fa4a393d9fb8d46649cc9fc429f50f89efc6a775e31c344385e991db7",
   "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22",
+  "engine/publisher.py": "666395ad438194b546076c961ec043dbbffce3baa2eaf867090e35329c168043",
   "engine/recovery.py": "35712dd8fb0a9bde84627e2f7a75ad94f83395c6605e214a79e1b2ebe6e72600",
   "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42",
   "engine/rounds.py": "e80db03a868260e9d1ee8361553452e0c5e8d434cbea0f27381338be2126e036",
@@ -23,11 +25,11 @@
   "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63",
   "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64",
   "schemas/v1/records.schema.json": "eaf34924cbbc1f9606f9e272c6df6acf337b5e39f0a467bea2751694c9c347e2",
-  "scripts/archive_pilot_reset.py": "6b55a3dcd1e32fd36677c855fe77e207687dd6add7554a8eb650a652f8cb6459",
+  "scripts/archive_pilot_reset.py": "b54687dd4a00dc0440a489997dcd141c332e06b36df92cf7ab0484b386379325",
   "scripts/gen_demo_dashboard.py": "99606d3fb2198cb4a89e32dc0ac37b366d6bd644028aadd8cc5da81d117282e1",
   "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02",
   "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752",
-  "scripts/run_pilot_12h.py": "a98403ddc16ba56fdd083a6597145bc95e3152f5d20443b904550e5bd6f80278"
+  "scripts/run_pilot_12h.py": "0d6b547de2039e52a0c101626fbc8febdfae6c3477b8791699e5099bea14964b"
  },
- "combined": "095da125b560d2efdb9f6f9be8993956550e00205a2a95bb2cfc02bafc0d0b6b"
+ "combined": "6f4fb6b17f3b20ee825157fe0800660e715ac5ea82e4e05156461845ebf7592e"
 }
