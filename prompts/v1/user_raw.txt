@@ -4,7 +4,6 @@ Instrument: synthetic {COIN}/USD perpetual paper contract, marked to Kraken {COI
 
 === MARKET DATA (Kraken {COIN}/USD spot) ===
 Execution price for this round (close of the last completed 1-minute candle): {PRICE}
-24h change: {CHG_24H}%
 
 Hourly candles, last 72, oldest first (UTC-time open high low close volume-in-{COIN}):
 {HOURLY_ROWS}

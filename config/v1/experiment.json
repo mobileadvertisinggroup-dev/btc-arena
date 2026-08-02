@@ -1,7 +1,7 @@
 {
-  "experiment": "v1.1",
+  "experiment": "v1.2",
   "question": "Does giving an AI trader a fixed technical-indicator summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?",
-  "classification": "DESIGN PROPOSAL — NOT APPROVED FOR IMPLEMENTATION OR LAUNCH",
+  "classification": "DESIGN PROPOSAL — trading engine implementation NOT yet authorized",
   "instrument_wording": "Synthetic USD-settled perpetual paper contract, marked and executed using Kraken {COIN}/USD spot-market OHLC data",
   "coins": {
     "BTC": {"kraken_pair": "XBTUSD", "price_decimals": 2, "qty_decimals": 6},
@@ -10,16 +10,15 @@
   },
   "market_data": {
     "canonical_source": "kraken_spot_ohlc",
-    "fallback_for_committed_data": "NONE — Kraken unavailable/incomplete/stale => PAIR_ABORTED with DATA_UNAVAILABLE",
-    "coinbase_role": "health comparison, alerting reference, and test fixtures only; never supplies committed decisions, fills, exits, invalidation evaluation, or equity",
+    "coinbase_role": "monitoring, alerting reference, and offline test fixtures ONLY — never a source for committed decisions, fills, exits, invalidation evaluation, or equity",
     "hourly_candles_supplied": 72,
     "daily_closes_supplied": 40,
-    "completeness": "exactly 72 contiguous closed hourly candles and 40 contiguous daily observations required; no silent omission",
-    "empty_interval_rule": "OPTION B (pending mentor approval): a Kraken-omitted interval (no trades) is filled with a deterministic synthetic candle o=h=l=c=previous close, volume=0; synthetic count recorded in snapshot metadata and prompt-invisible; identical rule for all coins; gaps at the series end are staleness, not gaps => DATA_UNAVAILABLE",
+    "completeness_policy": "exactly 72 real, contiguous, fully closed Kraken hourly candles; exactly 40 real, contiguous, fully closed Kraken daily observations; complete real Kraken 1-minute coverage for every replay interval",
+    "missing_interval_policy": "any missing interval invalidates the affected snapshot or replay: affected pairs record PAIR_ABORTED with DATA_UNAVAILABLE, no new decisions execute, and resting stop/target/liquidation/invalidation rules remain active only where complete 1-minute replay data exists; no interpolation, forward-fill, fabrication, or venue substitution of candles",
     "final_candle_must_be_closed": true,
     "execution_price": "close of last completed 1m candle at boundary T (P_T)",
     "max_auto_catchup_hours": 10,
-    "beyond_catchup": "halt new decisions for the coin, preserve state, set NEEDS_REVIEW"
+    "beyond_catchup": "INTEGRITY HALT C: that coin's V1 arena is terminated for the remainder of the run; last trustworthy state preserved; other coin arenas continue normally"
   },
   "models": {
     "haiku":  {"model": "claude-haiku-4-5-20251001", "pinning": "dated fixed snapshot"},
@@ -34,28 +33,59 @@
       "max_tokens": 1500,
       "tools": ["schemas/v1/decision.schema.json (strict: true)"],
       "tool_choice": {"type": "tool", "name": "submit_decision", "disable_parallel_tool_use": true},
-      "sampling_parameters": "temperature/top_p/top_k NOT SENT (rejected by sonnet-5 and opus-4-8; omitted for haiku for parity)",
+      "sampling_parameters": "temperature/top_p/top_k NOT SENT",
       "timeout_seconds": 120,
       "transport_retries": 3,
       "validation_retries": 1,
-      "messages": "single user message (round prompt); retry appends assistant tool_use + tool_result acknowledgment + fixed rejection message"
+      "messages": "single user message (round prompt); validation retry appends assistant tool_use + tool_result acknowledgment + fixed rejection message"
     },
     "per_model": {
-      "claude-haiku-4-5-20251001": {"thinking": "parameter omitted (model runs without extended thinking; explicit disable not applicable pre-4.6)"},
+      "claude-haiku-4-5-20251001": {"thinking": "parameter omitted (model runs without extended thinking)"},
       "claude-sonnet-5":           {"thinking": {"type": "disabled"}},
       "claude-opus-4-8":           {"thinking": {"type": "disabled"}}
     },
     "twin_parity": "Raw and TA requests for the same model are byte-identical except the user prompt text"
   },
+  "collection": {
+    "procedure": [
+      "freeze all three market snapshots",
+      "freeze all 18 account snapshots",
+      "generate and archive all 18 first-attempt prompts before sending any model request",
+      "submit calls with bounded concurrency",
+      "identical frozen prompts, state, and P_T regardless of response order",
+      "resolve commit/abort independently per matched pair",
+      "apply committed decisions logically at boundary T only after collection closes",
+      "one common post-T candle replay per coin"
+    ],
+    "concurrency_max_simultaneous_requests": 6,
+    "global_collection_deadline": "T+12 minutes, hard; transport retries must complete inside it",
+    "concurrency_lock": "preflight verifies 6-way concurrency against rate limits; the final value is locked before launch and cannot change during V1"
+  },
   "arms": ["raw", "ta"],
   "atomic_unit": "matched Raw/TA pair (same model, same coin); 9 independent pairs",
-  "pair_records": ["PAIR_COMMITTED", "PAIR_ABORTED"],
+  "pair_records": ["PAIR_COMMITTED", "PAIR_ABORTED", "PAIR_TERMINAL_SPLIT"],
+  "pair_abort_semantics": {
+    "meaning": "zero DECISION-GENERATED state change at T for both twins",
+    "no_new_discretionary_execution": true,
+    "thesis_memory_not_updated_from_aborted_attempt": true,
+    "existing_stop_target_position_lifecycle_invalidation_unchanged": true,
+    "all_attempts_and_rejection_reasons_still_archived": true,
+    "post_T_replay_continues_for_both_accounts": true,
+    "market_driven_exits_never_suspended": "stops, targets, liquidation, and invalidation monitoring never pause because a discretionary round aborted or was skipped"
+  },
+  "terminal_account_policy": {
+    "trigger": "post-fee equity reaches exactly 0 (permanent closure)",
+    "terminal_account": "receives no further model calls",
+    "surviving_twin": "continues receiving decisions and trading normally; never force-closed or frozen",
+    "pair_status": "PAIR_TERMINAL_SPLIT from the terminal event onward (missing side is an experimental outcome, not an infrastructure failure)",
+    "metrics": "post-terminal rounds excluded from paired behavioural metrics; both accounts' complete outcomes included in performance reporting; terminal timestamp and cause reported prominently"
+  },
   "accounts": {
     "total": 18,
     "id_format": "{coin_lower}_{model}_{arm}",
     "start_cash_usd": "10000.00",
     "max_leverage": "5.0 (validation limit — decisions above it are rejected, never clamped)",
-    "fee_rate": "0.0005 on every execution including stop/take-profit/liquidation fills",
+    "fee_rate": "0.0005 on every execution including stop/take-profit/liquidation fills and both reversal legs",
     "maintenance_margin": "0.02",
     "min_executable_change_usd": "10.00 (below => NO_EXECUTION_BELOW_MINIMUM, logged)"
   },
@@ -64,19 +94,86 @@
     "quantity_rounding": "round DOWN to per-coin qty_decimals at execution",
     "display_rounding": "presentation only; never feeds back into engine values"
   },
+  "liquidation_contract": {
+    "balance_variable": "E = realized cash equity (Decimal): starting cash + all realized P&L - all fees to date; excludes unrealized P&L",
+    "unrealized": "u(p) = q * (p - entry), with q the signed executed quantity (already rounded down to qty_decimals) and entry the Decimal average entry price",
+    "equity_at_price": "Equity(p) = E + u(p)",
+    "maintenance_requirement": "m(p) = Decimal('0.02') * abs(q) * p",
+    "liquidation_condition": "Equity(p) <= m(p)",
+    "long_threshold":  "L = (q*entry - E) / ((1 - Decimal('0.02')) * q)   [q > 0; liquidate when p <= L]",
+    "short_threshold": "L = (q*entry - E) / ((1 + Decimal('0.02')) * q)   [q < 0; liquidate when p >= L]",
+    "quantity_precision_note": "thresholds are computed with the executed rounded-down q, so precision affects L exactly as it affects the position",
+    "gap_fill": "if the 1m candle OPEN already satisfies the liquidation condition, fill at the open (worse price); otherwise fill at the threshold L",
+    "fee": "Decimal('0.0005') * abs(q) * fill_price, charged on the liquidation execution",
+    "post_fill_equity": "E' = E + q*(fill - entry) - fee",
+    "residual_equity": "a liquidation MAY leave positive residual equity: the position is closed but the account continues trading",
+    "terminal_rule": "permanent account closure ONLY when post-fee equity E' <= 0, floored to exactly 0"
+  },
+  "event_ordering": {
+    "scope": "every replayed 1-minute candle, evaluated in candle order",
+    "A_opening_gap": [
+      "1. if the account is already at or below maintenance margin at the candle open: liquidation at the open",
+      "2. else if the open has crossed the stop-loss: stop fill at the open",
+      "3. else if the open has crossed the take-profit: take-profit fill at the open"
+    ],
+    "B_intracandle": {
+      "long": "downside protective exit = the HIGHER valid level of {stop_loss, liquidation threshold}, evaluated against the candle low; upside take-profit evaluated against the candle high",
+      "short": "upside protective exit = the LOWER valid level of {stop_loss, liquidation threshold}, evaluated against the candle high; downside take-profit evaluated against the candle low",
+      "ambiguity": "if both a protective exit and a take-profit are reachable inside the same candle and order is unknowable: the protective exit wins; record AMBIGUOUS_CANDLE_PROTECTIVE_FIRST"
+    },
+    "C_invalidation_observation": {
+      "1m_intrabar": "latch if the condition is satisfied anywhere in a candle in which the lifecycle existed at candle open; if the position also exits in that candle, record SAME_CANDLE_INVALIDATION_AND_EXIT; such an exit counts as no-longer-exposed for the discipline metric",
+      "1h_close": "evaluate only at the completed hourly close; never trigger if the lifecycle ended before that close"
+    },
+    "D_lifecycle_end": "after stop, target, liquidation, decision close, or reversal ends a lifecycle, later candles cannot trigger that lifecycle's invalidation"
+  },
   "invalidation": {
     "operators": ["price_at_or_below", "price_at_or_above"],
     "timeframes": ["1h_close", "1m_intrabar"],
-    "lifecycle": "set once at open-from-flat or reversal; immutable while lifecycle open (hold/increase/reduce/partial exits); close or reversal ends it; no pre-trigger versioning",
-    "trigger": "inclusive comparison; first trigger latched permanently with timestamp+price+candle ref",
-    "post_trigger": "no forced exit; next-round prompt shows TRIGGERED block; behaviour recorded",
-    "primary_discipline_metric": "no longer exposed in the invalidated direction by the end of the account's next committed pair-round (stop, liquidation, reversal, or full close before that boundary qualifies); partial reductions reported descriptively, never as compliance"
+    "lifecycle": "set once at open-from-flat or reversal; immutable while the lifecycle is open (hold/increase/reduce/partial exits); close or reversal ends it",
+    "trigger": "inclusive comparison; first trigger latched permanently with timestamp, price, and candle reference",
+    "post_trigger": "no forced exit; next-round prompt shows the TRIGGERED block; behaviour recorded",
+    "primary_discipline_metric": "no longer exposed in the invalidated direction by the end of the account's next committed pair-round; stop, liquidation, reversal, or full close before that boundary qualifies; partial reductions reported descriptively, never as compliance"
+  },
+  "attempt_archive": {
+    "path": "data-v1/attempts/{round_id}/{account_id}_attempt{n}.json",
+    "every_attempt_recorded": true,
+    "fields": ["account_id", "pair_id", "round_id", "attempt_number", "generated_prompt_hash", "request_hash", "requested_model", "returned_model", "raw_response", "parsed_tool_input", "schema_result", "semantic_validation_result", "fixed_rejection_reasons", "transport_error_category", "latency_ms", "token_usage", "became_executed_decision"]
+  },
+  "metrics": {
+    "reliability_behavioural_outcome": ["first-attempt validity rate", "validation-retry rate", "successful-correction rate", "transport-retry rate", "pair-abort rate", "which arm caused each pair abort"],
+    "operative_decision": "the executed corrected decision is the operative decision for behavioural analysis; formatting/semantic reliability reported separately, never hidden",
+    "denominators": {
+      "direction_disagreement": "pair-committed rounds where both twins were active and produced executable target positions",
+      "target_size_difference": "compare target notional / twin's own pre-decision equity; report absolute difference in equity multiples",
+      "stop_target_usage": "pair-committed rounds leaving the relevant account positioned",
+      "invalidation_response_rate": "lifecycle invalidations that triggered early enough for at least one later committed decision opportunity before the experiment ended",
+      "turnover": "cumulative executed notional / time-weighted average equity",
+      "exclusions": "aborted, skipped, pre-launch, and post-terminal rounds never enter paired behavioural denominators; their counts and reasons are reported separately"
+    },
+    "statistics_policy": "no p-values or claims of statistical significance in V1; report counts, rates, paired descriptive differences, and uncertainty limitations"
+  },
+  "halt_policy": {
+    "normal_no_halt": ["semantic validation failure", "pair abort", "temporary transport failure", "one missing decision boundary", "temporary Kraken unavailability that recovers before replay integrity is lost"],
+    "integrity_halts": {
+      "A_hash_mismatch": "code/config/prompt/schema hash mismatch => entire experiment halts PERMANENTLY; no same-run repair or resumption",
+      "B_state_corruption": "state corruption or non-atomic persistence failure => entire experiment halts PERMANENTLY",
+      "C_replay_gap": ">10 hours unrecoverable 1-minute history for one coin => that coin's arena terminated for the remainder of the run; last trustworthy state preserved; other arenas continue",
+      "D_terminal_account": "account reaches terminal zero => PAIR_TERMINAL_SPLIT (terminal_account_policy); experiment does NOT halt"
+    },
+    "no_discretionary_clearing": "there is no mid-run human clearing of halts; any integrity termination is final for V1 and is reported"
+  },
+  "dashboard": {
+    "visibility": "public from the first committed boundary",
+    "required_elements": ["clear V1 experiment label", "frozen experiment question", "code/config/prompt hashes", "scheduler and data health", "committed/aborted/skipped/terminal statuses", "clearly labeled link to the archived pilot page"],
+    "pilot_label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"
   },
   "round_contract": {
     "cadence": "hourly boundaries at :00 UTC",
-    "duration": "exactly 14 days = 336 scheduled boundaries from the predeclared start boundary",
-    "no_mid_run_changes": "no extension, shortening, coin/indicator/prompt/rule changes based on observed results; operational failures reported, not backfilled",
-    "virtual_event_time": "replay 1m to T -> freeze accounts at T -> freeze snapshot & P_T -> generate all 6 prompts -> collect/validate pair decisions -> apply committed pairs at P_T -> immediately replay 1m candles after T through latest completed candle -> apply stops/targets/liquidation/invalidation -> publish; wall-clock model latency is excluded from simulated market time"
+    "duration": "exactly 14 complete days = exactly 336 scheduled boundaries",
+    "no_mid_run_changes": "no extension, shortening, coin replacement, indicator/prompt/rule change based on observed results; missed rounds are never replaced",
+    "T0_selection": "first suitable :00 UTC boundary at least 24 hours after final mentor launch approval, which itself requires: all offline tests pass, 24-hour mock soak passes, production-payload preflight passes",
+    "virtual_event_time": "replay 1m to T -> freeze accounts at T -> freeze snapshots & P_T -> generate all 18 prompts -> collect/validate with bounded concurrency -> apply committed pairs at P_T -> one common post-T 1m replay per coin -> publish; wall-clock model latency is excluded from simulated market time"
   },
   "scheduler": {
     "heartbeat_cron": "2-57/5 * * * *",
@@ -87,16 +184,16 @@
   },
   "persistence": {
     "code_branch": "main pinned at approved launch tag; runtime never commits to it",
-    "runtime_branch": "v1-runtime (state, prompts archive, logs, dashboard docs/)",
-    "integrity": "every run verifies SHA-256 of code+prompts+schema+config against the launch manifest; mismatch => immediate halt",
+    "runtime_branch": "v1-runtime (state, prompt archive, attempt archive, logs, dashboard docs/)",
+    "integrity": "every run verifies SHA-256 of code+prompts+schema+config against the launch manifest; mismatch => integrity halt A",
     "recorded_code_hash": "the approved launch commit, not the runtime-data commit"
   },
   "outcome_hierarchy": {
-    "primary_behavioural": ["direction disagreement rate", "abs target-size difference as % of equity", "turnover difference", "stop/target usage difference", "invalidation-response difference"],
+    "primary_behavioural": ["direction disagreement rate", "abs target-size difference in equity multiples", "turnover difference", "stop/target usage difference", "invalidation-response difference"],
     "secondary_descriptive": ["paired equity/return/drawdown/fee differences", "liquidations"],
-    "explicit_non_claim": "V1 does not prove indicators improve profitability; performance results are descriptive (one instance per model-coin-arm; shared market regimes)"
+    "explicit_non_claim": "V1 does not prove indicators improve profitability; performance results are descriptive"
   },
-  "token_measurement": "PENDING — count_tokens per model on 4 representative prompts (first-round raw/ta, mature raw/ta) during preflight; cost projection is provisional until then",
+  "token_measurement": "PENDING — count_tokens per model on 4 representative prompts (first-round raw/ta, mature raw/ta) during preflight; cost projection provisional until measured",
   "data_namespace": "data-v1/",
   "prompt_archive": "data-v1/prompts/{round_id}/{account_id}.txt",
   "round_id_format": "v1-{COIN}-{ISO8601_BOUNDARY}"
