@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BTC ARENA — RAW vs FEATURE</title>
+<title>AKRA ARENA — RAW vs FEATURE</title>
 <style>
 :root{
-  --paper:#f6f1e6; --panel:#fbf8f0; --ink:#141310; --mut:#6b665c;
-  --rule:#141310; --hair:#d8d2c2;
+  --paper:#f1f1ef; --panel:#fbfbfa; --ink:#121212; --mut:#63635f;
+  --rule:#121212; --hair:#dadad6;
   --haiku:#2a78d6; --sonnet:#158f63; --opus:#c47600;
   --up:#0a6b0a; --down:#b3261e; --demo:#b3261e;
 }
@@ -42,11 +42,13 @@ nav .soon::after{content:" ·SOON";font-size:9px}
 body.demo .demoflag{display:block}
 /* market strip */
 .strip{display:grid;grid-template-columns:repeat(7,1fr);border:2px solid var(--rule);
-  border-top:none;background:var(--panel)}
-.cell{padding:8px 12px;border-right:1.5px solid var(--hair)}
+  border-top:none;background:var(--ink);color:var(--paper)}
+.cell{padding:10px 14px;border-right:1px solid #3a3a38}
 .cell:last-child{border-right:none}
-.cell .l{font-size:10px;letter-spacing:1.5px;color:var(--mut);text-transform:uppercase}
-.cell .v{font-weight:700;font-size:13px}
+.cell .l{font-size:9.5px;letter-spacing:2px;color:#9a9a94;text-transform:uppercase}
+.cell .v{font-weight:800;font-size:15px;letter-spacing:.5px}
+.cell.mkt .v{font-size:17px}
+.cell.mkt .l::before{content:"● ";color:#5a8f5a}
 /* layout */
 .main{display:grid;grid-template-columns:1fr 330px;gap:18px;margin:18px 0}
 /* tabs */
@@ -56,8 +58,12 @@ body.demo .demoflag{display:block}
   text-transform:uppercase}
 .tab.active{background:var(--ink);color:var(--paper)}
 /* chart */
-.chartbox{border:2px solid var(--rule);border-top:none;background:var(--panel);
-  padding:12px}
+.chartbox{border:2px solid var(--rule);border-top:none;background:var(--panel)}
+.stagebar{background:var(--ink);color:var(--paper);display:flex;
+  justify-content:space-between;align-items:center;padding:7px 12px;
+  flex-wrap:wrap;gap:6px}
+.stagebar .chart-title{color:var(--paper)}
+.chart-inner{padding:12px}
 .chart-head{display:flex;justify-content:space-between;align-items:center;
   flex-wrap:wrap;gap:8px;margin-bottom:6px}
 .chart-title{font-weight:800;letter-spacing:1px;font-size:13px;text-transform:uppercase}
@@ -128,6 +134,12 @@ tr:last-child td{border-bottom:none}
 .fcard .fh{display:flex;justify-content:space-between;font-weight:700;
   font-size:11.5px;letter-spacing:.5px}
 .fcard .meta{color:var(--mut);font-size:10.5px;margin:2px 0}
+.st{font-size:9.5px;font-weight:800;letter-spacing:1.5px;padding:2px 7px;
+  border:1.5px solid var(--rule)}
+.st.waiting{color:var(--mut);border-color:var(--mut)}
+.st.thinking{color:#8a5a00;border-color:#8a5a00;animation:pulse 1.2s infinite}
+.st.decision{color:var(--up);border-color:var(--up)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
   gap:0;border:2px solid var(--rule);background:var(--panel)}
 .stat{padding:9px 12px;border-right:1.5px solid var(--hair);
@@ -151,8 +163,8 @@ footer{border-top:3px solid var(--rule);margin-top:26px;padding:14px 0 30px;
 <div class="prep">NEW BTC ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED</div>
 <div class="notice">No model has been called. No paper-trading pilot or official experiment has started.</div>
 <div class="top"><div class="wrap mast">
-  <div class="brand"><div class="t1">BTC ARENA</div>
-    <div class="t2">RAW <b>vs</b> FEATURE &nbsp;·&nbsp; 3 MODELS · 3 COINS · 18 PAPER ACCOUNTS</div></div>
+  <div class="brand"><div class="t1">AKRA ARENA</div>
+    <div class="t2">RAW <b>vs</b> FEATURE &nbsp;·&nbsp; 3 MODELS · 3 COINS · 18 ACCOUNTS</div></div>
   <nav>
     <a href="#live">LIVE</a>
     <a href="#leaderboard">LEADERBOARD</a>
@@ -172,18 +184,20 @@ footer{border-top:3px solid var(--rule);margin-top:26px;padding:14px 0 30px;
   <div id="live"></div>
   <div class="tabs" id="tabs"></div>
   <div class="chartbox">
-    <div class="chart-head">
+    <div class="stagebar">
       <span class="chart-title" id="charttitle">Equity — all accounts</span>
       <span style="display:flex;gap:6px;flex-wrap:wrap">
         <span class="metrics" id="metricbtns"></span>
         <button class="demo-btn" id="demobtn" onclick="toggleDemo()">View demo scenario</button>
       </span>
     </div>
-    <div id="chartwrap">
-      <svg id="chart" width="100%" height="330"></svg>
-      <div id="chartmsg"></div>
+    <div class="chart-inner">
+      <div id="chartwrap">
+        <svg id="chart" width="100%" height="360"></svg>
+        <div id="chartmsg"></div>
+      </div>
+      <div class="legend" id="legend"></div>
     </div>
-    <div class="legend" id="legend"></div>
   </div>
   <div id="tabbody"></div>
 </div>
@@ -248,7 +262,7 @@ function seriesMetric(a){
 
 function chart(){
   const svg = $('chart');
-  const W = 1000, H = 330, ML = 92, MR = 120, MT = 14, MB = 24;
+  const W = 1000, H = 360, ML = 92, MR = 120, MT = 14, MB = 24;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   let series = [];
   if (activeTab === 'Aggregate' || activeTab === 'Pair comparison' || activeTab === 'System status'){
@@ -386,7 +400,7 @@ function feed(){
   if (!demo){
     cards = Object.keys(MODEL).filter(m => !fm || m === fm).map(m =>
       `<div class="fcard" style="border-left-color:${MODEL[m].c}">
-        <div class="fh"><span>${MODEL[m].name}</span><span>WAITING</span></div>
+        <div class="fh"><span>${MODEL[m].name}</span><span class="st waiting">WAITING</span></div>
         <div class="meta">No decisions yet — pilot not started</div></div>`);
   } else {
     cards = allAccounts()
@@ -394,6 +408,8 @@ function feed(){
                 && (!fa || a.arm === fa) && (!fp || a.side === fp) && a.thesis)
       .map(a => `<div class="fcard" style="border-left-color:${MODEL[a.model].c}">
         <div class="fh"><span>${MODEL[a.model].name} · ${a.coin} · ${a.arm === 'raw' ? 'RAW' : 'FEATURE'}</span>
+          <span class="st ${a.feed_state === 'thinking' ? 'thinking' : 'decision'}">${a.feed_state === 'thinking' ? 'THINKING…' : 'DECISION'}</span></div>
+        <div class="fh" style="font-weight:800"><span></span>
           <span class="${a.side === 'long' ? 'up' : a.side === 'short' ? 'down' : ''}">${a.side.toUpperCase()}</span></div>
         <div class="meta">size ${a.side === 'flat' ? '$0' : money(a.notional)} · stop ${px(a.stop)} · target ${px(a.tp)} · t=demo</div>
         <div>“${a.thesis.replace(/</g,'&lt;')}”</div>
@@ -405,14 +421,14 @@ function feed(){
 
 function strip(){
   const cells = [
-    ...COINS.map(c => [c + '/USD', demo ? 'demo data' : 'Waiting for pilot']),
+    ...COINS.map(c => [c + '/USD', demo ? 'demo value' : 'Waiting for pilot', 'mkt']),
     ['Mode', 'Preparation'],
     ['Pilot progress', `${(D.pilot_progress || {done: 0}).done} / 24`],
     ['System health', demo ? 'demo' : 'standing by'],
     ['Last update', demo ? 'demo scenario' : 'pre-start'],
   ];
-  $('strip').innerHTML = cells.map(([l, v]) =>
-    `<div class="cell"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
+  $('strip').innerHTML = cells.map(([l, v, k]) =>
+    `<div class="cell ${k || ''}"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
 }
 
 function boot(){
