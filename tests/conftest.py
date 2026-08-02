@@ -17,6 +17,32 @@ def load_fix(coin, tf):
         return json.load(f)
 
 
+@pytest.fixture(autouse=True)
+def _network_block(monkeypatch):
+    """Hard technical network block for every test (Ruling 005.8)."""
+    import socket
+    import urllib.request
+    import http.client
+    import subprocess
+
+    def blocked(*a, **k):
+        raise RuntimeError("NETWORK BLOCKED: tests are hermetic")
+
+    monkeypatch.setattr(socket, "socket", blocked)
+    monkeypatch.setattr(socket, "create_connection", blocked)
+    monkeypatch.setattr(urllib.request, "urlopen", blocked)
+    monkeypatch.setattr(http.client.HTTPConnection, "connect", blocked)
+    real_popen = subprocess.Popen
+
+    def guarded_popen(args, *a, **k):
+        cmd = args if isinstance(args, str) else " ".join(map(str, args))
+        if any(tok in cmd for tok in ("curl", "wget", "nc ", "ssh", "ping")):
+            raise RuntimeError("NETWORK BLOCKED: subprocess network command")
+        return real_popen(args, *a, **k)
+
+    monkeypatch.setattr(subprocess, "Popen", guarded_popen)
+
+
 @pytest.fixture(scope="session")
 def cfg():
     return config.load_config()

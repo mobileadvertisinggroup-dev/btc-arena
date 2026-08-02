@@ -9,23 +9,31 @@ BASES = {"BTC": 63000.0, "ETH": 3100.0, "SOL": 150.0}
 
 
 def gen_series(coin, seed):
+    """Seeded walk. SOL carries a deterministic stress segment for the season:
+    -0.05%/min drift from T0+30h to T0+40h and a single -30% gap candle at
+    exactly T0+35h — engineered so a 5x long opened at T0+29h gaps through its
+    liquidation threshold to terminal zero (synthetic stress, documented)."""
     rng = random.Random(seed)
     px = BASES[coin]
     out_1m, out_1h, out_1d = [], [], []
     start = T0 - 45 * DAY
     t = start
     minute_prices = []
-    while t < T0 + 2 * HOUR:
+    while t < T0 + 73 * HOUR:
         drift = rng.gauss(0, px * 0.0006)
+        if coin == "SOL" and T0 + 30 * HOUR <= t < T0 + 40 * HOUR:
+            drift -= px * 0.0005
+            if t == T0 + 35 * HOUR:
+                px *= 0.70
         o = px
-        c = max(px + drift, px * 0.5)
+        c = max(px + drift, px * 0.05)
         h = max(o, c) * (1 + abs(rng.gauss(0, 0.0004)))
         l = min(o, c) * (1 - abs(rng.gauss(0, 0.0004)))
         v = abs(rng.gauss(8, 3))
         row = {"t": t, "o": round(o, 2), "h": round(h, 2),
                "l": round(l, 2), "c": round(c, 2), "v": round(v, 2)}
         minute_prices.append(row)
-        if t >= T0 - 12 * HOUR:      # keep 1m only where replay needs it
+        if t >= T0 - 12 * HOUR:      # keep 1m where replay needs it (through season)
             out_1m.append(row)
         px = c
         t += MIN
@@ -44,8 +52,9 @@ def gen_series(coin, seed):
             k["c"] = r["c"]
             k["v"] = round(k["v"] + r["v"], 2)
         return [bucket[b] for b in sorted(bucket)]
-    out_1h = [c for c in agg(minute_prices, HOUR) if c["t"] + HOUR <= T0 + 2 * HOUR]
-    out_1d = [c for c in agg(minute_prices, DAY) if c["t"] + DAY <= T0 + 2 * HOUR]
+    end = T0 + 73 * HOUR
+    out_1h = [c for c in agg(minute_prices, HOUR) if c["t"] + HOUR <= end]
+    out_1d = [c for c in agg(minute_prices, DAY) if c["t"] + DAY <= end]
     return out_1m, out_1h, out_1d
 
 
