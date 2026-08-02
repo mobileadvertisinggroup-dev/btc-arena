@@ -1,5 +1,4 @@
 """1-minute candle replay implementing the deterministic event-ordering contract."""
-from decimal import Decimal
 
 from . import state, lifecycle, execution
 

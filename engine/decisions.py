@@ -41,9 +41,16 @@ def validate(acct, dec, p_t):
         r.append("size_usd must be 0 when position is flat")
     if pos in ("long", "short") and size is not None and size < Decimal("10"):
         r.append("size_usd must be at least 10 when opening or holding a position")
-    if pos in ("long", "short") and size is not None and size > max_notional:
-        r.append(f"target notional {size} exceeds the 5x leverage limit "
-                 f"({max_notional}) — TARGET_EXCEEDS_MAX_LEVERAGE")
+    # Leverage semantics (Ruling 006.1): the 5x cap governs NEW or INCREASED
+    # exposure only. Exact holds and reductions are always allowed, even when
+    # mark-to-market losses have pushed effective leverage above 5x.
+    if pos in ("long", "short") and size is not None:
+        current_notional = abs(acct["qty"]) * p_t
+        increasing = (cur == "flat" or pos != cur
+                      or size > current_notional + Decimal("10"))
+        if increasing and size > max_notional:
+            r.append(f"target notional {size} exceeds the 5x leverage limit "
+                     f"({max_notional}) — TARGET_EXCEEDS_MAX_LEVERAGE")
 
     inv, wc = dec.get("invalidation"), dec.get("watch_condition")
     if (opening or reversing) and (inv is None or not _cond_ok(inv)):

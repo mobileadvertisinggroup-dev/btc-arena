@@ -33,24 +33,30 @@ def _crash(crash_at, point):
 
 
 def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
-                     candles_after_by_coin=None):
-    """store: directory. Returns ledger entries written this invocation."""
+                     candles_after_by_coin=None, clock=None):
+    """AUTHORITATIVE PRODUCTION BOUNDARY COORDINATOR (Ruling 006.3).
+
+    The single orchestration path for tests, soak, and production. Returns
+    (ledger_entries, attempt_records, pregenerated_user_prompts)."""
     spath = os.path.join(store, "state.json")
     lpath = os.path.join(store, "ledger.jsonl")
     apath = os.path.join(store, "attempts.jsonl")
     accounts, meta = persistence.load_state(spath)
     if meta.get("boundary") != T:
+        # new-boundary reset; coin termination persists for the whole run
         meta = {"boundary": T, "finalized_pairs": {}, "replay_watermark": {},
-                "boundary_complete": False}
+                "boundary_complete": False,
+                "coin_terminated": meta.get("coin_terminated", {})}
         persistence.save_state(spath, accounts, meta)
-    ledger = []
+    ledger, all_attempts = [], []
     ctx = {"model_ids": {k: v["model"] for k, v in cfg["models"].items()}}
+    meta.setdefault("coin_terminated", {})
 
     # 1. pregenerate + archive all prompts (fairness contract)
     pregen = {}
     for acct in accounts.values():
         snap = snapshots.get(acct["coin"])
-        if snap is None or acct["terminal"]:
+        if snap is None or acct["terminal"] or meta["coin_terminated"].get(acct["coin"]):
             continue
         pregen[acct["id"]] = prompts.render(acct, snap, cfg)
     _crash(crash_at, "after_prompts")
@@ -75,7 +81,13 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
             snap = snapshots.get(coin)
             a_raw = accounts[state.account_id(coin, model, "raw")]
             a_ta = accounts[state.account_id(coin, model, "ta")]
-            if snap is None:
+            if clock is not None and clock() > T + rounds.DEADLINE_S:
+                entry = {"round_id": rid, "pair": pid,
+                         "status": rounds.PAIR_ABORTED, "reason": "deadline_exceeded"}
+            elif meta["coin_terminated"].get(coin):
+                entry = {"round_id": rid, "pair": pid,
+                         "status": rounds.PAIR_ABORTED, "reason": "COIN_TERMINATED"}
+            elif snap is None:
                 entry = {"round_id": rid, "pair": pid,
                          "status": rounds.PAIR_ABORTED, "reason": "DATA_UNAVAILABLE"}
             elif a_raw["terminal"] or a_ta["terminal"]:
@@ -85,6 +97,7 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                                                        archive, ctx, pregen)
                            for a in live}
                 persistence.append_ledger(apath, archive)
+                all_attempts.extend(archive)
                 if all(d is not None for d, _ in results.values()):
                     for a in live:
                         rounds._commit_account(a, results[a["id"]][0], snap, T)
@@ -97,11 +110,13 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                 dec_raw, why_raw = rounds.collect_one(caller, a_raw, snap, cfg,
                                                       archive, ctx, pregen)
                 persistence.append_ledger(apath, archive)
+                all_attempts.extend(archive)
                 archive = []
                 _crash(crash_at, "after_first_attempt")   # attempt archived above
                 dec_ta, why_ta = rounds.collect_one(caller, a_ta, snap, cfg,
                                                     archive, ctx, pregen)
                 persistence.append_ledger(apath, archive)
+                all_attempts.extend(archive)
                 if dec_raw is not None and dec_ta is not None:
                     _crash(crash_at, "after_validate")
                     rounds._commit_account(a_raw, dec_raw, snap, T)
@@ -126,6 +141,17 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
 
     # 2. one common post-T replay per coin, watermark-checkpointed per candle
     for coin, candles in (candles_after_by_coin or {}).items():
+        if meta["coin_terminated"].get(coin):
+            continue
+        ts = [c["t"] for c in candles]
+        if any(b - a != 60 for a, b in zip(ts, ts[1:])):
+            # replay-integrity loss => INTEGRITY HALT C for this coin only
+            meta["coin_terminated"][coin] = True
+            persistence.save_state(spath, accounts, meta)
+            ledger.append({"round_id": prompts.round_id(coin, T),
+                           "replay": [{"e": "COIN_TERMINATED",
+                                       "reason": "replay_integrity_loss"}]})
+            continue
         wm = meta["replay_watermark"].get(coin, -1)
         coin_accounts = [a for a in accounts.values() if a["coin"] == coin]
         for c in candles:
@@ -142,7 +168,7 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
     meta["boundary_complete"] = True
     meta.pop("_recovering", None)
     persistence.save_state(spath, accounts, meta)
-    return ledger
+    return ledger, all_attempts, {aid: p[1] for aid, p in pregen.items()}
 
 
 def recover(store):

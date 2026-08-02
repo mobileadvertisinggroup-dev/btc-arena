@@ -101,3 +101,63 @@ def invalidation_response(accounts, ledger_by_pair):
                             "post_trigger_action": lifecycle_rec.get("post_trigger_action"),
                             "records": lifecycle_rec["records"]})
     return out
+
+
+def committed_only(ledger):
+    """Paired-behaviour denominators use PAIR_COMMITTED rounds only; aborted,
+    skipped, pre-launch, and post-terminal rounds are excluded and counted
+    separately (Ruling 005.10)."""
+    return [e for e in ledger if e.get("status") == "PAIR_COMMITTED"]
+
+
+def excluded_counts(ledger):
+    out = {}
+    for e in ledger:
+        s = e.get("status")
+        if s and s != "PAIR_COMMITTED":
+            out[s] = out.get(s, 0) + 1
+    return out
+
+
+def time_weighted_avg(series):
+    """series: [(t, Decimal equity)] sorted; TWA over the covered span."""
+    if len(series) < 2:
+        return series[0][1] if series else None
+    num = Decimal(0)
+    for (t0, e0), (t1, _) in zip(series, series[1:]):
+        num += e0 * (t1 - t0)
+    return num / (series[-1][0] - series[0][0])
+
+
+def turnover(total_executed_notional, twae):
+    if not twae or twae == 0:
+        return None
+    return total_executed_notional / twae
+
+
+def invalidation_outcomes(lifecycles, last_decision_opportunity_t):
+    """Eligibility: triggered early enough for >=1 later committed decision
+    opportunity. Compliance (binary): no longer exposed in the invalidated
+    direction by the next committed pair-round — full close, reversal, stop,
+    or liquidation qualifies; partial reduction NEVER counts."""
+    eligible, compliant, detail = 0, 0, []
+    for lc in lifecycles:
+        if lc.get("triggered") is None:
+            continue
+        elig = lc["triggered"]["t"] <= last_decision_opportunity_t
+        act = lc.get("post_trigger_action")
+        exit_reason = lc.get("end_reason")
+        ok = (act in ("closed", "reversed")
+              or exit_reason in ("stop_loss", "liquidation",
+                                 "decision_close", "decision_flip"))
+        if act in ("reduced", "held", "increased") and \
+                exit_reason not in ("stop_loss", "liquidation"):
+            ok = False
+        if elig:
+            eligible += 1
+            if ok:
+                compliant += 1
+        detail.append({"eligible": elig, "compliant": ok, "action": act,
+                       "end_reason": exit_reason})
+    return {"eligible": eligible, "compliant": compliant,
+            "rate": _rate(compliant, eligible), "detail": detail}

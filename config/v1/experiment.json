@@ -33,7 +33,8 @@
     "final_candle_must_be_closed": true,
     "execution_price": "close of last completed 1m candle at boundary T (P_T)",
     "max_auto_catchup_hours": 10,
-    "beyond_catchup": "INTEGRITY HALT C: that coin's V1 arena is terminated for the remainder of the run; last trustworthy state preserved; other coin arenas continue normally"
+    "beyond_catchup": "INTEGRITY HALT C: that coin's V1 arena is terminated for the remainder of the run; last trustworthy state preserved; other coin arenas continue normally",
+    "gap_fill_wording": "If a one-minute candle opens beyond a resting execution level, the fill occurs at that candle's opening price. For a protective stop or liquidation this may be worse than the trigger level; for a take-profit it may be better than the target level."
   },
   "models": {
     "haiku": {
@@ -131,7 +132,7 @@
     "total": 18,
     "id_format": "{coin_lower}_{model}_{arm}",
     "start_cash_usd": "10000.00",
-    "max_leverage": "5.0 (validation limit — decisions above it are rejected, never clamped)",
+    "max_leverage": "5.0 — governs NEW or INCREASED exposure only (open, reversal, same-side increase): such decisions above 5x pre-decision equity are rejected (TARGET_EXCEEDS_MAX_LEVERAGE), never clamped. Exact holds (within the $10 executable tolerance) and reductions are always allowed even above 5x effective leverage; no forced deleveraging and no requirement to reduce below 5x (Ruling 006.1)",
     "fee_rate": "0.0005 on every execution including stop/take-profit/liquidation fills and both reversal legs",
     "maintenance_margin": "0.02",
     "min_executable_change_usd": "10.00 (below => NO_EXECUTION_BELOW_MINIMUM, logged)"

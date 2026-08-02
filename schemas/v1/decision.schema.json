@@ -12,7 +12,7 @@
       },
       "size_usd": {
         "type": "number",
-        "description": "Exact target position size as USD notional. Must be 0 when flat; at least 10 when long or short. A target above 5x current equity is REJECTED as invalid (not clamped). Position changes smaller than $10 notional are not executed."
+        "description": "Exact target position size as USD notional. Must be 0 when flat; at least 10 when long or short. The 5x-equity cap applies to opening, reversing, or increasing: such targets above 5x current equity are REJECTED as invalid (not clamped). Holding your exact current size or reducing is always allowed even above 5x effective leverage. Position changes smaller than $10 notional are not executed."
       },
       "stop_loss": {
         "type": ["number", "null"],
