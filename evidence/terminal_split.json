@@ -1,0 +1,11 @@
+[
+ {
+  "round_id": "v1-BTC-2025-08-11T00:00:00Z",
+  "pair": "btc_opus",
+  "status": "PAIR_TERMINAL_SPLIT",
+  "terminal": [
+   "btc_opus_raw"
+  ],
+  "reason": null
+ }
+]

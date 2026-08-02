@@ -1,0 +1,505 @@
+{
+ "meta": {
+  "boundary": 1754870400,
+  "code_hash": "95f6e62c65c2c848754b057612efce981a2f9f11c04ddfd972d15afcb26fe701"
+ },
+ "accounts": {
+  "btc_haiku_raw": {
+   "id": "btc_haiku_raw",
+   "coin": "BTC",
+   "model": "haiku",
+   "arm": "raw",
+   "E": "9998.000011181270",
+   "qty": "0.059173",
+   "entry": "67598.02",
+   "stop": null,
+   "tp": "70977.921",
+   "lifecycle": {
+    "start_t": 1754870400,
+    "invalidation": {
+     "timeframe": "1m_intrabar",
+     "operator": "price_at_or_below",
+     "level": "67530.42198"
+    },
+    "triggered": {
+     "t": 1754870460,
+     "price": "67530.42198",
+     "candle_t": 1754870460
+    },
+    "ended_t": null,
+    "end_reason": null,
+    "post_trigger_action": null,
+    "records": []
+   },
+   "fees_total": "1.999988818730",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "test long with RSI reference"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "btc_haiku_ta": {
+   "id": "btc_haiku_ta",
+   "coin": "BTC",
+   "model": "haiku",
+   "arm": "ta",
+   "E": "9997.000033671410",
+   "qty": "0.088759",
+   "entry": "67598.02",
+   "stop": "65570.0794",
+   "tp": "70977.921",
+   "lifecycle": {
+    "start_t": 1754870400,
+    "invalidation": {
+     "timeframe": "1h_close",
+     "operator": "price_at_or_below",
+     "level": "64894.0992"
+    },
+    "triggered": null,
+    "ended_t": null,
+    "end_reason": null,
+    "post_trigger_action": null,
+    "records": []
+   },
+   "fees_total": "2.999966328590",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "test long with RSI reference"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "btc_sonnet_raw": {
+   "id": "btc_sonnet_raw",
+   "coin": "BTC",
+   "model": "sonnet",
+   "arm": "raw",
+   "E": "10000.00",
+   "qty": "0",
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "lifecycle": null,
+   "fees_total": "0",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "staying flat this round"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "btc_sonnet_ta": {
+   "id": "btc_sonnet_ta",
+   "coin": "BTC",
+   "model": "sonnet",
+   "arm": "ta",
+   "E": "10000.00",
+   "qty": "0",
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "lifecycle": null,
+   "fees_total": "0",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "staying flat this round"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "btc_opus_raw": {
+   "id": "btc_opus_raw",
+   "coin": "BTC",
+   "model": "opus",
+   "arm": "raw",
+   "E": "0",
+   "qty": "0",
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "lifecycle": null,
+   "fees_total": "0",
+   "trades": [],
+   "theses": [],
+   "n_decisions": 0,
+   "terminal": true,
+   "terminal_info": {
+    "t": 1754863200,
+    "cause": "liquidation"
+   }
+  },
+  "btc_opus_ta": {
+   "id": "btc_opus_ta",
+   "coin": "BTC",
+   "model": "opus",
+   "arm": "ta",
+   "E": "10000.00",
+   "qty": "0",
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "lifecycle": null,
+   "fees_total": "0",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "staying flat this round"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "eth_haiku_raw": {
+   "id": "eth_haiku_raw",
+   "coin": "ETH",
+   "model": "haiku",
+   "arm": "raw",
+   "E": "9998.0000088720",
+   "qty": "1.54864",
+   "entry": "2582.9",
+   "stop": null,
+   "tp": "2712.045",
+   "lifecycle": {
+    "start_t": 1754870400,
+    "invalidation": {
+     "timeframe": "1m_intrabar",
+     "operator": "price_at_or_below",
+     "level": "2580.3171"
+    },
+    "triggered": {
+     "t": 1754871180,
+     "price": "2580.3171",
+     "candle_t": 1754871180
+    },
+    "ended_t": null,
+    "end_reason": null,
+    "post_trigger_action": null,
+    "records": []
+   },
+   "fees_total": "1.9999911280",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "test long with RSI reference"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "eth_haiku_ta": {
+   "id": "eth_haiku_ta",
+   "coin": "ETH",
+   "model": "haiku",
+   "arm": "ta",
+   "E": "9997.0000003935",
+   "qty": "2.32297",
+   "entry": "2582.9",
+   "stop": "2505.413",
+   "tp": "2712.045",
+   "lifecycle": {
+    "start_t": 1754870400,
+    "invalidation": {
+     "timeframe": "1h_close",
+     "operator": "price_at_or_below",
+     "level": "2479.584"
+    },
+    "triggered": null,
+    "ended_t": null,
+    "end_reason": null,
+    "post_trigger_action": null,
+    "records": []
+   },
+   "fees_total": "2.9999996065",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "test long with RSI reference"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "eth_sonnet_raw": {
+   "id": "eth_sonnet_raw",
+   "coin": "ETH",
+   "model": "sonnet",
+   "arm": "raw",
+   "E": "10000.00",
+   "qty": "0",
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "lifecycle": null,
+   "fees_total": "0",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "staying flat this round"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "eth_sonnet_ta": {
+   "id": "eth_sonnet_ta",
+   "coin": "ETH",
+   "model": "sonnet",
+   "arm": "ta",
+   "E": "10000.00",
+   "qty": "0",
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "lifecycle": null,
+   "fees_total": "0",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "staying flat this round"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "eth_opus_raw": {
+   "id": "eth_opus_raw",
+   "coin": "ETH",
+   "model": "opus",
+   "arm": "raw",
+   "E": "10000.00",
+   "qty": "0",
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "lifecycle": null,
+   "fees_total": "0",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "staying flat this round"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "eth_opus_ta": {
+   "id": "eth_opus_ta",
+   "coin": "ETH",
+   "model": "opus",
+   "arm": "ta",
+   "E": "10000.00",
+   "qty": "0",
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "lifecycle": null,
+   "fees_total": "0",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "staying flat this round"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "sol_haiku_raw": {
+   "id": "sol_haiku_raw",
+   "coin": "SOL",
+   "model": "haiku",
+   "arm": "raw",
+   "E": "9998.000047640",
+   "qty": "27.041",
+   "entry": "147.92",
+   "stop": null,
+   "tp": "155.316",
+   "lifecycle": {
+    "start_t": 1754870400,
+    "invalidation": {
+     "timeframe": "1m_intrabar",
+     "operator": "price_at_or_below",
+     "level": "147.77208"
+    },
+    "triggered": null,
+    "ended_t": null,
+    "end_reason": null,
+    "post_trigger_action": null,
+    "records": []
+   },
+   "fees_total": "1.999952360",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "test long with RSI reference"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "sol_haiku_ta": {
+   "id": "sol_haiku_ta",
+   "coin": "SOL",
+   "model": "haiku",
+   "arm": "ta",
+   "E": "9997.000034480",
+   "qty": "40.562",
+   "entry": "147.92",
+   "stop": "143.4824",
+   "tp": "155.316",
+   "lifecycle": {
+    "start_t": 1754870400,
+    "invalidation": {
+     "timeframe": "1h_close",
+     "operator": "price_at_or_below",
+     "level": "142.0032"
+    },
+    "triggered": null,
+    "ended_t": null,
+    "end_reason": null,
+    "post_trigger_action": null,
+    "records": []
+   },
+   "fees_total": "2.999965520",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "test long with RSI reference"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "sol_sonnet_raw": {
+   "id": "sol_sonnet_raw",
+   "coin": "SOL",
+   "model": "sonnet",
+   "arm": "raw",
+   "E": "10000.00",
+   "qty": "0",
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "lifecycle": null,
+   "fees_total": "0",
+   "trades": [],
+   "theses": [],
+   "n_decisions": 0,
+   "terminal": false,
+   "terminal_info": null
+  },
+  "sol_sonnet_ta": {
+   "id": "sol_sonnet_ta",
+   "coin": "SOL",
+   "model": "sonnet",
+   "arm": "ta",
+   "E": "10000.00",
+   "qty": "0",
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "lifecycle": null,
+   "fees_total": "0",
+   "trades": [],
+   "theses": [],
+   "n_decisions": 0,
+   "terminal": false,
+   "terminal_info": null
+  },
+  "sol_opus_raw": {
+   "id": "sol_opus_raw",
+   "coin": "SOL",
+   "model": "opus",
+   "arm": "raw",
+   "E": "10000.00",
+   "qty": "0",
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "lifecycle": null,
+   "fees_total": "0",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "staying flat this round"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  },
+  "sol_opus_ta": {
+   "id": "sol_opus_ta",
+   "coin": "SOL",
+   "model": "opus",
+   "arm": "ta",
+   "E": "10000.00",
+   "qty": "0",
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "lifecycle": null,
+   "fees_total": "0",
+   "trades": [],
+   "theses": [
+    {
+     "t": "2025-08-11T00:00:00Z",
+     "text": "staying flat this round"
+    }
+   ],
+   "n_decisions": 1,
+   "terminal": false,
+   "terminal_info": null,
+   "watch": null
+  }
+ }
+}

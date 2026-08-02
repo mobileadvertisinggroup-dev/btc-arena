@@ -1,0 +1,11 @@
+{
+ "first_attempt_validity_rate": 0.9412,
+ "validation_retry_rate": 0.1176,
+ "successful_correction_rate": 0.0,
+ "transport_retry_count": 0,
+ "pair_abort_rate": 0.1111,
+ "aborts_caused_by_arm": {
+  "raw": 1,
+  "ta": 0
+ }
+}

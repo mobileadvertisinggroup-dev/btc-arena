@@ -1,0 +1,12 @@
+[
+ {
+  "e": "invalidation_latched",
+  "id": "btc_haiku_raw",
+  "t": 1754870460
+ },
+ {
+  "e": "invalidation_latched",
+  "id": "eth_haiku_raw",
+  "t": 1754871180
+ }
+]

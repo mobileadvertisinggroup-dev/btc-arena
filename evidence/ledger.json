@@ -1,0 +1,60 @@
+[
+ {
+  "round_id": "v1-BTC-2025-08-11T00:00:00Z",
+  "pair": "btc_opus",
+  "status": "PAIR_TERMINAL_SPLIT",
+  "terminal": [
+   "btc_opus_raw"
+  ],
+  "reason": null
+ },
+ {
+  "round_id": "v1-ETH-2025-08-11T00:00:00Z",
+  "pair": "eth_haiku",
+  "status": "PAIR_COMMITTED",
+  "reason": null
+ },
+ {
+  "round_id": "v1-ETH-2025-08-11T00:00:00Z",
+  "pair": "eth_sonnet",
+  "status": "PAIR_COMMITTED",
+  "reason": null
+ },
+ {
+  "round_id": "v1-ETH-2025-08-11T00:00:00Z",
+  "pair": "eth_opus",
+  "status": "PAIR_COMMITTED",
+  "reason": null
+ },
+ {
+  "round_id": "v1-SOL-2025-08-11T00:00:00Z",
+  "pair": "sol_haiku",
+  "status": "PAIR_COMMITTED",
+  "reason": null
+ },
+ {
+  "round_id": "v1-SOL-2025-08-11T00:00:00Z",
+  "pair": "sol_sonnet",
+  "status": "PAIR_ABORTED",
+  "reason": "validation_failure_after_retry",
+  "caused_by_arm": "raw"
+ },
+ {
+  "round_id": "v1-SOL-2025-08-11T00:00:00Z",
+  "pair": "sol_opus",
+  "status": "PAIR_COMMITTED",
+  "reason": null
+ },
+ {
+  "round_id": "v1-BTC-2025-08-11T00:00:00Z",
+  "pair": "btc_haiku",
+  "status": "PAIR_COMMITTED",
+  "reason": null
+ },
+ {
+  "round_id": "v1-BTC-2025-08-11T00:00:00Z",
+  "pair": "btc_sonnet",
+  "status": "PAIR_COMMITTED",
+  "reason": null
+ }
+]

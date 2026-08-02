@@ -1,0 +1,412 @@
+{
+ "experiment": "v1.3",
+ "label": "V1 EXPERIMENT",
+ "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?",
+ "hashes": {
+  "config/v1/experiment.json": "3b7e62dffda777398d4610cb90735f1303043f16caed4260ffd8dd01a9de0c57",
+  "schemas/v1/decision.schema.json": "730a1132f4617cb8460b976865df0f4518792cba93346134260c288b6822863c",
+  "prompts/v1/system.txt": "6d694f212ba5a587e05750b84cc13a4e7f618e3a3b0c9ebe2fe137d22bf99059",
+  "prompts/v1/user_raw.txt": "a10a0642cafcb40bf28c32981b7ef0bac400cf7c5420c9b92633a46262e3d0eb",
+  "prompts/v1/user_feature.txt": "f2880abdd137d0b092f751dcc2113be67718c6f013e80eba3d1a582932e1a6f8",
+  "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b",
+  "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c"
+ },
+ "combined_hash": "95f6e62c65c2c848754b057612efce981a2f9f11c04ddfd972d15afcb26fe701",
+ "pilot_link": {
+  "href": "pilot/index.html",
+  "label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"
+ },
+ "health": {
+  "heartbeat": {
+   "ts": 1754870520,
+   "code_hash": "95f6e62c65c2c848754b057612efce981a2f9f11c04ddfd972d15afcb26fe701"
+  },
+  "stale": false
+ },
+ "round_counts": {
+  "PAIR_COMMITTED": 7,
+  "PAIR_ABORTED": 1,
+  "PAIR_TERMINAL_SPLIT": 1
+ },
+ "coins": {
+  "BTC": {
+   "accounts": [
+    {
+     "id": "btc_haiku_raw",
+     "coin": "BTC",
+     "model": "haiku",
+     "arm": "raw",
+     "equity": "9998.000011181270",
+     "realized_pnl": "-1.999988818730",
+     "unrealized_pnl": "0E-12",
+     "total_return_pct": "-0.019999888187300",
+     "fees": "1.999988818730",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    },
+    {
+     "id": "btc_haiku_ta",
+     "coin": "BTC",
+     "model": "haiku",
+     "arm": "ta",
+     "equity": "9997.000033671410",
+     "realized_pnl": "-2.999966328590",
+     "unrealized_pnl": "0E-12",
+     "total_return_pct": "-0.029999663285900",
+     "fees": "2.999966328590",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    },
+    {
+     "id": "btc_sonnet_raw",
+     "coin": "BTC",
+     "model": "sonnet",
+     "arm": "raw",
+     "equity": "10000.00",
+     "realized_pnl": "0.00",
+     "unrealized_pnl": "0.00",
+     "total_return_pct": "0",
+     "fees": "0",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    },
+    {
+     "id": "btc_sonnet_ta",
+     "coin": "BTC",
+     "model": "sonnet",
+     "arm": "ta",
+     "equity": "10000.00",
+     "realized_pnl": "0.00",
+     "unrealized_pnl": "0.00",
+     "total_return_pct": "0",
+     "fees": "0",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    },
+    {
+     "id": "btc_opus_raw",
+     "coin": "BTC",
+     "model": "opus",
+     "arm": "raw",
+     "equity": "0",
+     "realized_pnl": "-10000.00",
+     "unrealized_pnl": "0",
+     "total_return_pct": "-100",
+     "fees": "0",
+     "n_trades": 0,
+     "n_decisions": 0,
+     "terminal": true
+    },
+    {
+     "id": "btc_opus_ta",
+     "coin": "BTC",
+     "model": "opus",
+     "arm": "ta",
+     "equity": "10000.00",
+     "realized_pnl": "0.00",
+     "unrealized_pnl": "0.00",
+     "total_return_pct": "0",
+     "fees": "0",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    }
+   ],
+   "pairs": [
+    {
+     "model": "haiku",
+     "raw": "btc_haiku_raw",
+     "feature": "btc_haiku_ta"
+    },
+    {
+     "model": "sonnet",
+     "raw": "btc_sonnet_raw",
+     "feature": "btc_sonnet_ta"
+    },
+    {
+     "model": "opus",
+     "raw": "btc_opus_raw",
+     "feature": "btc_opus_ta"
+    }
+   ],
+   "rounds": [
+    {
+     "round_id": "v1-BTC-2025-08-11T00:00:00Z",
+     "pair": "btc_opus",
+     "status": "PAIR_TERMINAL_SPLIT",
+     "terminal": [
+      "btc_opus_raw"
+     ],
+     "reason": null
+    },
+    {
+     "round_id": "v1-BTC-2025-08-11T00:00:00Z",
+     "pair": "btc_haiku",
+     "status": "PAIR_COMMITTED",
+     "reason": null
+    },
+    {
+     "round_id": "v1-BTC-2025-08-11T00:00:00Z",
+     "pair": "btc_sonnet",
+     "status": "PAIR_COMMITTED",
+     "reason": null
+    }
+   ]
+  },
+  "ETH": {
+   "accounts": [
+    {
+     "id": "eth_haiku_raw",
+     "coin": "ETH",
+     "model": "haiku",
+     "arm": "raw",
+     "equity": "9998.0000088720",
+     "realized_pnl": "-1.9999911280",
+     "unrealized_pnl": "0E-10",
+     "total_return_pct": "-0.0199999112800",
+     "fees": "1.9999911280",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    },
+    {
+     "id": "eth_haiku_ta",
+     "coin": "ETH",
+     "model": "haiku",
+     "arm": "ta",
+     "equity": "9997.0000003935",
+     "realized_pnl": "-2.9999996065",
+     "unrealized_pnl": "0E-10",
+     "total_return_pct": "-0.02999999606500",
+     "fees": "2.9999996065",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    },
+    {
+     "id": "eth_sonnet_raw",
+     "coin": "ETH",
+     "model": "sonnet",
+     "arm": "raw",
+     "equity": "10000.00",
+     "realized_pnl": "0.00",
+     "unrealized_pnl": "0.00",
+     "total_return_pct": "0",
+     "fees": "0",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    },
+    {
+     "id": "eth_sonnet_ta",
+     "coin": "ETH",
+     "model": "sonnet",
+     "arm": "ta",
+     "equity": "10000.00",
+     "realized_pnl": "0.00",
+     "unrealized_pnl": "0.00",
+     "total_return_pct": "0",
+     "fees": "0",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    },
+    {
+     "id": "eth_opus_raw",
+     "coin": "ETH",
+     "model": "opus",
+     "arm": "raw",
+     "equity": "10000.00",
+     "realized_pnl": "0.00",
+     "unrealized_pnl": "0.00",
+     "total_return_pct": "0",
+     "fees": "0",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    },
+    {
+     "id": "eth_opus_ta",
+     "coin": "ETH",
+     "model": "opus",
+     "arm": "ta",
+     "equity": "10000.00",
+     "realized_pnl": "0.00",
+     "unrealized_pnl": "0.00",
+     "total_return_pct": "0",
+     "fees": "0",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    }
+   ],
+   "pairs": [
+    {
+     "model": "haiku",
+     "raw": "eth_haiku_raw",
+     "feature": "eth_haiku_ta"
+    },
+    {
+     "model": "sonnet",
+     "raw": "eth_sonnet_raw",
+     "feature": "eth_sonnet_ta"
+    },
+    {
+     "model": "opus",
+     "raw": "eth_opus_raw",
+     "feature": "eth_opus_ta"
+    }
+   ],
+   "rounds": [
+    {
+     "round_id": "v1-ETH-2025-08-11T00:00:00Z",
+     "pair": "eth_haiku",
+     "status": "PAIR_COMMITTED",
+     "reason": null
+    },
+    {
+     "round_id": "v1-ETH-2025-08-11T00:00:00Z",
+     "pair": "eth_sonnet",
+     "status": "PAIR_COMMITTED",
+     "reason": null
+    },
+    {
+     "round_id": "v1-ETH-2025-08-11T00:00:00Z",
+     "pair": "eth_opus",
+     "status": "PAIR_COMMITTED",
+     "reason": null
+    }
+   ]
+  },
+  "SOL": {
+   "accounts": [
+    {
+     "id": "sol_haiku_raw",
+     "coin": "SOL",
+     "model": "haiku",
+     "arm": "raw",
+     "equity": "9998.000047640",
+     "realized_pnl": "-1.999952360",
+     "unrealized_pnl": "0E-9",
+     "total_return_pct": "-0.019999523600",
+     "fees": "1.999952360",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    },
+    {
+     "id": "sol_haiku_ta",
+     "coin": "SOL",
+     "model": "haiku",
+     "arm": "ta",
+     "equity": "9997.000034480",
+     "realized_pnl": "-2.999965520",
+     "unrealized_pnl": "0E-9",
+     "total_return_pct": "-0.029999655200",
+     "fees": "2.999965520",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    },
+    {
+     "id": "sol_sonnet_raw",
+     "coin": "SOL",
+     "model": "sonnet",
+     "arm": "raw",
+     "equity": "10000.00",
+     "realized_pnl": "0.00",
+     "unrealized_pnl": "0.00",
+     "total_return_pct": "0",
+     "fees": "0",
+     "n_trades": 0,
+     "n_decisions": 0,
+     "terminal": false
+    },
+    {
+     "id": "sol_sonnet_ta",
+     "coin": "SOL",
+     "model": "sonnet",
+     "arm": "ta",
+     "equity": "10000.00",
+     "realized_pnl": "0.00",
+     "unrealized_pnl": "0.00",
+     "total_return_pct": "0",
+     "fees": "0",
+     "n_trades": 0,
+     "n_decisions": 0,
+     "terminal": false
+    },
+    {
+     "id": "sol_opus_raw",
+     "coin": "SOL",
+     "model": "opus",
+     "arm": "raw",
+     "equity": "10000.00",
+     "realized_pnl": "0.00",
+     "unrealized_pnl": "0.00",
+     "total_return_pct": "0",
+     "fees": "0",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    },
+    {
+     "id": "sol_opus_ta",
+     "coin": "SOL",
+     "model": "opus",
+     "arm": "ta",
+     "equity": "10000.00",
+     "realized_pnl": "0.00",
+     "unrealized_pnl": "0.00",
+     "total_return_pct": "0",
+     "fees": "0",
+     "n_trades": 0,
+     "n_decisions": 1,
+     "terminal": false
+    }
+   ],
+   "pairs": [
+    {
+     "model": "haiku",
+     "raw": "sol_haiku_raw",
+     "feature": "sol_haiku_ta"
+    },
+    {
+     "model": "sonnet",
+     "raw": "sol_sonnet_raw",
+     "feature": "sol_sonnet_ta"
+    },
+    {
+     "model": "opus",
+     "raw": "sol_opus_raw",
+     "feature": "sol_opus_ta"
+    }
+   ],
+   "rounds": [
+    {
+     "round_id": "v1-SOL-2025-08-11T00:00:00Z",
+     "pair": "sol_haiku",
+     "status": "PAIR_COMMITTED",
+     "reason": null
+    },
+    {
+     "round_id": "v1-SOL-2025-08-11T00:00:00Z",
+     "pair": "sol_sonnet",
+     "status": "PAIR_ABORTED",
+     "reason": "validation_failure_after_retry",
+     "caused_by_arm": "raw"
+    },
+    {
+     "round_id": "v1-SOL-2025-08-11T00:00:00Z",
+     "pair": "sol_opus",
+     "status": "PAIR_COMMITTED",
+     "reason": null
+    }
+   ]
+  }
+ }
+}

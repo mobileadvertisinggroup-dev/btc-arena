@@ -1,0 +1,36 @@
+{
+ "btc_haiku_raw": {
+  "start_t": 1754870400,
+  "invalidation": {
+   "timeframe": "1m_intrabar",
+   "operator": "price_at_or_below",
+   "level": "67530.42198"
+  },
+  "triggered": {
+   "t": 1754870460,
+   "price": "67530.42198",
+   "candle_t": 1754870460
+  },
+  "ended_t": null,
+  "end_reason": null,
+  "post_trigger_action": null,
+  "records": []
+ },
+ "eth_haiku_raw": {
+  "start_t": 1754870400,
+  "invalidation": {
+   "timeframe": "1m_intrabar",
+   "operator": "price_at_or_below",
+   "level": "2580.3171"
+  },
+  "triggered": {
+   "t": 1754871180,
+   "price": "2580.3171",
+   "candle_t": 1754871180
+  },
+  "ended_t": null,
+  "end_reason": null,
+  "post_trigger_action": null,
+  "records": []
+ }
+}
