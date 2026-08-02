@@ -3,7 +3,7 @@ from decimal import Decimal, ROUND_DOWN
 
 from . import state, lifecycle
 
-QTY_DP = {"BTC": 6, "ETH": 5, "SOL": 3}
+QTY_DP = state.QTY_DECIMALS   # authoritative: frozen config (Ruling 008.14)
 
 
 def _qq(coin, qty):
@@ -20,6 +20,7 @@ def _record_trade(acct, exit_price, closed_qty, reason, t):
     acct["E"] += pnl - fee
     acct["fees_total"] += fee
     acct["trades"].append({
+        "lifecycle_id": (acct["lifecycle"] or {}).get("lifecycle_id"),
         "side": "long" if closed_qty > 0 else "short",
         "qty": str(abs(closed_qty)), "entry": str(acct["entry"]),
         "exit": str(exit_price), "pnl": str(pnl - fee), "fee": str(fee),
@@ -38,6 +39,8 @@ def close_position(acct, price, reason, t):
     acct["stop"] = None
     acct["tp"] = None
     lifecycle.end(acct["lifecycle"], t, reason)
+    acct["lifecycle"] = None            # history stays in acct["lifecycles"]
+    acct["active_lifecycle_id"] = None
     if acct["E"] <= 0:
         acct["E"] = Decimal("0")
         acct["terminal"] = True
@@ -53,7 +56,11 @@ def _open(acct, sidename, size_usd, price, t, inv):
     acct["fees_total"] += fee
     acct["qty"] = qty
     acct["entry"] = price
-    acct["lifecycle"] = lifecycle.new_lifecycle(t, inv)
+    lc_id = f"{acct['id']}-L{len(acct['lifecycles']) + 1}"
+    lc = lifecycle.new_lifecycle(t, inv, lifecycle_id=lc_id)
+    acct["lifecycles"].append(lc)       # append-only history (Ruling 008.15)
+    acct["lifecycle"] = lc
+    acct["active_lifecycle_id"] = lc_id
     return qty
 
 

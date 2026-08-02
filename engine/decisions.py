@@ -1,8 +1,31 @@
-"""Semantic decision validation. Returns the fixed rejection strings (blocks.md)."""
+"""Schema (Draft 2020-12) then semantic decision validation (Ruling 008.1)."""
+import math
 from decimal import Decimal
 
-from . import state
+import jsonschema
+
+from . import config, state
 from .lifecycle import OPERATORS, TIMEFRAMES
+
+_SCHEMA = config.load_schema()["input_schema"]
+_VALIDATOR = jsonschema.Draft202012Validator(_SCHEMA)
+
+
+def schema_validate(dec):
+    """Deterministic schema rejection reasons; never raises on bad input."""
+    if not isinstance(dec, dict):
+        return [f"decision must be a JSON object, got {type(dec).__name__}"]
+    for k in ("size_usd", "stop_loss", "take_profit"):
+        v = dec.get(k)
+        if isinstance(v, float) and not math.isfinite(v):
+            return [f"schema violation at {k}: non-finite number"]
+    for k in ("invalidation", "watch_condition"):
+        v = dec.get(k)
+        if isinstance(v, dict) and isinstance(v.get("level"), float)                 and not math.isfinite(v["level"]):
+            return [f"schema violation at {k}.level: non-finite number"]
+    errs = sorted(_VALIDATOR.iter_errors(dec), key=lambda e: list(e.absolute_path))
+    return [f"schema violation at {'/'.join(str(p) for p in e.absolute_path) or '<root>'}: "
+            f"{e.message}" for e in errs][:6]
 
 LEVEL_LO, LEVEL_HI = Decimal("0.2"), Decimal("5")
 

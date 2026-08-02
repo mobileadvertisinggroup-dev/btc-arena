@@ -8,12 +8,27 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CANONICAL_FILES = [
     "config/v1/experiment.json",
     "schemas/v1/decision.schema.json",
+    "schemas/v1/records.schema.json",
     "prompts/v1/system.txt",
     "prompts/v1/user_raw.txt",
     "prompts/v1/user_feature.txt",
     "prompts/v1/blocks.md",
     "prompts/v1/placeholders.json",
 ]
+
+
+def _code_files():
+    """Every engine source + production scripts, deterministic sorted order."""
+    out = []
+    for top in ("engine", "scripts"):
+        base = os.path.join(ROOT, top)
+        if not os.path.isdir(base):
+            continue
+        for root, dirs, files in os.walk(base):
+            dirs[:] = [d for d in dirs if d != "__pycache__"]
+            out += [os.path.relpath(os.path.join(root, f), ROOT)
+                    for f in files if f.endswith(".py")]
+    return sorted(out)
 
 
 class IntegrityError(Exception):
@@ -44,7 +59,7 @@ def file_hash(relpath):
 
 
 def build_manifest():
-    hashes = {p: file_hash(p) for p in CANONICAL_FILES}
+    hashes = {p: file_hash(p) for p in sorted(set(CANONICAL_FILES) | set(_code_files()))}
     combined = hashlib.sha256(
         "".join(f"{p}:{h}\n" for p, h in sorted(hashes.items())).encode()
     ).hexdigest()

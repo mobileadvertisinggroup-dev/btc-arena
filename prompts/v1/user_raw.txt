@@ -17,7 +17,7 @@ Volume is base-asset trading volume reported by the Kraken spot market for each 
 Equity: ${EQUITY}
 Position: {POSITION_BLOCK}
 Total fees paid so far: ${FEES_TOTAL}
-Maximum position size this round: ${MAX_NOTIONAL} notional (5x equity)
+Maximum target for new or increased exposure this round: ${MAX_NOTIONAL} notional. Existing exposure above this amount may be held or reduced, but not increased.
 
 {TRADES_BLOCK}
 

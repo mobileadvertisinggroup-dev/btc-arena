@@ -84,15 +84,22 @@ def replay(accounts, candles_1m, records):
                     lc["records"].append("SAME_CANDLE_INVALIDATION_AND_EXIT")
                     records.append({"e": "SAME_CANDLE_INVALIDATION_AND_EXIT",
                                     "id": acct["id"], "t": t_open})
-            # watch conditions (informational)
+            # watch conditions (informational; timeframe-aware, Ruling 008.16)
             wc = acct.get("watch")
-            if wc and not wc.get("triggered") and acct["qty"] == 0:
+            if wc and not wc.get("triggered") and acct["qty"] == 0 \
+                    and wc.get("timeframe") == "1m_intrabar":
                 if lifecycle.condition_met(wc, l, h):
                     wc["triggered"] = {"t": t_open, "price": str(wc["level"])}
         # 1h_close invalidation: only at completed hourly closes; lifecycle must
         # still be open at that close (D: ended lifecycles never trigger)
         if hour_close_t is not None:
             for acct in accounts:
+                wc = acct.get("watch")
+                if wc and not wc.get("triggered") and acct["qty"] == 0 \
+                        and wc.get("timeframe") == "1h_close":
+                    px = c["c"]
+                    if lifecycle.condition_met(wc, px, px):
+                        wc["triggered"] = {"t": hour_close_t, "price": str(wc["level"])}
                 lc = acct["lifecycle"]
                 if (lc is not None and lc["triggered"] is None
                         and lc["ended_t"] is None

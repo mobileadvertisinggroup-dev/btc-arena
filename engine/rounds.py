@@ -1,8 +1,8 @@
-"""Pair-atomic round coordination with deterministic wave rotation.
+"""Pure pair-round helpers: wave rotation, attempt collection, commit records.
 
-The model caller is INJECTED (offline stub in tests; live caller not wired here).
-Caller protocol: caller(account_id, system, user, retry_message_or_None) ->
-dict decision  |  raises TransportError.
+The AUTHORITATIVE coordinator is engine/recovery.py. The model caller is
+INJECTED: caller(account_id, system, user, retry_message_or_None) -> decision
+(any JSON value) | raises TransportError.
 """
 import hashlib
 import json
@@ -12,7 +12,6 @@ from . import state, prompts, decisions, execution, replay as replay_mod
 PAIR_COMMITTED = "PAIR_COMMITTED"
 PAIR_ABORTED = "PAIR_ABORTED"
 PAIR_TERMINAL_SPLIT = "PAIR_TERMINAL_SPLIT"
-DEADLINE_S = 12 * 60
 
 
 class TransportError(Exception):
@@ -27,62 +26,89 @@ def wave_order(round_seed):
     return [rotated[i:i + 3] for i in range(0, len(rotated), 3)]
 
 
-def _attempt(caller, acct, system, user, retry_msg, n, archive, ctx):
-    rec = {"account_id": acct["id"], "pair_id": state.pair_id(acct["coin"], acct["model"]),
+def attempt_id(round_id, account_id, n):
+    return f"{round_id}:{account_id}:attempt{n}"
+
+
+def _attempt(caller, acct, snapshot, system, user, retry_msg, n, ctx, writer):
+    """One transport attempt: transport -> schema (Draft 2020-12) -> semantic.
+    Handles ANY returned value without crashing. The durable record is written
+    exactly once, immutable, with `became_executed_decision` ALWAYS false
+    (Ruling 008.2) — execution is recorded later via immutable link events."""
+    rec = {"account_id": acct["id"],
+           "pair_id": state.pair_id(acct["coin"], acct["model"]),
            "round_id": ctx["round_id"], "attempt_number": n,
+           "attempt_id": attempt_id(ctx["round_id"], acct["id"], n),
            "generated_prompt_hash": hashlib.sha256(user.encode()).hexdigest(),
-           "request_hash": hashlib.sha256((system + user + (retry_msg or "")).encode()).hexdigest(),
+           "request_hash": hashlib.sha256(
+               (system + user + (retry_msg or "")).encode()).hexdigest(),
            "requested_model": ctx["model_ids"][acct["model"]],
-           "returned_model": None, "raw_response": None, "parsed_tool_input": None,
-           "schema_result": None, "semantic_validation_result": None,
-           "fixed_rejection_reasons": [], "transport_error_category": None,
-           "latency_ms": 0, "token_usage": None, "became_executed_decision": False}
+           "returned_model": None, "raw_response": None,
+           "parsed_tool_input": None, "schema_result": None,
+           "semantic_validation_result": None, "fixed_rejection_reasons": [],
+           "transport_error_category": None, "latency_ms": 0,
+           "token_usage": None, "became_executed_decision": False}
     try:
         dec = caller(acct["id"], system, user, retry_msg)
-        rec.update(returned_model=ctx["model_ids"][acct["model"]],
-                   raw_response=json.dumps(dec, default=str),
-                   parsed_tool_input=dec, schema_result="valid")
-        archive.append(rec)
-        return dec, rec
     except TransportError as e:
-        rec.update(transport_error_category=str(e) or "transport")
-        archive.append(rec)
-        return None, rec
+        rec["transport_error_category"] = str(e) or "transport"
+        writer(rec)
+        return None, "transport", rec
+    rec["returned_model"] = ctx["model_ids"][acct["model"]]
+    rec["raw_response"] = json.dumps(dec, default=str)
+    schema_reasons = decisions.schema_validate(dec)
+    if schema_reasons:
+        rec["schema_result"] = "invalid"
+        rec["fixed_rejection_reasons"] = schema_reasons
+        writer(rec)
+        return None, schema_reasons, rec
+    rec["schema_result"] = "valid"
+    rec["parsed_tool_input"] = dec
+    sem = decisions.validate(acct, dec, snapshot["P_T"])
+    rec["semantic_validation_result"] = "valid" if not sem else "invalid"
+    rec["fixed_rejection_reasons"] = sem
+    writer(rec)
+    if sem:
+        return None, sem, rec
+    return dec, None, rec
 
 
-def collect_one(caller, acct, snapshot, cfg, archive, ctx, pregen):
-    """Collect one valid decision for one account: 3 transport attempts, then
-    1 validation retry. Returns (decision|None, reason|None)."""
-    system, user = pregen[acct["id"]]
-    n = 0
-    dec = None
-    for _ in range(3):
+def _conversation(caller, acct, snapshot, system, user, retry_msg, n0, ctx,
+                  writer, budget_ok):
+    """One conversation under the full transport policy: 1 initial attempt +
+    cfg transport retries (= attempts_total, Ruling 008.7). Returns
+    (decision|None, why, last_n, last_rec)."""
+    n = n0
+    for _ in range(ctx["transport_attempts_total"]):
+        if not budget_ok():
+            return None, "deadline_exceeded", n, None
         n += 1
-        dec, rec = _attempt(caller, acct, system, user, None, n, archive, ctx)
-        if dec is not None:
-            break
-    if dec is None:
-        return None, "transport_failure"
-    reasons = decisions.validate(acct, dec, snapshot["P_T"])
-    if not reasons:
-        rec["semantic_validation_result"] = "valid"
-        rec["became_executed_decision"] = True
-        return dec, None
-    rec["semantic_validation_result"] = "invalid"
-    rec["fixed_rejection_reasons"] = reasons
-    n += 1
-    dec2, rec2 = _attempt(caller, acct, system, user,
-                          decisions.retry_message(reasons), n, archive, ctx)
-    if dec2 is None:
-        return None, "transport_failure_on_retry"
-    reasons2 = decisions.validate(acct, dec2, snapshot["P_T"])
-    if reasons2:
-        rec2["semantic_validation_result"] = "invalid"
-        rec2["fixed_rejection_reasons"] = reasons2
-        return None, "validation_failure_after_retry"
-    rec2["semantic_validation_result"] = "valid"
-    rec2["became_executed_decision"] = True
-    return dec2, None
+        dec, why, rec = _attempt(caller, acct, snapshot, system, user,
+                                 retry_msg, n, ctx, writer)
+        if why != "transport":
+            return dec, why, n, rec
+    return None, "transport_failure", n, None
+
+
+def collect_one(caller, acct, snapshot, cfg, ctx, pregen, writer, budget_ok):
+    """Schema-first collection with a single validation-retry conversation.
+    Returns (decision|None, why|None, operative_attempt_id|None)."""
+    system, user = pregen[acct["id"]]
+    dec, why, n, rec = _conversation(caller, acct, snapshot, system, user,
+                                     None, 0, ctx, writer, budget_ok)
+    if dec is not None:
+        return dec, None, rec["attempt_id"]
+    if why in ("transport_failure", "deadline_exceeded"):
+        return None, why, None
+    dec2, why2, n2, rec2 = _conversation(
+        caller, acct, snapshot, system, user, decisions.retry_message(why),
+        n, ctx, writer, budget_ok)
+    if dec2 is not None:
+        return dec2, None, rec2["attempt_id"]
+    if why2 in ("transport_failure", "deadline_exceeded"):
+        return None, ("transport_failure_on_retry" if why2 == "transport_failure"
+                      else why2), None
+    return None, "validation_failure_after_retry", None
 
 
 def _commit_account(acct, dec, snap, T):
@@ -112,6 +138,6 @@ def _commit_account(acct, dec, snap, T):
 
 
 def post_boundary_replay(accounts, coin, candles_1m_after_T, records):
-    """One common post-T replay per coin (virtual event time, ruling V1.2 G)."""
+    """Pure helper: one common post-T replay per coin."""
     coin_accounts = [a for a in accounts.values() if a["coin"] == coin]
     return replay_mod.replay(coin_accounts, candles_1m_after_T, records)

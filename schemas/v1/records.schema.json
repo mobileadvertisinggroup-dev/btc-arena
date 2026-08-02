@@ -4,7 +4,7 @@
   "$defs": {
     "attempt": {
       "type": "object",
-      "required": ["account_id", "pair_id", "round_id", "attempt_number",
+      "required": ["account_id", "pair_id", "round_id", "attempt_number", "attempt_id",
                    "generated_prompt_hash", "request_hash", "requested_model",
                    "returned_model", "raw_response", "parsed_tool_input",
                    "schema_result", "semantic_validation_result",
@@ -15,6 +15,7 @@
         "pair_id": {"type": "string"},
         "round_id": {"type": "string", "pattern": "^v1-(BTC|ETH|SOL)-"},
         "attempt_number": {"type": "integer", "minimum": 1},
+        "attempt_id": {"type": "string"},
         "generated_prompt_hash": {"type": "string", "minLength": 64, "maxLength": 64},
         "request_hash": {"type": "string", "minLength": 64, "maxLength": 64},
         "requested_model": {"type": "string"},
@@ -46,9 +47,10 @@
     },
     "lifecycle": {
       "type": "object",
-      "required": ["start_t", "invalidation", "triggered", "ended_t",
+      "required": ["lifecycle_id", "start_t", "invalidation", "triggered", "ended_t",
                    "end_reason", "post_trigger_action", "records"],
       "properties": {
+        "lifecycle_id": {"type": ["string", "null"]},
         "start_t": {"type": "integer"},
         "invalidation": {
           "type": "object",
@@ -77,8 +79,9 @@
     },
     "trade": {
       "type": "object",
-      "required": ["side", "qty", "entry", "exit", "pnl", "fee", "reason", "closed_ts"],
+      "required": ["lifecycle_id", "side", "qty", "entry", "exit", "pnl", "fee", "reason", "closed_ts"],
       "properties": {
+        "lifecycle_id": {"type": ["string", "null"]},
         "side": {"enum": ["long", "short"]},
         "qty": {"type": "string"}, "entry": {"type": "string"},
         "exit": {"type": "string"}, "pnl": {"type": "string"},

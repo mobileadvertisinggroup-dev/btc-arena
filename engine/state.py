@@ -1,14 +1,39 @@
-"""Accounts, positions, and fresh-experiment initialization. All money in Decimal."""
+"""Accounts, positions, and fresh-experiment initialization. All money in Decimal.
+
+Engine parameters are LOADED FROM THE FROZEN CONFIG (Ruling 008.14) — the
+config is authoritative; verify_params() re-checks at every coordinator start
+and raises on any mismatch (Integrity Halt A category)."""
 from decimal import Decimal
+
+from . import config as _config
+
+_CFG_PARAMS = _config.load_config()["parameters"]
 
 COINS = ["BTC", "ETH", "SOL"]
 MODELS = ["haiku", "sonnet", "opus"]
 ARMS = ["raw", "ta"]  # internal ids; 'ta' is the Feature arm in public language
-START_CASH = Decimal("10000.00")
-FEE_RATE = Decimal("0.0005")
-MAINT_MARGIN = Decimal("0.02")
-MAX_LEVERAGE = Decimal("5")
-MIN_DELTA_USD = Decimal("10.00")
+START_CASH = Decimal(_CFG_PARAMS["start_cash_usd"])
+FEE_RATE = Decimal(_CFG_PARAMS["fee_rate"])
+MAINT_MARGIN = Decimal(_CFG_PARAMS["maintenance_margin"])
+MAX_LEVERAGE = Decimal(_CFG_PARAMS["max_leverage"])
+MIN_DELTA_USD = Decimal(_CFG_PARAMS["min_delta_usd"])
+QTY_DECIMALS = dict(_CFG_PARAMS["qty_decimals"])
+
+
+class ParamsMismatch(Exception):
+    """Engine constants no longer match the frozen config => halt."""
+
+
+def verify_params(cfg):
+    p = cfg["parameters"]
+    pairs = [(START_CASH, Decimal(p["start_cash_usd"])),
+             (FEE_RATE, Decimal(p["fee_rate"])),
+             (MAINT_MARGIN, Decimal(p["maintenance_margin"])),
+             (MAX_LEVERAGE, Decimal(p["max_leverage"])),
+             (MIN_DELTA_USD, Decimal(p["min_delta_usd"]))]
+    if any(a != b for a, b in pairs) or QTY_DECIMALS != p["qty_decimals"]:
+        raise ParamsMismatch("engine constants != frozen config parameters")
+    return True
 
 
 def account_id(coin, model, arm):
@@ -27,7 +52,9 @@ def new_account(coin, model, arm):
         "qty": Decimal("0"),      # signed executed quantity
         "entry": None,
         "stop": None, "tp": None,
-        "lifecycle": None,        # see lifecycle.py
+        "lifecycles": [],         # append-only history (Ruling 008.15)
+        "active_lifecycle_id": None,
+        "lifecycle": None,        # reference to the ACTIVE entry in lifecycles
         "fees_total": Decimal("0"),
         "trades": [],
         "theses": [],             # last 3 {"t","text"}

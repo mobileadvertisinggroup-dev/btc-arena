@@ -28,16 +28,20 @@ def reliability(attempts, ledger):
     valid_first = [a for a in firsts if a.get("semantic_validation_result") == "valid"]
     retries = [a for a in attempts if a.get("fixed_rejection_reasons")
                and a.get("semantic_validation_result") == "invalid"]
+    corrected_valid = [a for a in attempts if a["attempt_number"] > 1
+                       and a.get("semantic_validation_result") == "valid"]
     corrected = [a for a in attempts if a["attempt_number"] > 1
                  and a.get("became_executed_decision")]
     transport = [a for a in attempts if a.get("transport_error_category")]
-    aborts = [e for e in ledger if e["status"] == "PAIR_ABORTED"]
+    aborts = [e for e in ledger if e.get("status") == "PAIR_ABORTED"]
+    pair_rows = [e for e in ledger if e.get("status")]
     return {
         "first_attempt_validity_rate": _rate(len(valid_first), len(firsts)),
         "validation_retry_rate": _rate(len(retries), len(firsts)),
+        "corrected_valid_rate": _rate(len(corrected_valid), len(retries)),
         "successful_correction_rate": _rate(len(corrected), len(retries)),
         "transport_retry_count": len(transport),
-        "pair_abort_rate": _rate(len(aborts), len(ledger)),
+        "pair_abort_rate": _rate(len(aborts), len(pair_rows)),
         "aborts_caused_by_arm": {arm: sum(1 for e in aborts
                                           if e.get("caused_by_arm") == arm)
                                  for arm in ("raw", "ta")},
@@ -91,10 +95,10 @@ def feature_reference_frequency(theses):
 
 
 def invalidation_response(accounts, ledger_by_pair):
+    """Uses the FULL append-only lifecycle history (Ruling 008.15)."""
     out = []
     for acct in accounts.values():
-        lc = acct.get("lifecycle")
-        for lifecycle_rec in ([lc] if lc else []):
+        for lifecycle_rec in acct.get("lifecycles", []):
             if lifecycle_rec["triggered"] is not None:
                 out.append({"id": acct["id"],
                             "triggered_t": lifecycle_rec["triggered"]["t"],

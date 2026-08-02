@@ -30,6 +30,30 @@ def _check_closed(candles, step, now_t, label):
         raise DataUnavailable(f"{label}: final candle not fully closed")
 
 
+def _check_fresh(candles, step, required_last_open, label):
+    if not candles or candles[-1]["t"] != required_last_open:
+        got = candles[-1]["t"] if candles else None
+        raise DataUnavailable(f"{label}: stale — last open {got}, "
+                              f"required {required_last_open}")
+
+
+def _check_sane(candles, step, label):
+    prev = None
+    for c in candles:
+        if c["t"] % step != 0:
+            raise DataUnavailable(f"{label}: timestamp {c['t']} not aligned")
+        if prev is not None and c["t"] <= prev:
+            raise DataUnavailable(f"{label}: timestamps not strictly increasing")
+        prev = c["t"]
+        for k in "ohlc":
+            if not c[k].is_finite() or c[k] <= 0:
+                raise DataUnavailable(f"{label}: non-finite/non-positive price")
+        if not c["v"].is_finite() or c["v"] < 0:
+            raise DataUnavailable(f"{label}: bad volume")
+        if c["h"] < max(c["o"], c["c"], c["l"]) or                 c["l"] > min(c["o"], c["c"], c["h"]):
+            raise DataUnavailable(f"{label}: OHLC sanity violation at {c['t']}")
+
+
 def validate_1m_coverage(candles, start_t, end_t):
     """Complete contiguous 1m coverage for [start_t, end_t); raises on any gap."""
     want = list(range(start_t, end_t, MIN))
@@ -46,14 +70,17 @@ def build_snapshot(coin, k1m, k1h, k1d, T):
     hourly = [c for c in k1h if c["t"] + HOUR <= T][-H72:]
     _check_contiguous(hourly, HOUR, H72, "hourly")
     _check_closed(hourly, HOUR, T, "hourly")
+    _check_fresh(hourly, HOUR, T - HOUR, "hourly")
+    _check_sane(hourly, HOUR, "hourly")
     # Daily convention (ruling 004.2): 40 most recent FULLY COMPLETED UTC daily
     # candles; the incomplete current UTC day is never supplied.
     day_start = (T // DAY) * DAY
     daily = [c for c in k1d if c["t"] + DAY <= day_start][-D40:]
     _check_contiguous(daily, DAY, D40, "daily")
+    _check_fresh(daily, DAY, day_start - DAY, "daily")
+    _check_sane(daily, DAY, "daily")
     m1 = [c for c in k1m if c["t"] + MIN <= T]
-    if not m1:
-        raise DataUnavailable("no completed 1m candle at boundary")
+    _check_fresh(m1, MIN, T - MIN, "1m")
     p_t = m1[-1]["c"]
     return {"coin": coin, "T": T, "P_T": p_t, "hourly": hourly,
             "daily_closes": [c["c"] for c in daily], "source": "kraken"}

@@ -17,7 +17,7 @@ def payload(accounts, ledger, snapshots, heartbeat, manifest, cfg):
                       for m in state.MODELS],
             "rounds": [e for e in ledger if e["round_id"].startswith(f"v1-{coin}-")],
         }
-    statuses = [e["status"] for e in ledger]
+    statuses = [e["status"] for e in ledger if e.get("status")]
     return {
         "experiment": cfg["experiment"],
         "label": "V1 EXPERIMENT",

@@ -4,9 +4,10 @@ OPERATORS = ("price_at_or_below", "price_at_or_above")
 TIMEFRAMES = ("1h_close", "1m_intrabar")
 
 
-def new_lifecycle(start_t, invalidation):
+def new_lifecycle(start_t, invalidation, lifecycle_id=None):
     """A lifecycle begins exactly at boundary T (ruling 004.3)."""
     return {
+        "lifecycle_id": lifecycle_id,
         "start_t": start_t,           # first eligible 1m candle: open >= start_t
         "invalidation": dict(invalidation),  # immutable copy
         "triggered": None,            # {"t","price","candle_t"} latched permanently
