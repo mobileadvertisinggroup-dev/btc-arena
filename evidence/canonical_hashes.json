@@ -1,12 +1,30 @@
 {
  "files": {
-  "config/v1/experiment.json": "4c5b1a975c7c1b880b172e759a6b5234725d9da85c035b3d4e4782d8e01c134b",
-  "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64",
-  "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8",
-  "prompts/v1/user_raw.txt": "a10a0642cafcb40bf28c32981b7ef0bac400cf7c5420c9b92633a46262e3d0eb",
-  "prompts/v1/user_feature.txt": "f2880abdd137d0b092f751dcc2113be67718c6f013e80eba3d1a582932e1a6f8",
+  "config/v1/experiment.json": "f7da51051a7031c26e5b5905979eeb33a4473739c901f766f25638472f39ef70",
+  "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032",
+  "engine/config.py": "8b83bb9d6b7ccbb2454ddd1106899b97714fb09b17ce9905703c53b64358a3ff",
+  "engine/dashboard.py": "923f63397c10f2f1e135b9b0580f332c71df4477c73dcaf956ee34833346aa8b",
+  "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5",
+  "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc",
+  "engine/features.py": "69ea768643b5b91c4abc7f202b72330204836ddf35020027ef66bdc687ff1da2",
+  "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872",
+  "engine/marketdata.py": "0b035211e44d0b3978dfbd56230c342dfb2bf77a9f3b310211748b8dede19a28",
+  "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9",
+  "engine/persistence.py": "d8848a78b1e8828b60dea0fe0028fe1d49e2bdee6cf4d9156026c8f408e91104",
+  "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22",
+  "engine/recovery.py": "1e19b1905c3041e54552b0ce29d182156a36d1159f0875c049e41f3c9af837f7",
+  "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42",
+  "engine/rounds.py": "e80db03a868260e9d1ee8361553452e0c5e8d434cbea0f27381338be2126e036",
+  "engine/state.py": "ca395fb36b0f4a3798309e8f1d254c55d330ed2dabb9d219c3d18cfd2abf5b70",
   "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b",
-  "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c"
+  "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c",
+  "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8",
+  "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04",
+  "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63",
+  "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64",
+  "schemas/v1/records.schema.json": "eaf34924cbbc1f9606f9e272c6df6acf337b5e39f0a467bea2751694c9c347e2",
+  "scripts/mock_run.py": "c9f8e7f8e1f4a35529b4cad67a13a695b11bedfb82bf08f29ab78cba7e91d5c3",
+  "scripts/mock_season.py": "fb3da3bfc6eeb30cd9cb62cc60142c13f9d6431e5674db867ed0e6d91e29ad79"
  },
- "combined": "e8290ac5981ac866151a4d700e9660db1e573efe6ffaa0714152f7c507d88478"
+ "combined": "e79c9dc6a9a489c1636a967c253f5caba3bb969cd07da0e69d5538e6d0b8a769"
 }

@@ -1,7 +1,8 @@
 {
  "meta": {
   "boundary": 1754870400,
-  "code_hash": "e8290ac5981ac866151a4d700e9660db1e573efe6ffaa0714152f7c507d88478"
+  "code_hash": "2ecd7fa061ed7d54cc4b4929bc257997fdab6a6a8323bd44a9f582ab2ac11a22",
+  "_checksum": "a8f52dc4c0b36c4979e895d498e19d4397abef2316ee88872f92d7263882f0dc"
  },
  "accounts": {
   "btc_haiku_raw": {
@@ -14,23 +15,27 @@
    "entry": "67598.02",
    "stop": null,
    "tp": "70977.921",
-   "lifecycle": {
-    "start_t": 1754870400,
-    "invalidation": {
-     "timeframe": "1m_intrabar",
-     "operator": "price_at_or_below",
-     "level": "67530.42198"
-    },
-    "triggered": {
-     "t": 1754870460,
-     "price": "67530.42198",
-     "candle_t": 1754870460
-    },
-    "ended_t": null,
-    "end_reason": null,
-    "post_trigger_action": null,
-    "records": []
-   },
+   "lifecycles": [
+    {
+     "lifecycle_id": "btc_haiku_raw-L1",
+     "start_t": 1754870400,
+     "invalidation": {
+      "timeframe": "1m_intrabar",
+      "operator": "price_at_or_below",
+      "level": "67530.42198"
+     },
+     "triggered": {
+      "t": 1754870460,
+      "price": "67530.42198",
+      "candle_t": 1754870460
+     },
+     "ended_t": null,
+     "end_reason": null,
+     "post_trigger_action": null,
+     "records": []
+    }
+   ],
+   "active_lifecycle_id": "btc_haiku_raw-L1",
    "fees_total": "1.999988818730",
    "trades": [],
    "theses": [
@@ -54,19 +59,23 @@
    "entry": "67598.02",
    "stop": "65570.0794",
    "tp": "70977.921",
-   "lifecycle": {
-    "start_t": 1754870400,
-    "invalidation": {
-     "timeframe": "1h_close",
-     "operator": "price_at_or_below",
-     "level": "64894.0992"
-    },
-    "triggered": null,
-    "ended_t": null,
-    "end_reason": null,
-    "post_trigger_action": null,
-    "records": []
-   },
+   "lifecycles": [
+    {
+     "lifecycle_id": "btc_haiku_ta-L1",
+     "start_t": 1754870400,
+     "invalidation": {
+      "timeframe": "1h_close",
+      "operator": "price_at_or_below",
+      "level": "64894.0992"
+     },
+     "triggered": null,
+     "ended_t": null,
+     "end_reason": null,
+     "post_trigger_action": null,
+     "records": []
+    }
+   ],
+   "active_lifecycle_id": "btc_haiku_ta-L1",
    "fees_total": "2.999966328590",
    "trades": [],
    "theses": [
@@ -90,7 +99,8 @@
    "entry": null,
    "stop": null,
    "tp": null,
-   "lifecycle": null,
+   "lifecycles": [],
+   "active_lifecycle_id": null,
    "fees_total": "0",
    "trades": [],
    "theses": [
@@ -114,7 +124,8 @@
    "entry": null,
    "stop": null,
    "tp": null,
-   "lifecycle": null,
+   "lifecycles": [],
+   "active_lifecycle_id": null,
    "fees_total": "0",
    "trades": [],
    "theses": [
@@ -138,7 +149,8 @@
    "entry": null,
    "stop": null,
    "tp": null,
-   "lifecycle": null,
+   "lifecycles": [],
+   "active_lifecycle_id": null,
    "fees_total": "0",
    "trades": [],
    "theses": [],
@@ -159,7 +171,8 @@
    "entry": null,
    "stop": null,
    "tp": null,
-   "lifecycle": null,
+   "lifecycles": [],
+   "active_lifecycle_id": null,
    "fees_total": "0",
    "trades": [],
    "theses": [
@@ -183,23 +196,27 @@
    "entry": "2582.9",
    "stop": null,
    "tp": "2712.045",
-   "lifecycle": {
-    "start_t": 1754870400,
-    "invalidation": {
-     "timeframe": "1m_intrabar",
-     "operator": "price_at_or_below",
-     "level": "2580.3171"
-    },
-    "triggered": {
-     "t": 1754871180,
-     "price": "2580.3171",
-     "candle_t": 1754871180
-    },
-    "ended_t": null,
-    "end_reason": null,
-    "post_trigger_action": null,
-    "records": []
-   },
+   "lifecycles": [
+    {
+     "lifecycle_id": "eth_haiku_raw-L1",
+     "start_t": 1754870400,
+     "invalidation": {
+      "timeframe": "1m_intrabar",
+      "operator": "price_at_or_below",
+      "level": "2580.3171"
+     },
+     "triggered": {
+      "t": 1754871180,
+      "price": "2580.3171",
+      "candle_t": 1754871180
+     },
+     "ended_t": null,
+     "end_reason": null,
+     "post_trigger_action": null,
+     "records": []
+    }
+   ],
+   "active_lifecycle_id": "eth_haiku_raw-L1",
    "fees_total": "1.9999911280",
    "trades": [],
    "theses": [
@@ -223,19 +240,23 @@
    "entry": "2582.9",
    "stop": "2505.413",
    "tp": "2712.045",
-   "lifecycle": {
-    "start_t": 1754870400,
-    "invalidation": {
-     "timeframe": "1h_close",
-     "operator": "price_at_or_below",
-     "level": "2479.584"
-    },
-    "triggered": null,
-    "ended_t": null,
-    "end_reason": null,
-    "post_trigger_action": null,
-    "records": []
-   },
+   "lifecycles": [
+    {
+     "lifecycle_id": "eth_haiku_ta-L1",
+     "start_t": 1754870400,
+     "invalidation": {
+      "timeframe": "1h_close",
+      "operator": "price_at_or_below",
+      "level": "2479.584"
+     },
+     "triggered": null,
+     "ended_t": null,
+     "end_reason": null,
+     "post_trigger_action": null,
+     "records": []
+    }
+   ],
+   "active_lifecycle_id": "eth_haiku_ta-L1",
    "fees_total": "2.9999996065",
    "trades": [],
    "theses": [
@@ -259,7 +280,8 @@
    "entry": null,
    "stop": null,
    "tp": null,
-   "lifecycle": null,
+   "lifecycles": [],
+   "active_lifecycle_id": null,
    "fees_total": "0",
    "trades": [],
    "theses": [
@@ -283,7 +305,8 @@
    "entry": null,
    "stop": null,
    "tp": null,
-   "lifecycle": null,
+   "lifecycles": [],
+   "active_lifecycle_id": null,
    "fees_total": "0",
    "trades": [],
    "theses": [
@@ -307,7 +330,8 @@
    "entry": null,
    "stop": null,
    "tp": null,
-   "lifecycle": null,
+   "lifecycles": [],
+   "active_lifecycle_id": null,
    "fees_total": "0",
    "trades": [],
    "theses": [
@@ -331,7 +355,8 @@
    "entry": null,
    "stop": null,
    "tp": null,
-   "lifecycle": null,
+   "lifecycles": [],
+   "active_lifecycle_id": null,
    "fees_total": "0",
    "trades": [],
    "theses": [
@@ -355,19 +380,23 @@
    "entry": "147.92",
    "stop": null,
    "tp": "155.316",
-   "lifecycle": {
-    "start_t": 1754870400,
-    "invalidation": {
-     "timeframe": "1m_intrabar",
-     "operator": "price_at_or_below",
-     "level": "147.77208"
-    },
-    "triggered": null,
-    "ended_t": null,
-    "end_reason": null,
-    "post_trigger_action": null,
-    "records": []
-   },
+   "lifecycles": [
+    {
+     "lifecycle_id": "sol_haiku_raw-L1",
+     "start_t": 1754870400,
+     "invalidation": {
+      "timeframe": "1m_intrabar",
+      "operator": "price_at_or_below",
+      "level": "147.77208"
+     },
+     "triggered": null,
+     "ended_t": null,
+     "end_reason": null,
+     "post_trigger_action": null,
+     "records": []
+    }
+   ],
+   "active_lifecycle_id": "sol_haiku_raw-L1",
    "fees_total": "1.999952360",
    "trades": [],
    "theses": [
@@ -391,19 +420,23 @@
    "entry": "147.92",
    "stop": "143.4824",
    "tp": "155.316",
-   "lifecycle": {
-    "start_t": 1754870400,
-    "invalidation": {
-     "timeframe": "1h_close",
-     "operator": "price_at_or_below",
-     "level": "142.0032"
-    },
-    "triggered": null,
-    "ended_t": null,
-    "end_reason": null,
-    "post_trigger_action": null,
-    "records": []
-   },
+   "lifecycles": [
+    {
+     "lifecycle_id": "sol_haiku_ta-L1",
+     "start_t": 1754870400,
+     "invalidation": {
+      "timeframe": "1h_close",
+      "operator": "price_at_or_below",
+      "level": "142.0032"
+     },
+     "triggered": null,
+     "ended_t": null,
+     "end_reason": null,
+     "post_trigger_action": null,
+     "records": []
+    }
+   ],
+   "active_lifecycle_id": "sol_haiku_ta-L1",
    "fees_total": "2.999965520",
    "trades": [],
    "theses": [
@@ -427,7 +460,8 @@
    "entry": null,
    "stop": null,
    "tp": null,
-   "lifecycle": null,
+   "lifecycles": [],
+   "active_lifecycle_id": null,
    "fees_total": "0",
    "trades": [],
    "theses": [],
@@ -445,7 +479,8 @@
    "entry": null,
    "stop": null,
    "tp": null,
-   "lifecycle": null,
+   "lifecycles": [],
+   "active_lifecycle_id": null,
    "fees_total": "0",
    "trades": [],
    "theses": [],
@@ -463,7 +498,8 @@
    "entry": null,
    "stop": null,
    "tp": null,
-   "lifecycle": null,
+   "lifecycles": [],
+   "active_lifecycle_id": null,
    "fees_total": "0",
    "trades": [],
    "theses": [
@@ -487,7 +523,8 @@
    "entry": null,
    "stop": null,
    "tp": null,
-   "lifecycle": null,
+   "lifecycles": [],
+   "active_lifecycle_id": null,
    "fees_total": "0",
    "trades": [],
    "theses": [

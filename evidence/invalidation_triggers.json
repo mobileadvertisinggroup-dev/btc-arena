@@ -1,5 +1,6 @@
 {
  "btc_haiku_raw": {
+  "lifecycle_id": "btc_haiku_raw-L1",
   "start_t": 1754870400,
   "invalidation": {
    "timeframe": "1m_intrabar",
@@ -17,6 +18,7 @@
   "records": []
  },
  "eth_haiku_raw": {
+  "lifecycle_id": "eth_haiku_raw-L1",
   "start_t": 1754870400,
   "invalidation": {
    "timeframe": "1m_intrabar",
