@@ -45,9 +45,15 @@ DECISION_INTERVAL_MIN = 55   # run a round if >=55 min since the last one
 MIN_ORDER_USD = 10.0
 
 TRADERS = [
-    {"id": "haiku",  "display": "Moudir (Haiku 4.5)", "api_model": "claude-haiku-4-5"},
-    {"id": "sonnet", "display": "Jamil (Sonnet 5)",   "api_model": "claude-sonnet-5"},
-    {"id": "opus",   "display": "Ziad (Opus 4.8)",    "api_model": "claude-opus-4-8"},
+    # raw arm — sees only raw candles
+    {"id": "haiku",  "display": "Moudir (Haiku 4.5)", "api_model": "claude-haiku-4-5", "ta": False},
+    {"id": "sonnet", "display": "Jamil (Sonnet 5)",   "api_model": "claude-sonnet-5", "ta": False},
+    {"id": "opus",   "display": "Ziad (Opus 4.8)",    "api_model": "claude-opus-4-8", "ta": False},
+    # TA arm — same models, same prompt, but also gets a technical-indicator
+    # pack + Fear & Greed sentiment. The A/B: does the feature pack help?
+    {"id": "haiku_ta",  "display": "Moudir+ (Haiku 4.5 TA)", "api_model": "claude-haiku-4-5", "ta": True},
+    {"id": "sonnet_ta", "display": "Jamil+ (Sonnet 5 TA)",   "api_model": "claude-sonnet-5", "ta": True},
+    {"id": "opus_ta",   "display": "Ziad+ (Opus 4.8 TA)",    "api_model": "claude-opus-4-8", "ta": True},
 ]
 
 MOCK = os.environ.get("BTC_ARENA_MOCK") == "1"
@@ -153,24 +159,132 @@ def fetch_klines(interval, limit):
         return order[1]()
 
 
+# ---------------------------------------------------------------- indicators
+
+def sma(vals, n):
+    return sum(vals[-n:]) / n if len(vals) >= n else None
+
+
+def ema_series(vals, n):
+    k = 2 / (n + 1)
+    e = vals[0]
+    out = [e]
+    for v in vals[1:]:
+        e = v * k + e * (1 - k)
+        out.append(e)
+    return out
+
+
+def rsi(vals, n=14):
+    if len(vals) < n + 1:
+        return None
+    gains = losses = 0.0
+    for i in range(1, n + 1):
+        d = vals[i] - vals[i - 1]
+        gains += max(d, 0)
+        losses += max(-d, 0)
+    ag, al = gains / n, losses / n
+    for i in range(n + 1, len(vals)):
+        d = vals[i] - vals[i - 1]
+        ag = (ag * (n - 1) + max(d, 0)) / n
+        al = (al * (n - 1) + max(-d, 0)) / n
+    if al == 0:
+        return 100.0
+    return 100 - 100 / (1 + ag / al)
+
+
+def macd(vals):
+    if len(vals) < 35:
+        return None
+    line = [a - b for a, b in zip(ema_series(vals, 12), ema_series(vals, 26))]
+    signal = ema_series(line, 9)
+    return line[-1], signal[-1], line[-1] - signal[-1]
+
+
+def bollinger(vals, n=20, k=2.0):
+    if len(vals) < n:
+        return None
+    window = vals[-n:]
+    mid = sum(window) / n
+    sd = (sum((v - mid) ** 2 for v in window) / n) ** 0.5
+    return mid + k * sd, mid, mid - k * sd
+
+
+def atr(candles, n=14):
+    if len(candles) < n + 1:
+        return None
+    trs = []
+    for i in range(1, len(candles)):
+        h, l, pc = candles[i]["h"], candles[i]["l"], candles[i - 1]["c"]
+        trs.append(max(h - l, abs(h - pc), abs(l - pc)))
+    a = sum(trs[:n]) / n
+    for tr in trs[n:]:
+        a = (a * (n - 1) + tr) / n
+    return a
+
+
+def fetch_fear_greed():
+    try:
+        d = http_get_json("https://api.alternative.me/fng/", timeout=10)
+        row = d["data"][0]
+        return f"{row['value']} ({row['value_classification']})"
+    except Exception:
+        return None
+
+
+def build_ta_block(hourly, daily):
+    """The TA arm's extra briefing. Hourly closes unless noted."""
+    hc = [c["c"] for c in hourly]
+    dc = [c["c"] for c in daily]
+    lines = ["=== TECHNICAL INDICATORS (hourly unless noted) ==="]
+
+    def f(v, nd=1):
+        return f"{v:.{nd}f}" if v is not None else "n/a"
+
+    r = rsi(hc)
+    lines.append(f"RSI(14): {f(r)}")
+    m = macd(hc)
+    if m:
+        lines.append(f"MACD(12,26,9): line {m[0]:+.1f}  signal {m[1]:+.1f}  "
+                     f"histogram {m[2]:+.1f}")
+    b = bollinger(hc)
+    if b:
+        lines.append(f"Bollinger(20,2): upper {b[0]:.0f}  mid {b[1]:.0f}  "
+                     f"lower {b[2]:.0f}")
+    lines.append(f"SMA 20/50/200: {f(sma(hc, 20), 0)} / {f(sma(hc, 50), 0)} / "
+                 f"{f(sma(hc, 200), 0)}")
+    e12, e26 = ema_series(hc, 12)[-1], ema_series(hc, 26)[-1]
+    lines.append(f"EMA 12/26: {e12:.0f} / {e26:.0f}")
+    lines.append(f"ATR(14): {f(atr(hourly), 0)}")
+    lines.append(f"Daily SMA 20/50: {f(sma(dc, 20), 0)} / {f(sma(dc, 50), 0)}")
+    lines.append(f"Daily RSI(14): {f(rsi(dc))}")
+    fg = fetch_fear_greed()
+    if fg:
+        lines.append(f"Crypto Fear & Greed Index: {fg}")
+    return "\n".join(lines)
+
+
 # ---------------------------------------------------------------- state
 
+def new_trader(tconf):
+    return {
+        "display": tconf["display"], "api_model": tconf["api_model"],
+        "equity": START_CASH,        # realized equity (cash basis)
+        "qty": 0.0,                  # BTC; + long, - short
+        "entry": None, "stop": None, "tp": None,
+        "opened_at": None,
+        "invalidation": None,        # the model's own "what proves me wrong"
+        "liquidated": False,
+        "trades": [],                # closed trades
+        "n_decisions": 0,
+        "last_reasonings": [],       # last 3, newest last
+    }
+
+
 def default_state():
-    traders = {}
-    for t in TRADERS:
-        traders[t["id"]] = {
-            "display": t["display"], "api_model": t["api_model"],
-            "equity": START_CASH,        # realized equity (cash basis)
-            "qty": 0.0,                  # BTC; + long, - short
-            "entry": None, "stop": None, "tp": None,
-            "opened_at": None,
-            "liquidated": False,
-            "trades": [],                # closed trades
-            "n_decisions": 0,
-            "last_reasonings": [],       # last 3, newest last
-        }
     return {"started_at": iso(), "last_decision_at": None,
-            "last_tick_at": None, "last_price": None, "traders": traders}
+            "last_tick_at": None, "last_price": None,
+            "traders": {t["id"]: new_trader(t) for t in TRADERS}}
 
 
 def load_state():
@@ -179,10 +293,14 @@ def load_state():
             state = json.load(f)
     else:
         state = default_state()
-    # display names follow the TRADERS config so renames apply to a live game
+    # sync roster with the TRADERS config: renames apply to a live game and
+    # newly added traders join with a fresh $10k account
     for tc in TRADERS:
         if tc["id"] in state["traders"]:
             state["traders"][tc["id"]]["display"] = tc["display"]
+            state["traders"][tc["id"]].setdefault("invalidation", None)
+        else:
+            state["traders"][tc["id"]] = new_trader(tc)
     return state
 
 
@@ -348,9 +466,19 @@ DECISION_TOOL = {
                                 "round (2-5 sentences). Shown on the public "
                                 "leaderboard."),
             },
+            "invalidation": {
+                "type": "string",
+                "description": ("The specific, observable market condition "
+                                "that would prove this thesis WRONG (e.g. "
+                                "'hourly close below 62500' or '2 consecutive "
+                                "daily closes above the 20-day SMA'). If you "
+                                "are flat, state what would make you enter. "
+                                "You will be shown this next round and must "
+                                "confront it honestly."),
+            },
         },
         "required": ["position", "size_usd", "stop_loss", "take_profit",
-                     "reasoning"],
+                     "reasoning", "invalidation"],
         "additionalProperties": False,
     },
 }
@@ -364,10 +492,12 @@ Rules of the venue:
 - If equity falls to the 2% maintenance margin your position is force-liquidated. Equity at $0 means you are out of the game permanently.
 - No funding rates, no slippage; fills at the traded price.
 
-You are completely free: strategy, timeframe, risk management, whether to use stops at all — every choice is yours. You will see your own past reasoning to maintain continuity. Submit your decision with the submit_decision tool."""
+You are completely free: strategy, timeframe, risk management, whether to use stops at all — every choice is yours. You will see your own past reasoning to maintain continuity.
+
+Accountability rule: every decision must include an invalidation signal — the specific market condition that would prove your thesis wrong. Next round you will be shown your stated invalidation and are expected to confront it honestly: if it has triggered, act accordingly rather than moving the goalposts. Submit your decision with the submit_decision tool."""
 
 
-def build_user_prompt(t, market):
+def build_user_prompt(t, market, ta=False):
     h = market["hourly"]
     d = market["daily"]
     price = market["price"]
@@ -384,6 +514,9 @@ def build_user_prompt(t, market):
     lines.append("Last 30 daily closes (oldest first): "
                  + " ".join(f"{c['c']:.0f}" for c in d[-30:]))
     lines.append("")
+    if ta and market.get("ta_block"):
+        lines.append(market["ta_block"])
+        lines.append("")
     eq = equity_total(t, price)
     lines.append("=== YOUR ACCOUNT ===")
     lines.append(f"Equity: ${eq:.2f}  (started with $10,000)")
@@ -403,6 +536,10 @@ def build_user_prompt(t, market):
         for tr in t["trades"][-5:]:
             lines.append(f"  {tr['side']} entry {tr['entry']} exit {tr['exit']} "
                          f"P&L {tr['pnl']:+.2f} ({tr['reason']})")
+    if t.get("invalidation"):
+        lines.append(f"Your stated invalidation signal from last round: "
+                     f"\"{t['invalidation']}\" — has it triggered? Confront "
+                     f"it honestly before deciding.")
     if t["last_reasonings"]:
         lines.append("Your reasoning from previous rounds (oldest first):")
         for r in t["last_reasonings"]:
@@ -412,18 +549,20 @@ def build_user_prompt(t, market):
 
 MOCK_DECISIONS = {
     "haiku": {"position": "long", "size_usd": 5000, "stop_loss": None,
-              "take_profit": None, "reasoning": "Mock: testing a long."},
+              "take_profit": None, "reasoning": "Mock: testing a long.",
+              "invalidation": "Mock: close below entry - 3%."},
     "sonnet": {"position": "short", "size_usd": 3000, "stop_loss": None,
-               "take_profit": None, "reasoning": "Mock: testing a short."},
-    "opus": {"position": "flat", "size_usd": 0, "stop_loss": None,
-             "take_profit": None, "reasoning": "Mock: staying flat."},
+               "take_profit": None, "reasoning": "Mock: testing a short.",
+               "invalidation": "Mock: close above entry + 3%."},
 }
+MOCK_DEFAULT = {"position": "flat", "size_usd": 0, "stop_loss": None,
+                "take_profit": None, "reasoning": "Mock: staying flat.",
+                "invalidation": "Mock: breakout either way."}
 
 
 def call_model(api_key, tid, api_model, user_prompt):
     if MOCK:
-        d = dict(MOCK_DECISIONS[tid])
-        # mock stop 3% below/above price if position taken
+        d = dict(MOCK_DECISIONS.get(tid, MOCK_DEFAULT))
         return d, {"mock": True}
     body = {
         "model": api_model,
@@ -537,6 +676,8 @@ def execute_decision(t, dec, price):
             actions.append(f"ignored invalid tp {tp}")
         if t["stop"] is not None or t["tp"] is not None:
             actions.append(f"stop={t['stop']} tp={t['tp']}")
+    inv = dec.get("invalidation")
+    t["invalidation"] = str(inv)[:500] if inv else None
     return "; ".join(actions)
 
 
@@ -551,7 +692,7 @@ def run_decision_round(state, market):
         t = state["traders"][tid]
         if t["liquidated"]:
             continue
-        prompt = build_user_prompt(t, market)
+        prompt = build_user_prompt(t, market, ta=tconf.get("ta", False))
         try:
             dec, usage = call_model(api_key, tid, tconf["api_model"], prompt)
         except Exception as e:
@@ -569,7 +710,9 @@ def run_decision_round(state, market):
             "t": iso(), "trader": tid, "price": round(price, 2),
             "decision": {k: dec.get(k) for k in
                          ("position", "size_usd", "stop_loss", "take_profit")},
-            "reasoning": reasoning, "executed": executed,
+            "reasoning": reasoning,
+            "invalidation": str(dec.get("invalidation", ""))[:500],
+            "executed": executed,
             "equity_after": round(equity_total(t, price), 2),
             "usage": {k: usage.get(k) for k in
                       ("input_tokens", "output_tokens")} if usage else None,
@@ -623,8 +766,10 @@ def tick(force_round=False):
             >= DECISION_INTERVAL_MIN * 60
         if due:
             market = {"price": price,
-                      "hourly": fetch_klines("1h", 26),
-                      "daily": fetch_klines("1d", 31)}
+                      "hourly": fetch_klines("1h", 260),
+                      "daily": fetch_klines("1d", 60)}
+            market["ta_block"] = build_ta_block(market["hourly"],
+                                               market["daily"])
             run_decision_round(state, market)
             price = market["price"]
 
@@ -669,6 +814,7 @@ def gen_dashboard(state):
             "side": side_of(t),
             "notional": round(abs(t["qty"]) * price, 0) if t["qty"] else 0,
             "entry": t["entry"], "stop": t["stop"], "tp": t["tp"],
+            "invalidation": t.get("invalidation"),
             "liquidated": t["liquidated"],
             "n_decisions": t["n_decisions"],
             "n_trades": len(t["trades"]),
@@ -693,7 +839,8 @@ DASHBOARD_TEMPLATE = r"""<!doctype html>
   --surface: #fcfcfb; --page: #f9f9f7;
   --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
   --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
-  --haiku: #2a78d6; --sonnet: #1baf7a; --opus: #eda100;
+  --c-haiku: #2a78d6; --c-sonnet: #1baf7a; --c-opus: #eda100;
+  --c-haiku_ta: #4a3aa7; --c-sonnet_ta: #e34948; --c-opus_ta: #eb6834;
   --up: #006300; --down: #d03b3b;
 }
 @media (prefers-color-scheme: dark) {
@@ -701,7 +848,8 @@ DASHBOARD_TEMPLATE = r"""<!doctype html>
     --surface: #1a1a19; --page: #0d0d0d;
     --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
     --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
-    --haiku: #3987e5; --sonnet: #199e70; --opus: #c98500;
+    --c-haiku: #3987e5; --c-sonnet: #199e70; --c-opus: #c98500;
+    --c-haiku_ta: #9085e9; --c-sonnet_ta: #e66767; --c-opus_ta: #d95926;
     --up: #0ca30c; --down: #e66767;
   }
 }
@@ -772,7 +920,8 @@ td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--grid);
   </tr></thead><tbody></tbody></table></div></div>
 <script>
 const D = __DATA__;
-const COLORS = { haiku: 'var(--haiku)', sonnet: 'var(--sonnet)', opus: 'var(--opus)' };
+const COLORS = Object.fromEntries(D.traders.map(t => [t.id, `var(--c-${t.id})`]));
+const SHORT = Object.fromEntries(D.traders.map(t => [t.id, t.display.split(' ')[0]]));
 const fmt$ = v => '$' + v.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
 const fmt2 = v => '$' + v.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const ftime = s => new Date(s).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
@@ -803,13 +952,14 @@ document.getElementById('tiles').innerHTML = ranked.map((t,i) => {
     <div class="eq">${fmt2(t.equity)}</div>
     <div class="pnl ${cls}">${t.pnl_pct >= 0 ? '+' : ''}${t.pnl_pct.toFixed(2)}%</div>
     <div class="pos">${pos}</div>
+    ${t.invalidation ? `<div class="pos">Invalidation: ${t.invalidation.replace(/</g,'&lt;')}</div>` : ''}
     <div class="pos">${t.n_decisions} decisions · ${t.n_trades} closed trades</div>
   </div>`;
 }).join('');
 
 document.getElementById('legend').innerHTML = D.traders.map(t =>
   `<span><span class="dot" style="background:${COLORS[t.id]}"></span>${t.display}</span>`
-).join('') + '<span style="color:var(--muted)">dashed = $10,000 start</span>';
+).join('') + '<span style="color:var(--muted)">dashed = $10,000 start · "+" traders get technical indicators &amp; sentiment, plain traders get raw candles only</span>';
 
 // equity chart
 (function chart() {
@@ -821,7 +971,7 @@ document.getElementById('legend').innerHTML = D.traders.map(t =>
   }
   const W = 1060, H = 320, ML = 56, MR = 70, MT = 12, MB = 26;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  const keys = ['haiku','sonnet','opus'];
+  const keys = D.traders.map(t => t.id).filter(k => rows.some(r => typeof r[k] === 'number'));
   const t0 = new Date(rows[0].t).getTime(), t1 = new Date(rows[rows.length-1].t).getTime();
   let lo = Infinity, hi = -Infinity;
   for (const r of rows) for (const k of keys) {
@@ -847,13 +997,13 @@ document.getElementById('legend').innerHTML = D.traders.map(t =>
   // start line
   g += `<line x1="${ML}" y1="${Y(D.start_cash)}" x2="${W-MR}" y2="${Y(D.start_cash)}" stroke="var(--axis)" stroke-width="1" stroke-dasharray="4 4"/>`;
   // series
-  const names = { haiku: 'Moudir', sonnet: 'Jamil', opus: 'Ziad' };
+  const lastRow = rows[rows.length-1];
   for (const k of keys) {
     const pts = rows.filter(r => typeof r[k] === 'number')
       .map(r => `${X(new Date(r.t).getTime()).toFixed(1)},${Y(r[k]).toFixed(1)}`);
     g += `<polyline points="${pts.join(' ')}" fill="none" stroke="${COLORS[k]}" stroke-width="2" stroke-linejoin="round"/>`;
-    const lastRow = rows[rows.length-1];
-    g += `<text x="${W-MR+6}" y="${Y(lastRow[k])+4}" font-size="11.5" font-weight="600" fill="${COLORS[k]}">${names[k]}</text>`;
+    if (typeof lastRow[k] === 'number')
+      g += `<text x="${W-MR+6}" y="${Y(lastRow[k])+4}" font-size="11.5" font-weight="600" fill="${COLORS[k]}">${SHORT[k]}</text>`;
   }
   g += `<line id="xhair" x1="0" y1="${MT}" x2="0" y2="${H-MB}" stroke="var(--axis)" stroke-width="1" visibility="hidden"/>`;
   svg.innerHTML = g;
@@ -873,7 +1023,8 @@ document.getElementById('legend').innerHTML = D.traders.map(t =>
     xh.setAttribute('x1', cx); xh.setAttribute('x2', cx);
     xh.setAttribute('visibility', 'visible');
     tip.innerHTML = `<b>${ftime(r.t)}</b> · BTC ${fmt$(r.price)}<br>` +
-      keys.map(k => `<span style="color:${COLORS[k]}">&#9679;</span> ${names[k]}: ${fmt2(r[k])}`).join('<br>');
+      keys.filter(k => typeof r[k] === 'number')
+        .map(k => `<span style="color:${COLORS[k]}">&#9679;</span> ${SHORT[k]}: ${fmt2(r[k])}`).join('<br>');
     tip.style.display = 'block';
     const left = Math.min(ev.clientX - rect.left + 14, rect.width - 190);
     tip.style.left = left + 'px';
@@ -901,6 +1052,7 @@ document.getElementById('feed').innerHTML = D.decisions.length === 0
       <span><b>${(dec.position||'').toUpperCase()}</b>${dec.size_usd ? ' ' + fmt$(dec.size_usd) : ''}</span>
       <span>equity ${fmt2(d.equity_after)}</span></div>
       <div class="reason">${(d.reasoning||'').replace(/</g,'&lt;')}</div>
+      ${d.invalidation ? `<div class="exec">Invalidation: ${d.invalidation.replace(/</g,'&lt;')}</div>` : ''}
       <div class="exec">${(d.executed||'').replace(/</g,'&lt;')}</div></div>`;
   }).join('');
 
