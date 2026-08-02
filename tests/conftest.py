@@ -82,16 +82,19 @@ class ScriptedCaller:
     """Offline stub caller: decisions per account id (list = per attempt)."""
 
     def __init__(self, script, default="flat"):
+        import threading
         self.script = dict(script)
         self.default = default
         self.calls = []
         self.in_flight_max = 0
+        self._lock = threading.Lock()
 
     def __call__(self, account_id, system, user, retry_msg):
-        self.calls.append({"id": account_id, "retry": retry_msg is not None})
-        item = self.script.get(account_id)
-        if isinstance(item, list):
-            item = item.pop(0) if item else None
+        with self._lock:
+            self.calls.append({"id": account_id, "retry": retry_msg is not None})
+            item = self.script.get(account_id)
+            if isinstance(item, list):
+                item = item.pop(0) if item else None
         if isinstance(item, Exception):
             raise item
         if callable(item):
@@ -104,16 +107,20 @@ class ScriptedCaller:
 
 
 def run_prod(accounts, snapshots, cfg, caller=None, clock=None, candles=None,
-             crash_at=None, store=None):
+             crash_at=None, store=None, replay_spec=None):
     """Run the AUTHORITATIVE coordinator (recovery.run_checkpointed) against a
     throwaway store, then mirror the persisted result back into `accounts`."""
     if not callable(caller):
         caller = ScriptedCaller(caller or {})
     store = store or tempfile.mkdtemp(prefix="arena-prod-")
     persistence.save_state(store + "/state.json", accounts, {"boundary": None})
+    if replay_spec is None and candles is not None:
+        replay_spec = {coin: {"start": cs[0]["t"] if cs else T0,
+                              "end": (cs[-1]["t"] + 60) if cs else T0,
+                              "candles": cs} for coin, cs in candles.items()}
     ledger, archive, parchive = recovery.run_checkpointed(
         T0, snapshots, caller, cfg, store, crash_at=crash_at,
-        candles_after_by_coin=candles, clock=clock)
+        replay_spec=replay_spec, clock=clock)
     loaded, _ = persistence.load_state(store + "/state.json")
     accounts.clear()
     accounts.update(loaded)

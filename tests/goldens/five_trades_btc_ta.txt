@@ -100,7 +100,7 @@ Price minus VWAP: +2.56%
 Equity: $9994.99
 Position: flat — no position
 Total fees paid so far: $5.01
-Maximum position size this round: $49975 notional (5x equity)
+Maximum target for new or increased exposure this round: $49975 notional. Existing exposure above this amount may be held or reduced, but not increased.
 
 Closed trades (5 total, most recent 5 shown, oldest first):
 long | entry 67598.02 | exit 67598.02 | P&L -0.499988754930 | closed 1754861700 | reason decision_close

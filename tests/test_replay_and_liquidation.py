@@ -142,8 +142,8 @@ def test_ended_lifecycle_never_triggers():
                                     "operator": "price_at_or_below", "level": 90})
     rec = []
     replay.replay([a], [mk(60, 98, 98, 97, 98)], rec)             # stopped out
-    lc = a["lifecycle"]
-    assert lc is not None and lc["ended_t"] == 60
+    lc = a["lifecycles"][0]                                        # history kept
+    assert a["lifecycle"] is None and lc["ended_t"] == 60
     hour = [mk(t, 85, 85, 84, 85) for t in range(120, 3600, 60)]
     replay.replay([a], hour + [mk(3540, 85, 85, 84, 85)], rec)
     assert lc["triggered"] is None

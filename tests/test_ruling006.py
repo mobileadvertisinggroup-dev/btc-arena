@@ -127,29 +127,28 @@ def test_gap_wording_in_system_prompt_and_leverage_wording():
     assert "never force-deleveraged" in s
 
 
-def test_coordinator_coin_termination_on_replay_gap(accounts, snapshots, cfg):
+def test_replay_gap_now_sets_catchup_not_termination(accounts, snapshots, cfg):
+    """Ruling 008.6 supersedes immediate termination: short gap => CATCHUP."""
     from conftest import load_fix
     from engine import marketdata
     good = [c for c in marketdata.to_dec(load_fix("SOL", "1m"))
             if T0 <= c["t"] < T0 + 600]
-    gapped = good[:3] + good[5:]                      # missing candles
+    gapped = good[:3] + good[5:]
     import tempfile
-    store = tempfile.mkdtemp(prefix="arena-term-")
+    store = tempfile.mkdtemp(prefix="arena-catchup-")
     led1, *_ = run_prod(accounts, snapshots, cfg, None, store=store,
-                        candles={"SOL": gapped})
-    term = [e for e in led1 if "replay" in e and
-            e["replay"][0]["e"] == "COIN_TERMINATED"]
-    assert term and term[0]["round_id"].startswith("v1-SOL-")
-    # next boundary on same store: SOL pairs abort with COIN_TERMINATED
-    accounts2, meta = persistence.load_state(store + "/state.json")
-    assert meta["coin_terminated"]["SOL"] is True
+                        replay_spec={"SOL": {"start": T0, "end": T0 + 600,
+                                             "candles": gapped}})
+    _, meta = persistence.load_state(store + "/state.json")
+    assert meta["replay_state"]["SOL"]["status"] == "CATCHUP_REQUIRED"
+    assert not meta["coin_terminated"].get("SOL")
+    # next boundary: SOL pairs abort DATA_UNAVAILABLE while catch-up pending
     led2, _, _ = recovery.run_checkpointed(T0 + 3600, snapshots,
                                            ScriptedCaller({}), cfg, store)
     sol = [e for e in led2 if e.get("pair", "").startswith("sol_")]
-    assert sol and all(e["reason"] == "COIN_TERMINATED" for e in sol)
+    assert sol and all(e["reason"] == "DATA_UNAVAILABLE" for e in sol)
     other = [e for e in led2 if e.get("pair", "").startswith(("btc_", "eth_"))]
-    assert all(e["status"] != "PAIR_ABORTED" or e["reason"] != "COIN_TERMINATED"
-               for e in other)
+    assert all(e["status"] == "PAIR_COMMITTED" for e in other)
 
 
 def test_coordinator_new_boundary_reset(accounts, snapshots, cfg):

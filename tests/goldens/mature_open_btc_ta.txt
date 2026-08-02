@@ -100,7 +100,7 @@ Price minus VWAP: +2.56%
 Equity: $9998.00
 Position: long 0.059173 BTC ($4000 notional) | entry 67598.02 | unrealized P&L +0.00 | stop-loss 65570.08 | take-profit 70977.92 | approx. liquidation price -103432.83
 Total fees paid so far: $2.00
-Maximum position size this round: $49990 notional (5x equity)
+Maximum target for new or increased exposure this round: $49990 notional. Existing exposure above this amount may be held or reduced, but not increased.
 
 Closed trades: none yet.
 

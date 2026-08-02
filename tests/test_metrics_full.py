@@ -95,6 +95,7 @@ def test_account_outcomes_and_invalidation_response_shapes():
     a = state.new_account("BTC", "haiku", "raw")
     out = metrics.account_outcomes(a, Decimal("100"))
     assert out["equity"] == "10000.00" and out["terminal"] is False
-    a["lifecycle"] = dict(lc(50, "held"), start_t=0, invalidation={}, records=[])
+    a["lifecycles"] = [dict(lc(50, "held"), lifecycle_id="x-L1", start_t=0,
+                            invalidation={}, records=[])]
     resp = metrics.invalidation_response({"x": a}, {})
     assert resp[0]["post_trigger_action"] == "held"

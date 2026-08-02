@@ -112,7 +112,7 @@ def test_attempt_records_validate(accounts, snapshots, cfg):
     bad = dict(long_decision(p), size_usd=-1)
     accounts["eth_opus_raw"]["terminal"] = True
     script = {"btc_haiku_raw": [bad, long_decision(p, 2000)],
-              "sol_opus_ta": [rounds.TransportError("x")] * 3}
+              "sol_opus_ta": [rounds.TransportError("x")] * 4}
     from conftest import run_prod
     ledger, archive, _, caller = run_prod(accounts, snapshots, cfg,
                                           ScriptedCaller(script))
@@ -140,7 +140,8 @@ def test_lifecycle_trade_dashboard_schemas(accounts, snapshots, cfg):
                          "h": p * Decimal("0.9"), "l": p * Decimal("0.89"),
                          "c": p * Decimal("0.9"), "v": Decimal(1)}], rec)
     enc = persistence._enc(a)
-    _validate("lifecycle", enc["lifecycle"])
+    for lc in enc["lifecycles"]:
+        _validate("lifecycle", lc)
     for tr in enc["trades"]:
         _validate("trade", tr)
     from conftest import run_prod

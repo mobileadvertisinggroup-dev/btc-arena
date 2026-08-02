@@ -54,10 +54,16 @@ def decide(aid, T, p, acct_side, idx):
 
 class SeasonCaller:
     def __init__(self, accounts, T, idx, snapshots):
+        import threading
         self.accounts, self.T, self.idx, self.snaps = accounts, T, idx, snapshots
         self.scripts = {}
+        self._lock = threading.Lock()
 
     def __call__(self, aid, system, user, retry):
+        with self._lock:
+            return self._call(aid, system, user, retry)
+
+    def _call(self, aid, system, user, retry):
         a = self.accounts[aid]
         p = self.snaps[a["coin"]]["P_T"]
         if aid == "sol_haiku_raw" and self.idx == 34 and state.side(a) == "flat" \
@@ -102,11 +108,18 @@ def run_season(store):
         caller = SeasonCaller(accounts, T, idx, snaps)
         after = {c: [x for x in marketdata.to_dec(K[c]["1m"])
                      if T <= x["t"] < T + HOUR] for c in ("BTC", "ETH", "SOL")}
+        spec = {c: {"start": T, "end": T + HOUR, "candles": after[c]}
+                for c in after}
         led, _, _ = recovery.run_checkpointed(T, snaps, caller, cfg, store,
-                                              candles_after_by_coin=after)
+                                              replay_spec=spec)
         all_ledger.extend(led)
     accounts, meta = persistence.load_state(store + "/state.json")
-    attempts = [json.loads(l) for l in open(store + "/attempts.jsonl")]
+    attempts = []
+    adir = os.path.join(store, "attempts")
+    for root, _, fs in os.walk(adir):
+        for fn in sorted(fs):
+            if fn.endswith(".json"):
+                attempts.append(json.load(open(os.path.join(root, fn))))
     rel = metrics.reliability(attempts, all_ledger)
     pl = dashboard.payload(accounts, all_ledger, last_snaps,
                            {"ts": 0, "code_hash": "fixed"},
@@ -120,7 +133,7 @@ def run_season(store):
         "prompts": H(sorted({a["generated_prompt_hash"] for a in attempts})),
         "metrics": H(rel),
         "dashboard": H(pl),
-        "counts": {s: sum(1 for e in all_ledger if e["status"] == s)
+        "counts": {s: sum(1 for e in all_ledger if e.get("status") == s)
                    for s in ("PAIR_COMMITTED", "PAIR_ABORTED", "PAIR_TERMINAL_SPLIT")},
         "terminal": [aid for aid, a in accounts.items() if a["terminal"]],
         "n_attempts": len(attempts),

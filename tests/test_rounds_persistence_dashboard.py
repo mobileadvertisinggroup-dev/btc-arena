@@ -54,7 +54,7 @@ def test_pair_abort_isolates_and_preserves_state(accounts, snapshots, cfg):
 
 
 def test_transport_retries_then_abort(accounts, snapshots, cfg):
-    errs = [rounds.TransportError("boom")] * 3
+    errs = [rounds.TransportError("boom")] * 4
     script = {"eth_opus_ta": errs}
     ledger, archive, _, caller = run(accounts, snapshots, cfg, script)
     ab = [e for e in ledger if e["status"] == "PAIR_ABORTED"][0]
@@ -88,7 +88,11 @@ def test_missing_coin_data_aborts_only_that_coin(accounts, snapshots, cfg):
 
 
 def test_deadline_aborts_remaining_pairs(accounts, snapshots, cfg):
-    ledger, *_ = run(accounts, snapshots, cfg, clock=lambda: T0 + 13 * 60)
+    tick = [0.0]
+    def clock():                    # monotonic; jumps past deadline immediately
+        tick[0] += 800.0
+        return tick[0]
+    ledger, *_ = run(accounts, snapshots, cfg, clock=clock)
     assert all(e["status"] == "PAIR_ABORTED" and e["reason"] == "deadline_exceeded"
                for e in ledger)
 

@@ -100,7 +100,7 @@ Price minus VWAP: -1.57%
 Equity: $9998.00
 Position: long 1.54864 ETH ($4000 notional) | entry 2582.90 | unrealized P&L +0.00 | stop-loss 2505.41 | take-profit 2712.05 | approx. liquidation price -3952.13
 Total fees paid so far: $2.00
-Maximum position size this round: $49990 notional (5x equity)
+Maximum target for new or increased exposure this round: $49990 notional. Existing exposure above this amount may be held or reduced, but not increased.
 
 Closed trades: none yet.
 

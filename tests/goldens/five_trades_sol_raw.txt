@@ -88,7 +88,7 @@ Volume is base-asset trading volume reported by the Kraken spot market for each 
 Equity: $9994.99
 Position: flat — no position
 Total fees paid so far: $5.01
-Maximum position size this round: $49975 notional (5x equity)
+Maximum target for new or increased exposure this round: $49975 notional. Existing exposure above this amount may be held or reduced, but not increased.
 
 Closed trades (5 total, most recent 5 shown, oldest first):
 long | entry 147.92 | exit 147.92 | P&L -0.499969600 | closed 1754861700 | reason decision_close

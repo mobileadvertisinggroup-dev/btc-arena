@@ -37,9 +37,10 @@ def script_for(snapshots):
 
 def run(store, snapshots, cfg, crash_at=None, script=None):
     caller = ScriptedCaller(script or script_for(snapshots))
+    ca = candles_after(snapshots)
+    spec = {c: {"start": T0, "end": T0 + 30 * 60, "candles": ca[c]} for c in ca}
     return recovery.run_checkpointed(T0, snapshots, caller, cfg, store,
-                                     crash_at=crash_at,
-                                     candles_after_by_coin=candles_after(snapshots))[0]
+                                     crash_at=crash_at, replay_spec=spec)[0]
 
 
 @pytest.mark.parametrize("point", CRASH_POINTS)
