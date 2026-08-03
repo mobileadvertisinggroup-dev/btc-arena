@@ -249,7 +249,7 @@ const MODEL = {haiku:{name:'Haiku 4.5',c:'var(--haiku)',mono:'H'},
 const COINS = ['BTC','ETH','SOL'];
 const $ = id => document.getElementById(id);
 const N = v => Number(v);
-const money = v => '$' + N(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const money = v => v == null ? 'MARK N/A' : '$' + N(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const px = v => v == null ? '—' : N(v).toLocaleString('en-US',{maximumFractionDigits:2});
 const qp = new URLSearchParams(location.search);
 let demo = qp.get('demo') === '1';
@@ -298,10 +298,14 @@ function strip(){
       <div class="v">${money(t.price)}</div>
       <div class="sub">updated ${new Date(t.at).toLocaleTimeString()}${stale ? ' · STALE' : ''}</div></div>`;
   });
+  const live = D.mode === 'PILOT_12H';
+  const lc = {THINKING: 'THINKING — AWAITING RESPONSES', READY: 'READY',
+              ROUND_COMMITTED: 'ROUND COMMITTED'}[D.round_lifecycle] || '—';
   const info = [
-    ['MODE', 'Preparation'],
-    ['PILOT PROGRESS', `${(D.pilot_progress || {done:0}).done} / 12`],
-    ['ACCOUNTS', demo ? 'demo scenario' : 'inactive — waiting'],
+    ['MODE', live ? '12-HOUR PILOT' : 'Preparation'],
+    ['ROUND STATUS', lc],
+    ['PILOT PROGRESS', `${(D.pilot_progress || {done:0}).done} / ${(D.pilot_progress || {total:12}).total || 12}`],
+    ['ACCOUNTS', live ? 'live paper accounts' : (demo ? 'demo scenario' : 'inactive — waiting')],
   ].map(([l, v]) => `<div class="cell"><div class="l">${l}</div><div class="v">${v}</div></div>`);
   $('strip').innerHTML = mkt.join('') + info.join('')
     + `<div class="ticker-note">Display-only market ticker (Coinbase spot, 30s refresh). Official experiment execution uses Kraken data.</div>`;
@@ -310,10 +314,11 @@ function strip(){
 /* ---------------- chart ---------------- */
 function seriesMetric(a){
   return (a.series || []).map(pt => {
+    if (metric === 'Fees') return N(pt.fees);
+    if (pt.equity == null) return null;             // mark unavailable: gap, never $0
     const eq = N(pt.equity);
     if (metric === 'Equity') return eq;
     if (metric === 'Return') return (eq / 10000 - 1) * 100;
-    if (metric === 'Fees') return N(pt.fees);
     if (metric === 'Drawdown') return Math.min(0, (eq / 10000 - 1) * 100);
     return demo ? N(a.notional || 0) / 10000 : 0;   // Turnover multiples
   });
@@ -329,8 +334,10 @@ function chart(){
       const accts = allAccounts().filter(a => a.arm === arm);
       const n = accts[0].series.length, pts = [];
       for (let i = 0; i < n; i++){
-        let v = 0; accts.forEach(a => v += seriesMetric(a)[i]);
-        pts.push(v / accts.length);
+        let v = 0, ok = true;
+        accts.forEach(a => { const m = seriesMetric(a)[i];
+                             if (m == null) ok = false; else v += m; });
+        pts.push(ok ? v / accts.length : null);
       }
       series.push({label: arm === 'raw' ? 'RAW' : 'FEATURE', color: 'var(--ink)',
                    dash: arm === 'ta', pts});
@@ -344,15 +351,16 @@ function chart(){
       }
   }
   chartRows = series;
-  let lo = Math.min(...series.flatMap(s => s.pts));
-  let hi = Math.max(...series.flatMap(s => s.pts));
+  const vals = series.flatMap(s => s.pts).filter(v => v != null);
+  let lo = vals.length ? Math.min(...vals) : 0;
+  let hi = vals.length ? Math.max(...vals) : 0;
   if (hi === lo){ hi += metric === 'Equity' ? 130 : 1; lo -= metric === 'Equity' ? 130 : 1; }
   const pad = (hi - lo) * .12; lo -= pad; hi += pad;
   const nx = series[0].pts.length;
   const X = i => ML + (W - ML - MR) * (nx === 1 ? 0 : i / (nx - 1));
   const Y = v => MT + (H - MT - MB) * (1 - (v - lo) / (hi - lo));
-  const fmtV = v => metric === 'Equity' || metric === 'Fees'
-    ? money(v) : v.toFixed(2) + (metric === 'Turnover' ? 'x' : '%');
+  const fmtV = v => v == null ? 'MARK N/A' : (metric === 'Equity' || metric === 'Fees'
+    ? money(v) : v.toFixed(2) + (metric === 'Turnover' ? 'x' : '%'));
   let g = '';
   for (let i = 0; i <= 5; i++){
     const v = lo + (hi - lo) * i / 5, y = Y(v);
@@ -364,25 +372,35 @@ function chart(){
      + `<line x1="${ML}" y1="${H-MB}" x2="${W-MR}" y2="${H-MB}" stroke="var(--rule)" stroke-width="2"/>`
      + `<text x="${ML}" y="${H-8}" font-size="11" fill="var(--mut)" font-family="inherit">${demo ? 'start' : ''}</text>`
      + `<text x="${W-MR}" y="${H-8}" text-anchor="end" font-size="11" fill="var(--mut)" font-family="inherit">${demo ? 'demo now' : ''}</text>`;
-  // endpoint labels with collision avoidance
-  const ends = series.map((s, i) => ({i, y: Y(s.pts[s.pts.length-1]), s}))
+  // endpoint labels with collision avoidance (last AVAILABLE point)
+  const lastVal = s => [...s.pts].reverse().find(v => v != null);
+  const ends = series.map((s, i) => ({i, y: Y(lastVal(s) == null ? lo : lastVal(s)), s}))
                      .sort((a, b) => a.y - b.y);
   let lastY = -99;
   ends.forEach(e => { e.ly = Math.max(e.y, lastY + 14); lastY = e.ly; });
   series.forEach(s => {
-    const pts = s.pts.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
-    g += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.5"
-          ${s.dash ? 'stroke-dasharray="8 6"' : ''}/>`;
+    // null points (mark unavailable) break the line into segments — a gap is
+    // drawn rather than a fabricated value
+    const segs = []; let cur = [];
+    s.pts.forEach((v, i) => {
+      if (v == null){ if (cur.length) segs.push(cur); cur = []; }
+      else cur.push(`${X(i).toFixed(1)},${Y(v).toFixed(1)}`);
+    });
+    if (cur.length) segs.push(cur);
+    segs.forEach(pl => {
+      g += `<polyline points="${pl.join(' ')}" fill="none" stroke="${s.color}" stroke-width="2.5"
+            ${s.dash ? 'stroke-dasharray="8 6"' : ''}/>`;
+    });
   });
   ends.forEach(e => {
     g += `<text x="${W-MR+8}" y="${e.ly+4}" font-size="11.5" font-weight="700"
           fill="${e.s.color}" font-family="inherit">${e.s.label}${e.s.dash ? ' ┄' : ''}</text>`;
   });
   svg.innerHTML = g;
-  $('chartmsg').textContent = demo ? '' : 'WAITING FOR PILOT ACTIVITY';
+  $('chartmsg').textContent = (demo || D.mode === 'PILOT_12H') ? '' : 'WAITING FOR PILOT ACTIVITY';
   $('charttitle').textContent = metric.toUpperCase();
   $('charttf').textContent = (coinTab === 'AGGREGATE' ? ' · Raw vs Feature aggregate' : ` · ${coinTab} arena`)
-    + (demo ? ' · demo timeframe' : ' · timeframe: pre-start');
+    + (demo ? ' · demo timeframe' : (D.mode === 'PILOT_12H' ? ' · live pilot boundaries' : ' · timeframe: pre-start'));
   $('legend').innerHTML = series.map(s =>
     `<span><span class="sw ${s.dash?'dash':''}" style="border-color:${s.color}"></span>${s.label}</span>`).join('');
   svg.onmousemove = ev => {
@@ -537,7 +555,7 @@ function leaderboard(){
       <td>${a.arm === 'raw' ? 'Raw' : 'Feature'}</td><td>${money(a.equity)}</td>
       <td class="${a.ret >= 0 ? 'up' : 'down'}">${a.ret >= 0 ? '+' : ''}${a.ret.toFixed(2)}%</td>
       <td>${a.ret < 0 ? a.ret.toFixed(2) + '%' : '0.00%'}</td><td>${money(a.fees)}</td>
-      <td>${a.terminal ? 'CLOSED' : (a.status_text || (demo ? 'demo' : 'Waiting for pilot'))}</td></tr>`).join('')}
+      <td>${a.terminal ? 'CLOSED' : (a.status_text || (D.mode === 'PILOT_12H' ? 'live' : demo ? 'demo' : 'Waiting for pilot'))}</td></tr>`).join('')}
     </table></div>`;
 }
 function boot(){
@@ -555,8 +573,29 @@ function boot(){
 window.setCoin = t => { coinTab = t; chart(); };
 window.setMetric = m => { metric = m; chart(); };
 ['f_model','f_coin','f_arm'].forEach(id => $(id).addEventListener('change', panel));
+
+/* ---- live payload auto-refresh (Ruling 011.3): an already-open browser
+   receives each newly published state without a manual reload. Cache-busted
+   fetch; on any error the page keeps the last good payload. ---- */
+let lastPub = window.ARENA_LIVE ? window.ARENA_LIVE.publication_id : null;
+async function pollLive(){
+  try {
+    const r = await fetch('live_payload.js?cb=' + Date.now(), {cache: 'no-store'});
+    if (!r.ok) return;
+    const t = await r.text();
+    const pl = JSON.parse(t.slice(t.indexOf('=') + 1).trim().replace(/;$/, ''));
+    if (pl && pl.publication_id && pl.publication_id !== lastPub){
+      lastPub = pl.publication_id;
+      window.ARENA_LIVE = pl;
+      if (!demo) boot();
+    }
+  } catch (e) { /* keep last good payload */ }
+}
+setInterval(pollLive, 60000);
+
 boot();
 pollTicker();
+pollLive();
 </script>
 </body>
 </html>

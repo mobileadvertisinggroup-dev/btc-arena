@@ -1,7 +1,15 @@
-"""Dashboard payload generation (data model only — no HTML, no deployment)."""
+"""Dashboard payload generation (data model only — no HTML, no deployment).
+
+Mark discipline (Ruling 011.2): a coin's mark is a MARKET PRICE or nothing.
+Account cash equity is NEVER substituted for a missing price. With no valid
+mark, an account with an open position publishes explicit null equity/PnL and
+mark_unavailable=true; a flat account's equity is exact cash regardless of
+any mark (qty == 0, so no price enters the calculation)."""
 from decimal import Decimal
 
 from . import state, metrics
+
+_NULL_OUTCOME_KEYS = ("equity", "unrealized_pnl", "total_return_pct")
 
 
 def _account_detail(a, mark):
@@ -13,15 +21,21 @@ def _account_detail(a, mark):
                "level": str(lc["invalidation"]["level"]),
                "status": ("TRIGGERED" if lc["triggered"] else "NOT TRIGGERED"),
                "triggered_t": (lc["triggered"] or {}).get("t")}
-    upnl = (a["qty"] * (mark - a["entry"])) if a["qty"] and a["entry"] else Decimal(0)
+    if not a["qty"]:
+        upnl, notional = "0", "0"
+    elif mark is None:
+        upnl, notional = None, None          # explicit: no valid market mark
+    else:
+        upnl = str(a["qty"] * (mark - a["entry"])) if a["entry"] else "0"
+        notional = str(abs(a["qty"]) * mark)
     return {
         "side": state.side(a),
         "qty": str(abs(a["qty"])),
-        "notional": str(abs(a["qty"]) * mark) if a["qty"] else "0",
+        "notional": notional,
         "entry": str(a["entry"]) if a["entry"] is not None else None,
         "stop": str(a["stop"]) if a["stop"] is not None else None,
         "tp": str(a["tp"]) if a["tp"] is not None else None,
-        "unrealized_pnl": str(upnl),
+        "unrealized_pnl": upnl,
         "thesis": (a["theses"][-1]["text"] if a["theses"] else None),
         "invalidation": inv,
         "watch": ({"level": str(a["watch"]["level"]),
@@ -33,16 +47,36 @@ def _account_detail(a, mark):
     }
 
 
-def payload(accounts, ledger, snapshots, heartbeat, manifest, cfg):
-    marks = {c: s["P_T"] for c, s in snapshots.items() if s}
+def _account_row(a, mark):
+    if mark is not None:
+        out = metrics.account_outcomes(a, mark)
+    elif state.side(a) == "flat":
+        # equity_at(flat, p) == E for every p: cash is exact without a mark
+        out = metrics.account_outcomes(a, Decimal(0))
+    else:
+        out = metrics.account_outcomes(a, a["entry"])
+        for k in _NULL_OUTCOME_KEYS:
+            out[k] = None                    # never fabricate from a stale price
+    row = dict(out, **_account_detail(a, mark))
+    row["mark"] = str(mark) if mark is not None else None
+    row["mark_unavailable"] = mark is None
+    return row
+
+
+def payload(accounts, ledger, snapshots, heartbeat, manifest, cfg, marks=None):
+    """`marks` (optional): {coin: Decimal|str|None} of PERSISTED boundary
+    market marks — the production publisher always supplies these. Without
+    `marks`, marks derive from live snapshots (offline/demo use)."""
+    if marks is None:
+        marks = {c: s["P_T"] for c, s in snapshots.items() if s}
+    marks = {c: (Decimal(str(v)) if v is not None else None)
+             for c, v in marks.items()}
     per_coin = {}
     for coin in state.COINS:
         mark = marks.get(coin)
         coin_accounts = [a for a in accounts.values() if a["coin"] == coin]
         per_coin[coin] = {
-            "accounts": [dict(metrics.account_outcomes(a, mark if mark else a["E"]),
-                              **_account_detail(a, mark if mark else a["E"]))
-                         for a in coin_accounts],
+            "accounts": [_account_row(a, mark) for a in coin_accounts],
             "pairs": [{"model": m,
                        "raw": state.account_id(coin, m, "raw"),
                        "feature": state.account_id(coin, m, "ta")}

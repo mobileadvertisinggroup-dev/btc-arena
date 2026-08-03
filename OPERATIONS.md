@@ -17,16 +17,25 @@ Regenerate the mock payload: `python3 scripts/gen_demo_dashboard.py`
 ```
 ARENA_PILOT_APPROVED=YES-AUDIT-PASSED \
 ARENA_APPROVED_MANIFEST_SHA256=<mentor-approved combined-manifest digest> \
+ARENA_APPROVED_SITE_SHA256=<mentor-approved site-manifest digest> \
 ARENA_DEPLOY_TOKEN=<GitHub push token for the Pages branch> \
 ANTHROPIC_API_KEY=<key> \
   python3 scripts/run_pilot_12h.py --activate
 ```
 
-`ARENA_APPROVED_MANIFEST_SHA256` is issued EXTERNALLY by the independent
-auditor after a formal PASS. The current tree must hash to exactly this
-combined manifest digest BEFORE any state initialization, prompt rendering,
+Both digests are issued EXTERNALLY by the independent auditor after a formal
+PASS: `ARENA_APPROVED_MANIFEST_SHA256` freezes the engine/scripts/config/
+prompts/schemas tree and `ARENA_APPROVED_SITE_SHA256` freezes the static
+production UI (docs/index.html + prestart/demo payloads; the dynamic
+live_payload.js is deliberately excluded). The current tree must hash to
+exactly these digests BEFORE any state initialization, prompt rendering,
 network access, or model call — otherwise the script halts with zero model
-calls. The tree can never approve itself (Ruling 010.1).
+calls. The tree can never approve itself (Rulings 010.1/011.1). The guard
+also verifies the publishing mechanism (deploy token + dulwich) up front, and
+a READY dashboard state must be published AND verified on the public URL
+before the first model call; each boundary then publishes THINKING (before
+requests) and ROUND_COMMITTED (after the atomic commit), each verified
+against the publicly served payload with cache-busting.
 
 When active it: persists a fixed 12-boundary hourly schedule; fetches real
 Kraken OHLC; asks real Claude Haiku/Sonnet/Opus for hourly decisions (paper
@@ -46,7 +55,7 @@ startup.
 ## Exact archive/reset command — after the pilot, before the official run
 
 ```
-ARENA_APPROVED_MANIFEST_SHA256=<mentor-approved combined-manifest digest> \
+ARENA_APPROVED_MANIFEST_SHA256=<digest> ARENA_APPROVED_SITE_SHA256=<digest> \
   python3 scripts/archive_pilot_reset.py --confirm
 ```
 

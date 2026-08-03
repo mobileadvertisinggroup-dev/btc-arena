@@ -1,5 +1,7 @@
 """Ruling 010: external approved-digest provisioning, internal-id validation,
-public publication, and pilot restart/recovery — all offline."""
+public publication, and pilot restart/recovery — all offline.
+(Updated for Ruling 011: provisioning takes engine + site digests; each
+boundary publishes THINKING then ROUND_COMMITTED, gated by a READY publish.)"""
 import json
 import os
 import shutil
@@ -26,30 +28,43 @@ def fake_fetch(coin, T, first):
 
 
 class FakePublisher:
-    """Records exactly what was published; can fail the first N attempts."""
+    """Records exactly what was published. `ok_first` calls succeed, then
+    `fail_times` calls fail, then everything succeeds."""
 
-    def __init__(self, fail_times=0):
+    def __init__(self, fail_times=0, ok_first=0):
         self.published = []
         self.fail_times = fail_times
+        self.ok_first = ok_first
         self._lock = threading.Lock()
 
     def __call__(self, text):
         with self._lock:
-            if self.fail_times > 0:
+            if self.ok_first > 0:
+                self.ok_first -= 1
+            elif self.fail_times > 0:
                 self.fail_times -= 1
                 raise RuntimeError("simulated publish transport failure")
             self.published.append(text)
             return text
+
+    def by_lifecycle(self, lifecycle):
+        return [p for p in map(parse_payload, self.published)
+                if p["round_lifecycle"] == lifecycle]
 
 
 def no_sleep(_):
     pytest.fail("pilot slept although the boundary time had passed")
 
 
+def digests():
+    return (config.build_manifest()["combined"],
+            config.build_site_manifest()["combined"])
+
+
 def provisioned_pilot(n=12):
     store = tempfile.mkdtemp(prefix="arena-r10-")
-    digest = config.build_manifest()["combined"]
-    pilot.provision(store, digest, T0, total=n)
+    eng, site = digests()
+    pilot.provision(store, eng, site, T0, total=n)
     return store
 
 
@@ -57,15 +72,21 @@ def parse_payload(text):
     return json.loads(text.strip()[text.index("=") + 1:].rstrip("; \n"))
 
 
-# ---- 1. externally approved digest: pre-launch code cannot approve itself ----
+def run(store, cfg, caller, pub, crash_at=None):
+    return pilot.run_pilot(store, cfg, caller, fake_fetch, pub,
+                           clock=lambda: FAR_FUTURE, sleep=no_sleep,
+                           crash_at=crash_at)
+
+
+# ---- 1. externally approved digests: pre-launch code cannot approve itself ----
 
 def test_mutated_tree_before_first_store_creation_halts(tmp_path, monkeypatch):
     """Mutate a canonical file BEFORE store creation: integrity halt, zero
-    model calls, no state initialization or mutation. The approved digest is
-    the PRISTINE tree's digest, supplied externally."""
-    approved = config.build_manifest()["combined"]   # mentor-approved digest
+    model calls, no state initialization or mutation. The approved digests
+    are the PRISTINE tree's digests, supplied externally."""
+    eng, site = digests()                            # mentor-approved digests
     tree = tmp_path / "tree"
-    for d in ("engine", "scripts", "prompts", "schemas", "config"):
+    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs"):
         shutil.copytree(os.path.join(config.ROOT, d), tree / d)
     victim = tree / "prompts/v1/system.txt"
     victim.write_bytes(victim.read_bytes() + b"#pre-launch-mutation")
@@ -73,25 +94,52 @@ def test_mutated_tree_before_first_store_creation_halts(tmp_path, monkeypatch):
     store = tempfile.mkdtemp(prefix="arena-r10-mut-")
     caller = ScriptedCaller({})
     with pytest.raises(config.IntegrityError):
-        pilot.provision(store, approved, T0)
+        pilot.provision(store, eng, site, T0)
     assert caller.calls == []                        # zero model calls
     assert os.listdir(store) == []                   # nothing initialized
     with pytest.raises(pilot.ScheduleError):
         pilot.load_schedule(store)
 
 
-@pytest.mark.parametrize("bad", ["", None, "f" * 64, "not-a-digest"])
-def test_provision_requires_exact_external_digest(bad):
-    store = tempfile.mkdtemp(prefix="arena-r10-bad-")
+def test_mutated_site_before_store_creation_halts(tmp_path, monkeypatch):
+    """Ruling 011.1: a mutated STATIC UI file likewise blocks provisioning."""
+    eng, site = digests()
+    tree = tmp_path / "tree"
+    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs"):
+        shutil.copytree(os.path.join(config.ROOT, d), tree / d)
+    victim = tree / "docs/index.html"
+    victim.write_bytes(victim.read_bytes() + b"<!--mutated-->")
+    monkeypatch.setattr(config, "ROOT", str(tree))
+    store = tempfile.mkdtemp(prefix="arena-r10-smut-")
     with pytest.raises(config.IntegrityError):
-        pilot.provision(store, bad, T0)
+        pilot.provision(store, eng, site, T0)
     assert os.listdir(store) == []
 
 
-def test_provision_with_matching_digest_creates_verified_store(cfg):
+@pytest.mark.parametrize("bad", ["", None, "f" * 64, "not-a-digest"])
+def test_provision_requires_exact_external_digest(bad):
+    _, site = digests()
+    store = tempfile.mkdtemp(prefix="arena-r10-bad-")
+    with pytest.raises(config.IntegrityError):
+        pilot.provision(store, bad, site, T0)
+    assert os.listdir(store) == []
+
+
+@pytest.mark.parametrize("bad", ["", None, "f" * 64])
+def test_provision_requires_exact_site_digest(bad):
+    eng, _ = digests()
+    store = tempfile.mkdtemp(prefix="arena-r10-bads-")
+    with pytest.raises(config.IntegrityError):
+        pilot.provision(store, eng, bad, T0)
+    assert os.listdir(store) == []
+
+
+def test_provision_with_matching_digests_creates_verified_store(cfg):
     store = provisioned_pilot()
     m = config.load_launch_manifest(store)
     assert m["combined"] == config.build_manifest()["combined"]
+    sm = config.load_site_manifest(store)
+    assert sm["combined"] == config.build_site_manifest()["combined"]
     accounts, _ = persistence.load_state(os.path.join(store, "state.json"),
                                          expect_full_roster=True)
     assert len(accounts) == 18
@@ -122,13 +170,11 @@ def test_mismatched_internal_id_rejected(cfg, snapshots):
 
 
 def test_duplicate_internal_id_rejected(cfg, snapshots):
-    def m(accounts):
-        accounts["btc_haiku_raw"]["id"] = "btc_haiku_ta"
-        # two records now share the internal id "btc_haiku_ta"
     store = provisioned_pilot()
     spath = os.path.join(store, "state.json")
     accounts, meta = persistence.load_state(spath)
-    m(accounts)
+    accounts["btc_haiku_raw"]["id"] = "btc_haiku_ta"
+    # two records now share the internal id "btc_haiku_ta"
     persistence.save_state(spath, accounts, meta)
     with pytest.raises(persistence.StateCorruption, match="duplicate internal"):
         persistence.load_state(spath)
@@ -150,17 +196,16 @@ def test_progress_advances_0_through_12_one_publication_each(cfg):
     store = provisioned_pilot()
     caller = ScriptedCaller({})
     pub = FakePublisher()
-    sched = pilot.run_pilot(store, cfg, caller, fake_fetch, pub,
-                            clock=lambda: FAR_FUTURE, sleep=no_sleep)
+    sched = run(store, cfg, caller, pub)
     assert len(sched["completed"]) == 12
-    assert len(pub.published) == 12                  # one per committed boundary
-    for i, text in enumerate(pub.published):
-        pl = parse_payload(text)
+    committed = pub.by_lifecycle("ROUND_COMMITTED")
+    assert len(committed) == 12                      # one per committed boundary
+    for i, pl in enumerate(committed):
         assert pl["pilot_progress"] == {"done": i + 1, "total": 12}
         assert pl["published_boundary"] == T0 + i * 3600
         assert pl["mode"] == "PILOT_12H"
     log = publisher.read_log(store)
-    assert all(log[str(T0 + i * 3600)]["status"] == "PUBLISHED"
+    assert all(log[f"{T0 + i * 3600}:committed"]["status"] == "PUBLISHED"
                for i in range(12))
 
 
@@ -168,24 +213,25 @@ def test_rerun_after_completion_publishes_nothing_new(cfg):
     store = provisioned_pilot(n=3)
     caller = ScriptedCaller({})
     pub = FakePublisher()
-    pilot.run_pilot(store, cfg, caller, fake_fetch, pub,
-                    clock=lambda: FAR_FUTURE, sleep=no_sleep)
-    n_calls, n_pubs = len(caller.calls), len(pub.published)
-    pilot.run_pilot(store, cfg, caller, fake_fetch, pub,
-                    clock=lambda: FAR_FUTURE, sleep=no_sleep)
+    run(store, cfg, caller, pub)
+    n_calls = len(caller.calls)
+    n_rounds = len(pub.by_lifecycle("ROUND_COMMITTED"))
+    n_think = len(pub.by_lifecycle("THINKING"))
+    run(store, cfg, caller, pub)                     # rerun: only READY re-verified
     assert len(caller.calls) == n_calls              # no re-trading
-    assert len(pub.published) == n_pubs              # no re-publication
+    assert len(pub.by_lifecycle("ROUND_COMMITTED")) == n_rounds
+    assert len(pub.by_lifecycle("THINKING")) == n_think
 
 
 def test_publication_failure_keeps_engine_state_and_marks_failed(cfg):
     store = provisioned_pilot(n=2)
     caller = ScriptedCaller({})
-    pub = FakePublisher(fail_times=99)               # every publish fails
-    sched = pilot.run_pilot(store, cfg, caller, fake_fetch, pub,
-                            clock=lambda: FAR_FUTURE, sleep=no_sleep)
+    pub = FakePublisher(ok_first=1, fail_times=999)  # READY ok, then all fail
+    sched = run(store, cfg, caller, pub)
     assert len(sched["completed"]) == 2              # trading unaffected
     log = publisher.read_log(store)
-    assert all(log[str(T)]["status"] == "FAILED" for T in sched["completed"])
+    assert all(log[f"{T}:committed"]["status"] == "FAILED"
+               for T in sched["completed"])
     accounts, meta = persistence.load_state(os.path.join(store, "state.json"),
                                             expect_full_roster=True)
     assert meta["boundary_complete"] is True         # committed state intact
@@ -194,9 +240,8 @@ def test_publication_failure_keeps_engine_state_and_marks_failed(cfg):
 def test_retry_republishes_only_no_model_calls_no_trades(cfg):
     store = provisioned_pilot(n=2)
     caller = ScriptedCaller({})
-    failing = FakePublisher(fail_times=99)
-    pilot.run_pilot(store, cfg, caller, fake_fetch, failing,
-                    clock=lambda: FAR_FUTURE, sleep=no_sleep)
+    failing = FakePublisher(ok_first=1, fail_times=999)
+    run(store, cfg, caller, failing)
     n_calls = len(caller.calls)
     spath = os.path.join(store, "state.json")
     lpath = os.path.join(store, "ledger.jsonl")
@@ -208,29 +253,30 @@ def test_retry_republishes_only_no_model_calls_no_trades(cfg):
     assert open(spath, "rb").read() == state_before  # engine state untouched
     assert open(lpath, "rb").read() == ledger_before
     log = publisher.read_log(store)
-    latest = str(T0 + 3600)
-    assert log[latest]["status"] == "PUBLISHED"      # latest re-published
-    assert log[str(T0)]["status"] == "SUPERSEDED"    # older marked stale
+    assert log[f"{T0 + 3600}:committed"]["status"] == "PUBLISHED"
+    assert log[f"{T0}:committed"]["status"] == "SUPERSEDED"
     assert dict(results)[T0 + 3600] == "PUBLISHED"
     pl = parse_payload(working.published[-1])
     assert pl["pilot_progress"]["done"] == 2
 
 
-def test_publisher_lying_about_content_is_failed(cfg):
-    """Verification: a publisher that publishes the wrong payload is FAILED."""
+def test_lying_publisher_fails_ready_gate_zero_model_calls(cfg):
+    """A publisher that publishes the wrong payload fails verification at the
+    READY gate => PublicationError BEFORE any model call (Ruling 011.3)."""
     store = provisioned_pilot(n=1)
     caller = ScriptedCaller({})
 
     def liar(text):
         return 'window.ARENA_LIVE = {"published_boundary": 0};\n'
-    pilot.run_pilot(store, cfg, caller, fake_fetch, liar,
-                    clock=lambda: FAR_FUTURE, sleep=no_sleep)
+    with pytest.raises(publisher.PublicationError):
+        run(store, cfg, caller, liar)
+    assert caller.calls == []                        # gate held: zero calls
     log = publisher.read_log(store)
-    assert log[str(T0)]["status"] == "FAILED"
-    assert "identifier" in log[str(T0)]["reason"]
+    assert log["ready"]["status"] == "FAILED"
+    assert "identifier" in log["ready"]["reason"]
 
 
-# ---- 4. restart/recovery: same schedule, exactly 12 unique boundaries ----
+# ---- 4. restart/recovery: same schedule, exactly N unique boundaries ----
 
 @pytest.mark.parametrize("crash_point", ["after_prompts", "after_one_pair",
                                          "after_checkpoint", "during_replay"])
@@ -240,12 +286,9 @@ def test_crash_restart_resumes_same_schedule(cfg, crash_point):
     caller = ScriptedCaller({})
     pub = FakePublisher()
     with pytest.raises(recovery.CrashError):
-        pilot.run_pilot(store, cfg, caller, fake_fetch, pub,
-                        clock=lambda: FAR_FUTURE, sleep=no_sleep,
-                        crash_at=crash_point)
+        run(store, cfg, caller, pub, crash_at=crash_point)
     # RESTART: same store, no crash injection — must resume, not restart
-    sched = pilot.run_pilot(store, cfg, ScriptedCaller({}), fake_fetch, pub,
-                            clock=lambda: FAR_FUTURE, sleep=no_sleep)
+    sched = run(store, cfg, ScriptedCaller({}), pub)
     assert sched["boundaries"] == sched0["boundaries"]   # schedule unchanged
     assert sorted(sched["completed"]) == sched0["boundaries"]
     assert len(set(sched["completed"])) == 3             # exactly 3 unique
@@ -266,12 +309,9 @@ def test_recovery_rule_applied_on_restart(cfg):
     caller = ScriptedCaller({})
     pub = FakePublisher()
     with pytest.raises(recovery.CrashError):
-        pilot.run_pilot(store, cfg, caller, fake_fetch, pub,
-                        clock=lambda: FAR_FUTURE, sleep=no_sleep,
-                        crash_at="after_one_pair")
+        run(store, cfg, caller, pub, crash_at="after_one_pair")
     n_calls = len(caller.calls)
-    pilot.run_pilot(store, cfg, caller, fake_fetch, pub,
-                    clock=lambda: FAR_FUTURE, sleep=no_sleep)
+    run(store, cfg, caller, pub)
     ledger = persistence.read_ledger(os.path.join(store, "ledger.jsonl"))
     reasons = {e.get("reason") for e in ledger if e.get("status")}
     assert "crash_recovery" in reasons                   # frozen rule applied
@@ -294,8 +334,7 @@ def test_restart_after_boundary_commit_before_mark_is_idempotent(cfg):
     n_calls = len(caller.calls)                          # boundary committed,
     # ...but crash happened before mark_completed: schedule still empty
     assert pilot.load_schedule(store)["completed"] == []
-    sched = pilot.run_pilot(store, cfg, caller, fake_fetch, pub,
-                            clock=lambda: FAR_FUTURE, sleep=no_sleep)
+    sched = run(store, cfg, caller, pub)
     assert len(caller.calls) == n_calls                  # zero duplicate calls
     assert sched["completed"] == [T0]
-    assert len(pub.published) == 1
+    assert len(pub.by_lifecycle("ROUND_COMMITTED")) == 1

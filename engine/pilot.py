@@ -26,13 +26,16 @@ class ScheduleError(Exception):
     pass
 
 
-def provision(store, approved_digest, start, total=12):
+def provision(store, approved_digest, approved_site_digest, start, total=12):
     """Create (or resume) a store ONLY if the current tree matches the
-    EXTERNALLY supplied mentor-approved combined digest (Ruling 010.1).
-    On mismatch nothing is written: no manifest, no state, no schedule.
-    Idempotent on restart: existing state/schedule are preserved verbatim."""
+    EXTERNALLY supplied mentor-approved combined digest (Ruling 010.1) AND
+    the static production UI matches the externally approved site digest
+    (Ruling 011.1). On any mismatch nothing is written: no manifests, no
+    state, no schedule. Idempotent on restart: existing state/schedule are
+    preserved verbatim."""
     config_mod.check_approved_digest(approved_digest)   # halt BEFORE any write
-    config_mod.provision_store(store, approved_digest)
+    config_mod.check_approved_site_digest(approved_site_digest)
+    config_mod.provision_store(store, approved_digest, approved_site_digest)
     spath = os.path.join(store, "state.json")
     if not os.path.exists(spath):
         persistence.save_state(spath, state.init_accounts(), {"boundary": None})
@@ -81,11 +84,18 @@ def run_pilot(store, cfg, caller, fetch_market, publish, clock, sleep,
 
     fetch_market(coin, T, first) -> (snapshot, replay_spec); an exception
     marks that coin DATA_UNAVAILABLE for the boundary. publish(text) -> the
-    text as actually published (verified by engine.publisher). Publication
-    failure is recorded and NEVER re-executes a round; startup reconciles
-    failed publications (publication only) before trading resumes."""
+    text as ACTUALLY PUBLISHED on the public site (verified by
+    engine.publisher). Publication failure is recorded and NEVER re-executes
+    a round; startup reconciles failed publications (publication only).
+
+    Ruling 011.3 lifecycle: a READY state is published and verified BEFORE
+    the first model call — if the public dashboard cannot receive it,
+    PublicationError propagates and no model is ever called. Each boundary
+    then publishes THINKING (before any model request; progress unchanged;
+    no fabricated data) and ROUND_COMMITTED (after the atomic commit)."""
     sched = load_schedule(store)
     publisher_mod.reconcile(store, cfg, publish)
+    publisher_mod.publish_ready(store, cfg, publish)    # gate: raises => halt
     spath = os.path.join(store, "state.json")
     for T in sched["boundaries"]:
         if T in sched["completed"]:
@@ -95,6 +105,9 @@ def run_pilot(store, cfg, caller, fetch_market, publish, clock, sleep,
             recovery.recover(store)      # finish/abort the SAME boundary first
         while clock() < T + grace:
             sleep(max(1, min(30, T + grace - clock())))
+        # lifecycle A: THINKING published BEFORE any model request
+        publisher_mod.publish_thinking(store, T, len(sched["completed"]),
+                                       sched["total"], cfg, publish)
         snaps, spec = {}, {}
         first = not sched["completed"]
         for coin in ("BTC", "ETH", "SOL"):
@@ -108,6 +121,7 @@ def run_pilot(store, cfg, caller, fetch_market, publish, clock, sleep,
                          if snaps.get(c) is not None},
             crash_at=crash_at)
         sched = mark_completed(store, T)
+        # lifecycle B: ROUND_COMMITTED after the atomic engine commit
         publisher_mod.publish_boundary(store, T, len(sched["completed"]),
                                        sched["total"], cfg, publish)
     return sched

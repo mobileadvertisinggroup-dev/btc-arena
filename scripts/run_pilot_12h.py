@@ -33,6 +33,7 @@ import os
 import re
 import sys
 import time
+import urllib.parse
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -56,10 +57,30 @@ def guard():
               "mentor-approved 64-hex combined-manifest digest. The tree "
               "cannot approve itself. No model call was made.")
         sys.exit(2)
+    site_digest = os.environ.get("ARENA_APPROVED_SITE_SHA256", "").strip().lower()
+    if not re.fullmatch(r"[0-9a-f]{64}", site_digest):
+        print("REFUSED: ARENA_APPROVED_SITE_SHA256 not set to the "
+              "mentor-approved 64-hex site-manifest digest. The static UI "
+              "cannot approve itself. No model call was made.")
+        sys.exit(2)
+    # publishing-mechanism preflight (Ruling 011.4): the public publisher and
+    # its runtime dependency must be available BEFORE accounts are created or
+    # any model is called — publishing-unavailable => refuse here.
+    if not os.environ.get("ARENA_DEPLOY_TOKEN"):
+        print("REFUSED: ARENA_DEPLOY_TOKEN not set — public publishing is "
+              "unavailable, so the visible pilot must not start. No model "
+              "call was made.")
+        sys.exit(2)
+    try:
+        import dulwich.porcelain  # noqa: F401  (publisher runtime dependency)
+    except Exception as e:
+        print(f"REFUSED: publisher dependency unavailable (dulwich: {e}). "
+              "No model call was made.")
+        sys.exit(2)
     if not os.environ.get("ANTHROPIC_API_KEY"):
         print("REFUSED: ANTHROPIC_API_KEY not set.")
         sys.exit(2)
-    return digest
+    return digest, site_digest
 
 
 def kraken_ohlc(pair, interval_min):
@@ -122,13 +143,48 @@ def live_caller_factory(cfg):
     return caller
 
 
+PAGES_URL = ("https://mobileadvertisinggroup-dev.github.io/btc-arena/"
+             "live_payload.js")
+PUBLIC_VERIFY_TIMEOUT_S = 420          # GitHub Pages deploys take minutes
+PUBLIC_VERIFY_INTERVAL_S = 15
+
+
+def poll_public(expected_id, fetch, clock, sleep,
+                timeout=PUBLIC_VERIFY_TIMEOUT_S,
+                interval=PUBLIC_VERIFY_INTERVAL_S):
+    """Poll the PUBLIC payload URL until it serves the expected publication
+    id; return the remote text. A local write alone is never sufficient —
+    only the publicly served payload counts. Timeout or persistently wrong
+    remote content => PublicationError => recorded FAILED (Ruling 011.4)."""
+    from engine import publisher as publisher_mod
+    deadline = clock() + timeout
+    last = "no fetch attempted"
+    while True:
+        try:
+            remote = fetch()
+            pl = publisher_mod.parse_payload_text(remote)
+            if pl.get("publication_id") == expected_id:
+                return remote
+            last = f"public payload has stale id {pl.get('publication_id')!r}"
+        except Exception as e:
+            last = str(e)[:150]
+        if clock() >= deadline:
+            raise publisher_mod.PublicationError(
+                f"public verification timeout: {last}")
+        sleep(interval)
+
+
 def git_publish(text):
     """Production publisher: atomically write docs/live_payload.js, commit,
-    push to the public GitHub Pages branch, and return the payload as read
-    back from the committed working tree (verified by engine.publisher).
-    Any failure raises PublicationError => persisted FAILED status; the
-    engine and its committed rounds are never affected."""
+    push to the public GitHub Pages branch, then poll the PUBLIC URL with a
+    cache-busting query until it serves this exact publication id, and return
+    the REMOTE text (engine.publisher re-verifies boundary/progress/lifecycle
+    before recording PUBLISHED). Any failure raises PublicationError =>
+    persisted FAILED status; committed rounds are never affected."""
     from engine import publisher as publisher_mod
+    expected_id = publisher_mod.parse_payload_text(text).get("publication_id")
+    if not expected_id:
+        raise publisher_mod.PublicationError("payload missing publication_id")
     out = os.path.join(ROOT, "docs", "live_payload.js")
     tmp = out + ".tmp"
     with open(tmp, "w") as f:
@@ -154,17 +210,26 @@ def git_publish(text):
             "v1-clean-experiment")
     except Exception as e:
         raise publisher_mod.PublicationError(f"pages push failed: {e}"[:300])
-    return open(out).read()
+
+    def fetch():
+        # cache-busting query keyed to the publication id + no-cache headers
+        req = urllib.request.Request(
+            f"{PAGES_URL}?cb={urllib.parse.quote(expected_id)}",
+            headers={"Cache-Control": "no-cache", "Pragma": "no-cache"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return r.read().decode()
+    return poll_public(expected_id, fetch, time.monotonic, time.sleep)
 
 
 def main():
-    digest = guard()
+    digest, site_digest = guard()
     from engine import config, pilot, publisher
-    # INTEGRITY GATE FIRST (Ruling 010.1): externally approved digest must
-    # match the current tree BEFORE any state initialization or network use.
-    # provision() is idempotent: a restart keeps the SAME persisted schedule.
+    # INTEGRITY GATES FIRST (Rulings 010.1/011.1): externally approved engine
+    # AND site digests must match the current tree BEFORE any state
+    # initialization or network use. provision() is idempotent: a restart
+    # keeps the SAME persisted schedule.
     start = (int(time.time()) // 3600 + 1) * 3600
-    sched = pilot.provision(PILOT_STORE, digest, start)
+    sched = pilot.provision(PILOT_STORE, digest, site_digest, start)
     cfg = config.load_config()
     print(f"PILOT ACTIVE — {sched['total']} boundaries from "
           f"T0={sched['start']} | {publisher.BANNER}")

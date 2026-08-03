@@ -26,6 +26,7 @@ stand; replay resumes strictly after the persisted watermark.
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 
 from . import (state, rounds, prompts, persistence, config as config_mod,
                marketdata, replay as replay_mod)
@@ -64,13 +65,23 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
     spath = os.path.join(store, "state.json")
     accounts, meta = persistence.load_state(spath, expect_full_roster=True)
     if meta.get("boundary") != T:
+        # PERSISTED BOUNDARY MARKS (Ruling 011.2): freeze this boundary's
+        # market marks (snapshot P_T per coin, or None when data-blocked) at
+        # boundary start. Publication uses ONLY these persisted marks; a
+        # crash-restart of the same boundary keeps the frozen values.
         meta = {"boundary": T, "finalized_pairs": {},
                 "replay_watermark": meta.get("replay_watermark", {}),
                 "boundary_complete": False,
                 "coin_terminated": meta.get("coin_terminated", {}),
                 "replay_state": meta.get("replay_state", {}),
                 "outbox": meta.get("outbox", []),
-                "flushed_ids": meta.get("flushed_ids", [])}
+                "flushed_ids": meta.get("flushed_ids", []),
+                "marks": {c: (str(snapshots[c]["P_T"]) if snapshots.get(c)
+                              else None)
+                          for c in ("BTC", "ETH", "SOL")},
+                "marks_T": T,
+                "equity_history": meta.get("equity_history", {}),
+                "equity_history_last": meta.get("equity_history_last")}
         persistence.save_state(spath, accounts, meta)
     meta.setdefault("coin_terminated", {})
     meta.setdefault("replay_state", {})
@@ -317,6 +328,22 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                 ledger.append({"round_id": prompts.round_id(coin, T),
                                "replay": recs})
             _crash(crash_at, "during_replay")
+    # DURABLE EQUITY HISTORY (Ruling 011.2): one point per completed boundary,
+    # equity computed with THIS boundary's persisted mark; explicit null when
+    # an open position has no valid mark. Idempotent across same-T re-runs.
+    if meta.get("equity_history_last") != T:
+        hist = meta.setdefault("equity_history", {})
+        for aid, acct in accounts.items():
+            mark = (meta.get("marks") or {}).get(acct["coin"])
+            if state.side(acct) == "flat":
+                eq = str(acct["E"])
+            elif mark is not None:
+                eq = str(state.equity_at(acct, Decimal(mark)))
+            else:
+                eq = None                    # never fabricated from cash
+            hist.setdefault(aid, []).append(
+                {"T": T, "equity": eq, "fees": str(acct["fees_total"])})
+        meta["equity_history_last"] = T
     meta["boundary_complete"] = True
     meta.pop("_recovering", None)
     persistence.save_state(spath, accounts, meta)

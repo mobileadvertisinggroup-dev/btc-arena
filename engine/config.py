@@ -16,6 +16,15 @@ CANONICAL_FILES = [
     "prompts/v1/placeholders.json",
 ]
 
+# Static production UI, frozen by its own externally approved manifest
+# (Ruling 011.1). The DYNAMIC docs/live_payload.js is deliberately excluded:
+# it changes every publication and must never be integrity-locked.
+SITE_FILES = [
+    "docs/index.html",
+    "docs/prestart_payload.js",
+    "docs/demo_payload.js",
+]
+
 
 def _code_files():
     """Every engine source + production scripts, deterministic sorted order."""
@@ -75,6 +84,23 @@ def verify_integrity(manifest):
     return True
 
 
+def build_site_manifest():
+    hashes = {p: file_hash(p) for p in sorted(SITE_FILES)}
+    combined = hashlib.sha256(
+        "".join(f"{p}:{h}\n" for p, h in sorted(hashes.items())).encode()
+    ).hexdigest()
+    return {"files": hashes, "combined": combined}
+
+
+def verify_site_integrity(manifest):
+    current = build_site_manifest()
+    if current["combined"] != manifest["combined"]:
+        diffs = [p for p in manifest["files"]
+                 if current["files"].get(p) != manifest["files"][p]]
+        raise IntegrityError(f"site-file hash mismatch: {diffs}")
+    return True
+
+
 def load_config():
     return load_json("config/v1/experiment.json")
 
@@ -84,6 +110,7 @@ def load_schema():
 
 
 LAUNCH_MANIFEST_NAME = "launch_manifest.json"
+SITE_MANIFEST_NAME = "site_manifest.json"
 
 
 def write_launch_manifest(store):
@@ -96,6 +123,8 @@ def write_launch_manifest(store):
     path = os.path.join(store, LAUNCH_MANIFEST_NAME)
     with open(path, "w") as f:
         json.dump(build_manifest(), f, indent=1)
+    with open(os.path.join(store, SITE_MANIFEST_NAME), "w") as f:
+        json.dump(build_site_manifest(), f, indent=1)
     return path
 
 
@@ -115,16 +144,46 @@ def check_approved_digest(approved_digest):
     return current
 
 
-def provision_store(store, approved_digest):
-    """The ONLY way production code installs a store's launch manifest: verify
-    the current tree against the external approved digest, and only then copy
-    the verified manifest into the store. Nothing is written on mismatch."""
+def check_approved_site_digest(approved_site_digest):
+    """Ruling 011.1: the static production UI (SITE_FILES) is frozen by its
+    own EXTERNALLY approved combined digest, checked like the engine digest."""
+    current = build_site_manifest()
+    if not isinstance(approved_site_digest, str) \
+            or not approved_site_digest.strip() \
+            or current["combined"] != approved_site_digest.strip().lower():
+        raise IntegrityError(
+            "static site files do not match the externally approved site "
+            f"manifest digest (current={current['combined']}, "
+            f"approved={approved_site_digest!r})")
+    return current
+
+
+def provision_store(store, approved_digest, approved_site_digest):
+    """The ONLY way production code installs a store's manifests: verify the
+    current tree AND the static site against their external approved digests,
+    and only then copy the verified manifests in. Nothing is written on any
+    mismatch."""
     current = check_approved_digest(approved_digest)
+    site = check_approved_site_digest(approved_site_digest)
     os.makedirs(store, exist_ok=True)
-    path = os.path.join(store, LAUNCH_MANIFEST_NAME)
-    with open(path, "w") as f:
+    with open(os.path.join(store, LAUNCH_MANIFEST_NAME), "w") as f:
         json.dump(current, f, indent=1)
-    return path
+    with open(os.path.join(store, SITE_MANIFEST_NAME), "w") as f:
+        json.dump(site, f, indent=1)
+    return store
+
+
+def load_site_manifest(store):
+    """Load the immutable approved site manifest. Missing/unreadable => halt."""
+    path = os.path.join(store, SITE_MANIFEST_NAME)
+    try:
+        with open(path) as f:
+            m = json.load(f, object_pairs_hook=_reject_dupes)
+    except Exception as e:
+        raise IntegrityError(f"approved site manifest unavailable: {e}")
+    if "files" not in m or "combined" not in m:
+        raise IntegrityError("approved site manifest malformed")
+    return m
 
 
 def load_launch_manifest(store):
