@@ -1,12 +1,12 @@
 {
  "approved_combined_manifest_digest_required_for_activation": "c425200e1b840524bb444288d6725bc1f728f60d94d72ed725d0fc704ec5432c",
- "approved_site_manifest_digest_required_for_activation": "f66f69e05923bc66fba86a5b4785530305dc3b2686a283e80d076948f6b4017f",
+ "approved_site_manifest_digest_required_for_activation": "2bfff2cb28b970c09a76b5a9045c4ffee909d37ccd8f39ab69001a95c264b7fa",
  "site_manifest": {
   "files": {
    "docs/demo_payload.js": "a818714c62c365dd8783a191052c18ec26c9119c4711b90fd317fd9003a26d89",
-   "docs/index.html": "10bcd65d6b52db61a0219a8071ef4ff3a8148d71824a6702ebc381c831dba231",
+   "docs/index.html": "cc38ca3cb030b1dfd214824e8cd6be4853a6d3223b8ee2d01156533c53408f6e",
    "docs/prestart_payload.js": "b5e4617874ca14df950c6fb75d72a090830393489d7ed5e4949ab2a04b7ed8d7"
   },
-  "combined": "f66f69e05923bc66fba86a5b4785530305dc3b2686a283e80d076948f6b4017f"
+  "combined": "2bfff2cb28b970c09a76b5a9045c4ffee909d37ccd8f39ab69001a95c264b7fa"
  }
 }

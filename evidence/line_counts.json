@@ -34,7 +34,7 @@
  "tests/test_config_and_prompts.py": 116,
  "tests/test_coverage_gaps.py": 100,
  "tests/test_ruling006.py": 164,
- "tests/test_ruling012.py": 294,
+ "tests/test_ruling012.py": 376,
  "tests/test_rounds_persistence_dashboard.py": 189,
  "tests/test_decisions_and_execution.py": 154,
  "tests/fixtures/gen_fixtures.py": 71,

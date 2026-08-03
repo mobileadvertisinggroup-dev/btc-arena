@@ -284,6 +284,88 @@ def test_dom_preparation_mode_still_waits(cfg):
     assert "THINKING / AWAITING RESPONSE" not in chat
 
 
+# ---- Ruling 013: null market values must never render as zero ----
+
+@pytest.fixture(scope="module")
+def null_mark_payload(cfg, tmp_path_factory):
+    """Genuine live payload: SOL long opened at boundary 1, SOL data
+    unavailable at boundary 2 => open position with mark_unavailable=true and
+    null mark/equity/unrealized_pnl/notional; BTC/ETH accounts stay validly
+    marked."""
+    store = provisioned_pilot(n=2)
+    d = long_decision(float(_sol_price()), 2000)
+    d["thesis"] = MARKER
+    caller = ScriptedCaller({"sol_haiku_raw": [d]})
+
+    def flaky(coin, T, first):
+        if coin == "SOL" and T > T0:
+            raise RuntimeError("sol feed down")
+        return fake_fetch(coin, T, first)
+    pub = FakePublisher()
+    vc = PilotClock()
+    pilot.run_pilot(store, cfg, caller, flaky, pub, clock=vc, sleep=vc.sleep)
+    text = [t for t in pub.published
+            if parse_payload(t)["round_lifecycle"] == "ROUND_COMMITTED"][-1]
+    pl = parse_payload(text)
+    row = [a for a in pl["coins"]["SOL"]["accounts"]
+           if a["id"] == "sol_haiku_raw"][0]
+    assert row["mark_unavailable"] is True and row["equity"] is None \
+        and row["unrealized_pnl"] is None and row["notional"] is None
+    p = tmp_path_factory.mktemp("nullmark") / "null.js"
+    p.write_text(text)
+    return str(p)
+
+
+@pytestmark_node
+def test_dom_null_mark_open_positions_never_zero(cfg, null_mark_payload):
+    res = _harness(null_mark_payload)
+    opens = res["dom"]["panel:OPEN POSITIONS"]
+    assert "MARK N/A" in opens                       # explicit unavailability
+    assert "mark MARK N/A" in opens                  # a.mark used, not derived
+    assert "mark 0" not in opens                     # never a zero mark
+    assert "+$0.00" not in opens                     # never false zero P&L
+    assert "-$0.00" not in opens
+    assert "LONG" in opens                           # position stays visible
+
+
+@pytestmark_node
+def test_dom_null_mark_pair_details_no_fabricated_gaps(cfg,
+                                                      null_mark_payload):
+    res = _harness(null_mark_payload)
+    pairs = res["dom"]["panel:PAIR DETAILS"]
+    # the mentor-probed fabrication: null equity treated as 0 => -$10,000.00
+    assert "-$10,000.00" not in pairs
+    # the null pair's gaps are explicitly unavailable, never computed
+    assert "equity gap</span><b>MARK N/A</b>" in pairs
+    assert "size gap</span><b>MARK N/A</b>" in pairs
+    # validly marked pairs still compute genuine gaps (flat pairs: $0.00)
+    assert "equity gap</span><b>$0.00</b>" in pairs
+
+
+@pytestmark_node
+def test_dom_null_mark_leaderboard_unranked_but_visible(cfg,
+                                                       null_mark_payload):
+    res = _harness(null_mark_payload)
+    lb = res["dom"]["leaderboard"]
+    assert "MARK N/A" in lb                          # return not shown as 0%
+    assert "MARK UNAVAILABLE" in lb                  # clear visible status
+    assert "+0.00%" in lb                            # valid rows still normal
+    assert "$10,000.00" in lb or "$9,99" in lb       # valid equities rendered
+    chat = res["dom"]["panel:MODEL CHAT"]
+    assert MARKER in chat                            # account remains visible
+
+
+@pytestmark_node
+def test_dom_valid_marks_still_render_normally(cfg, pilot_payloads):
+    """Regression guard: a fully marked committed payload shows real money
+    values and no MARK N/A anywhere in the open-positions panel."""
+    res = _harness(pilot_payloads["ROUND_COMMITTED"])
+    opens = res["dom"]["panel:OPEN POSITIONS"]
+    assert "MARK N/A" not in opens
+    assert "mark " in opens and "LONG" in opens
+    assert "MARK N/A" not in res["dom"]["leaderboard"]
+
+
 @pytestmark_node
 def test_dom_demo_mode_clearly_labeled(cfg):
     res = _harness("none", "-", "?demo=1")

@@ -510,15 +510,17 @@ function openCards(){
     return `<div class="mcard" style="border-left-color:var(--mut)">
       <div class="thesis" style="color:var(--mut)">No open positions — ${demo ? 'demo scenario' : uiMode() === 'PILOT' ? 'all accounts currently flat' : 'waiting for pilot'}.</div></div>`;
   return open.map(a => {
-    const mark = N(a.notional) / Math.abs(N(a.qty));
-    const u = N(a.unrealized_pnl);
+    // null market values stay null (Ruling 013): the payload's explicit
+    // a.mark is authoritative — never derived from notional/qty, never 0
+    const na = a.mark == null || a.unrealized_pnl == null;
+    const u = na ? null : N(a.unrealized_pnl);
     return `<div class="tcard" style="border-left-color:${MODEL[a.model].c}">
       <div class="row1">${icon(a.model)}
         <div><div class="who" style="font-size:14.5px;font-weight:800">${MODEL[a.model].name}</div>
         <div class="sub">${a.coin} · ${a.arm === 'raw' ? 'Raw' : 'Feature'}</div></div>
-        <div class="pnl ${u > 0 ? 'up' : u < 0 ? 'down' : 'zero'}">${u >= 0 ? '+' : ''}${money(u)}</div></div>
+        <div class="pnl ${u == null ? '' : u > 0 ? 'up' : u < 0 ? 'down' : 'zero'}">${u == null ? 'MARK N/A' : (u >= 0 ? '+' : '') + money(u)}</div></div>
       <div class="route"><span class="dir ${a.side}" style="font-size:12px;padding:2px 9px;color:#fff">${a.side.toUpperCase()}</span>
-        &nbsp;entry ${px(a.entry)} · mark ${px(mark)}</div>
+        &nbsp;entry ${px(a.entry)} · mark ${a.mark == null ? 'MARK N/A' : px(a.mark)}</div>
       <div class="grid">
         <span>size</span><b>${money(a.notional)}</b>
         <span>stop</span><b>${px(a.stop)}</b>
@@ -551,8 +553,8 @@ function pairCards(){
           <span>Feature equity</span><b>${money(ta.equity)}</b>
           <span>Raw direction</span><b>${raw.side}</b>
           <span>Feature direction</span><b>${ta.side}</b>
-          <span>size gap</span><b>${money(Math.abs(N(raw.notional) - N(ta.notional)))}</b>
-          <span>equity gap</span><b>${money(N(raw.equity) - N(ta.equity))}</b>
+          <span>size gap</span><b>${money(raw.notional == null || ta.notional == null ? null : Math.abs(N(raw.notional) - N(ta.notional)))}</b>
+          <span>equity gap</span><b>${money(raw.equity == null || ta.equity == null ? null : N(raw.equity) - N(ta.equity))}</b>
           <span>fee gap</span><b>${money(Math.abs(N(raw.fees) - N(ta.fees)))}</b>
           <span>trades</span><b>${raw.n_trades} / ${ta.n_trades}</b>
         </div>
@@ -574,19 +576,22 @@ window.setPanel = p => { panelTab = p; panel(); };
 
 /* ---------------- leaderboard + boot ---------------- */
 function leaderboard(){
-  const rows = allAccounts().map(a => ({...a, ret: N(a.total_return_pct)}));
+  // null return (mark unavailable) is NOT 0%: unranked, sorted last, and
+  // clearly labeled — the account stays visible (Ruling 013)
+  const rows = allAccounts().map(a =>
+    ({...a, ret: a.total_return_pct == null ? null : N(a.total_return_pct)}));
   const tied = rows.every(r => r.ret === rows[0].ret);
-  rows.sort((x, y) => y.ret - x.ret);
+  rows.sort((x, y) => (y.ret == null ? -Infinity : y.ret) - (x.ret == null ? -Infinity : x.ret));
   $('leaderboard').innerHTML = `<div class="rulehead"><h2>LEADERBOARD</h2>
     <span class="sub">${tied ? 'all accounts tied at start — no ranking' : uiMode() === 'DEMO' ? 'ranked by return (demonstration scenario)' : 'ranked by return'}</span></div>
     <div class="twrap"><table><tr><th>#</th><th>Coin</th><th>Model</th><th>Arm</th>
     <th>Equity</th><th>Return</th><th>Drawdown</th><th>Fees</th><th>Status</th></tr>
-    ${rows.map((a, i) => `<tr><td>${tied ? '—' : i + 1}</td><td>${a.coin}</td>
+    ${rows.map((a, i) => `<tr><td>${tied || a.ret == null ? '—' : i + 1}</td><td>${a.coin}</td>
       <td><span class="mdot" style="background:${MODEL[a.model].c}"></span>${MODEL[a.model].name}</td>
       <td>${a.arm === 'raw' ? 'Raw' : 'Feature'}</td><td>${money(a.equity)}</td>
-      <td class="${a.ret >= 0 ? 'up' : 'down'}">${a.ret >= 0 ? '+' : ''}${a.ret.toFixed(2)}%</td>
-      <td>${a.ret < 0 ? a.ret.toFixed(2) + '%' : '0.00%'}</td><td>${money(a.fees)}</td>
-      <td>${a.terminal ? 'CLOSED' : (a.status_text || (D.mode === 'PILOT_12H' ? 'live' : demo ? 'demo' : 'Waiting for pilot'))}</td></tr>`).join('')}
+      <td class="${a.ret == null ? '' : a.ret >= 0 ? 'up' : 'down'}">${a.ret == null ? 'MARK N/A' : (a.ret >= 0 ? '+' : '') + a.ret.toFixed(2) + '%'}</td>
+      <td>${a.ret == null ? 'MARK N/A' : a.ret < 0 ? a.ret.toFixed(2) + '%' : '0.00%'}</td><td>${money(a.fees)}</td>
+      <td>${a.terminal ? 'CLOSED' : a.equity == null ? 'MARK UNAVAILABLE' : (a.status_text || (D.mode === 'PILOT_12H' ? 'live' : demo ? 'demo' : 'Waiting for pilot'))}</td></tr>`).join('')}
     </table></div>`;
 }
 function boot(){
