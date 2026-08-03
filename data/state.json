@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
- "last_decision_at": "2026-08-03T18:27:04Z",
- "last_tick_at": "2026-08-03T18:27:04Z",
- "last_price": 63818.9,
+ "last_decision_at": "2026-08-03T20:13:07Z",
+ "last_tick_at": "2026-08-03T20:13:07Z",
+ "last_price": 63868.1,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -134,12 +134,12 @@
   "haiku_ta": {
    "display": "Moudir+ (Haiku 4.5 TA)",
    "api_model": "claude-haiku-4-5",
-   "equity": 10239.816795409723,
-   "qty": 0.16074124978818746,
-   "entry": 63735.6,
-   "stop": 62300.0,
-   "tp": 64000.0,
-   "opened_at": "2026-08-03T16:39:21Z",
+   "equity": 10277.173061860498,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close below 62300 for two consecutive candles, OR RSI rolls over below 50 with a lower high and MACD histogram turns negative. Either condition would signal momentum exhaustion and thesis failure.",
    "liquidated": false,
    "trades": [
@@ -161,6 +161,16 @@
      "entry": 63143.3,
      "exit": 63693.2,
      "pnl": 123.07,
+     "reason": "take_profit"
+    },
+    {
+     "opened_at": "2026-08-03T16:39:21Z",
+     "closed_at": "2026-08-03T20:13:05Z",
+     "side": "long",
+     "qty": 0.160741,
+     "entry": 63735.6,
+     "exit": 64000.0,
+     "pnl": 37.36,
      "reason": "take_profit"
     }
    ],

@@ -84,3 +84,10 @@
 2026-08-03T18:26:49Z haiku_ta: long $10258 -> held long; stop=62300.0 tp=64000.0
 2026-08-03T18:26:58Z sonnet_ta: flat $0 -> stayed flat
 2026-08-03T18:27:04Z opus_ta: long $14018 -> held long; stop=63400.0 tp=64750.0
+2026-08-03T20:13:05Z haiku_ta: take_profit @ 64000.00
+2026-08-03T20:13:06Z haiku: model call failed: HTTP 400: {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CdgRfUrFAmFtVifY1H67f"}
+2026-08-03T20:13:06Z sonnet: model call failed: HTTP 400: {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CdgRfVecJQDWz2mpXMsKB"}
+2026-08-03T20:13:06Z opus: model call failed: HTTP 400: {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CdgRfWSji9WTfHJyX976c"}
+2026-08-03T20:13:07Z haiku_ta: model call failed: HTTP 400: {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CdgRfX4SYYvwAvBYM2PsP"}
+2026-08-03T20:13:07Z sonnet_ta: model call failed: HTTP 400: {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CdgRfYu5DxmbvJ5nc3avW"}
+2026-08-03T20:13:07Z opus_ta: model call failed: HTTP 400: {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CdgRfbpgpkmef2GJca1tm"}
