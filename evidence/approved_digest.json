@@ -1,12 +1,12 @@
 {
- "approved_combined_manifest_digest_required_for_activation": "cd6daa6a9195742dee705e508c944dc98cfe106dab940d5237f5753b2ac76ac3",
- "approved_site_manifest_digest_required_for_activation": "630eac190c3123a3b8fa3c428fe8cf68d8631bddd5099a40db31e0fc7d98aa60",
+ "approved_combined_manifest_digest_required_for_activation": "c425200e1b840524bb444288d6725bc1f728f60d94d72ed725d0fc704ec5432c",
+ "approved_site_manifest_digest_required_for_activation": "f66f69e05923bc66fba86a5b4785530305dc3b2686a283e80d076948f6b4017f",
  "site_manifest": {
   "files": {
-   "docs/demo_payload.js": "d876f775a7860d84785bc5758204ae407d55fe86e0c6946ddda2a61f068ca579",
-   "docs/index.html": "282eed71366dd9b53a37ed46486d29bc6dab419f33957362fc2f4ecb951b2bd3",
-   "docs/prestart_payload.js": "605ead7ab129fbf9ebf6146a4b17e06092a2f00b784fce1c04ba52fdbc108781"
+   "docs/demo_payload.js": "a818714c62c365dd8783a191052c18ec26c9119c4711b90fd317fd9003a26d89",
+   "docs/index.html": "10bcd65d6b52db61a0219a8071ef4ff3a8148d71824a6702ebc381c831dba231",
+   "docs/prestart_payload.js": "b5e4617874ca14df950c6fb75d72a090830393489d7ed5e4949ab2a04b7ed8d7"
   },
-  "combined": "630eac190c3123a3b8fa3c428fe8cf68d8631bddd5099a40db31e0fc7d98aa60"
+  "combined": "f66f69e05923bc66fba86a5b4785530305dc3b2686a283e80d076948f6b4017f"
  }
 }
