@@ -1,3 +1,12 @@
 {
- "approved_combined_manifest_digest_required_for_activation": "6f4fb6b17f3b20ee825157fe0800660e715ac5ea82e4e05156461845ebf7592e"
+ "approved_combined_manifest_digest_required_for_activation": "cd6daa6a9195742dee705e508c944dc98cfe106dab940d5237f5753b2ac76ac3",
+ "approved_site_manifest_digest_required_for_activation": "630eac190c3123a3b8fa3c428fe8cf68d8631bddd5099a40db31e0fc7d98aa60",
+ "site_manifest": {
+  "files": {
+   "docs/demo_payload.js": "d876f775a7860d84785bc5758204ae407d55fe86e0c6946ddda2a61f068ca579",
+   "docs/index.html": "282eed71366dd9b53a37ed46486d29bc6dab419f33957362fc2f4ecb951b2bd3",
+   "docs/prestart_payload.js": "605ead7ab129fbf9ebf6146a4b17e06092a2f00b784fce1c04ba52fdbc108781"
+  },
+  "combined": "630eac190c3123a3b8fa3c428fe8cf68d8631bddd5099a40db31e0fc7d98aa60"
+ }
 }
