@@ -303,24 +303,37 @@ def test_shuffled_completion_order_identical_results(accounts, snapshots, cfg):
 # ---- 9. hard global deadline ----
 
 class DeadlineCaller:
-    """Advances a fake monotonic clock; per-account completion times."""
+    """Advances a fake clock when watched accounts complete. With
+    `rendezvous`, ALL watched accounts must be in-flight (inside the caller,
+    i.e. past their budget check) before the clock advances — this removes
+    the race where one watched twin's completion time starved the other
+    twin's budget check via the shared clock (Ruling 012.3 determinism)."""
 
-    def __init__(self, clockbox, finish_at):
+    def __init__(self, clockbox, finish_at, rendezvous=False):
         self.clockbox = clockbox
         self.finish_at = finish_at
         self.lock = threading.Lock()
+        self.barrier = (threading.Barrier(len(finish_at), timeout=30)
+                        if rendezvous and len(finish_at) > 1 else None)
 
     def __call__(self, aid, system, user, retry):
-        with self.lock:
-            if aid in self.finish_at:
+        if aid in self.finish_at:
+            if self.barrier is not None:
+                self.barrier.wait()
+            with self.lock:
                 self.clockbox[0] = max(self.clockbox[0], self.finish_at[aid])
         return flat_decision()
 
 
+@pytest.mark.parametrize("rep", range(3))
 @pytest.mark.parametrize("finish,ok", [(719.0, True), (720.0, False), (721.0, False)])
-def test_deadline_boundaries(accounts, snapshots, cfg, finish, ok):
+def test_deadline_boundaries(accounts, snapshots, cfg, finish, ok, rep):
+    """Both twins finish at exactly `finish` (rendezvous: both are past their
+    budget checks before the clock moves) — deterministic across repeats."""
     clockbox = [0.0]
-    caller = DeadlineCaller(clockbox, {"btc_haiku_raw": finish})
+    caller = DeadlineCaller(clockbox, {"btc_haiku_raw": finish,
+                                       "btc_haiku_ta": finish},
+                            rendezvous=True)
     ledger, *_ = run_prod(accounts, snapshots, cfg, caller,
                           clock=lambda: clockbox[0])
     pair = [e for e in ledger if e["pair"] == "btc_haiku"][0]

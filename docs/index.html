@@ -419,12 +419,25 @@ function chart(){
 }
 
 /* ---------------- right panel ---------------- */
+/* Explicit UI mode (Ruling 012.1): PREP (preparation, nothing started),
+   DEMO (opt-in labeled demonstration scenario), PILOT (genuine live data
+   from the published pilot payload). Never keyed off `demo` alone. */
+function uiMode(){ return demo ? 'DEMO' : (D.mode === 'PILOT_12H' ? 'PILOT' : 'PREP'); }
+function boundaryLabel(){
+  return D.published_boundary ? new Date(D.published_boundary * 1000).toUTCString() : '';
+}
+function pairStatus(coin, model){
+  const rounds = (D.coins[coin].rounds || [])
+    .filter(e => e.pair === `${coin.toLowerCase()}_${model}` && e.status);
+  return rounds.length ? rounds[rounds.length - 1] : null;
+}
 function filt(a){
   const fm = $('f_model').value, fc = $('f_coin').value, fa = $('f_arm').value;
   return (!fm || a.model === fm) && (!fc || a.coin === fc) && (!fa || a.arm === fa);
 }
 function chatCards(){
-  if (!demo)
+  const mode = uiMode();
+  if (mode === 'PREP')
     return Object.keys(MODEL).filter(m => !$('f_model').value || m === $('f_model').value)
       .map(m => `<div class="chatrow">${icon(m)}<div class="mcard tint-${m}">
         <div class="mhead"><div><div class="who">${MODEL[m].name}</div>
@@ -432,14 +445,26 @@ function chatCards(){
         <span class="stpill waiting" style="margin-left:auto">WAITING</span></div>
         <div class="thesis" style="color:var(--mut)">No decisions yet — the paper-trading pilot has not started.</div>
       </div></div>`).join('');
+  if (mode === 'PILOT' && D.round_lifecycle === 'THINKING')
+    // live pre-request state: model/coin/arm + status ONLY — no invented
+    // theses or decisions before receipt
+    return allAccounts().filter(filt).map(a =>
+      `<div class="chatrow">${icon(a.model)}<div class="mcard tint-${a.model} ${a.arm === 'ta' ? 'arm-ta' : ''}">
+        <div class="mhead"><div><div class="who">${MODEL[a.model].name}</div>
+          <div class="sub">${a.coin} · ${a.arm === 'raw' ? 'Raw' : 'Feature'} · boundary ${boundaryLabel()}</div></div>
+        <span class="stpill thinking" style="margin-left:auto">THINKING / AWAITING RESPONSE</span></div>
+        <div class="thesis" style="color:var(--mut)">Model request processing — no decision received yet. The submitted decision appears when the round commits.</div>
+      </div></div>`).join('') || '<div class="sub">No entries match the filters.</div>';
+  // DEMO or live committed rounds: actual submitted theses/decisions only
   return allAccounts().filter(a => filt(a) && a.thesis).map(a => {
-    const st = a.feed_state === 'thinking' ? 'thinking' : 'decision';
+    const ps = mode === 'PILOT' ? pairStatus(a.coin, a.model) : null;
+    const stamp = mode === 'DEMO' ? 'DEMONSTRATION' : boundaryLabel();
     return `<div class="chatrow">${icon(a.model)}<div class="mcard tint-${a.model} ${a.arm === 'ta' ? 'arm-ta' : ''}"
       onclick="this.classList.toggle('open')">
       <div class="mhead">
         <div><div class="who">${MODEL[a.model].name}</div>
-          <div class="sub">${a.coin} · ${a.arm === 'raw' ? 'Raw' : 'Feature'} · t=demo</div></div>
-        <span class="stpill ${st}" style="margin-left:auto">${st === 'thinking' ? 'THINKING…' : 'DECISION RECEIVED'}</span></div>
+          <div class="sub">${a.coin} · ${a.arm === 'raw' ? 'Raw' : 'Feature'} · ${stamp}</div></div>
+        <span class="stpill decision" style="margin-left:auto">DECISION RECEIVED</span></div>
       <div class="thesis">“${a.thesis.replace(/</g,'&lt;')}”</div>
       <div class="dstrip"><span class="dir ${a.side}">${a.side.toUpperCase()}</span>
         <span>size <b>${a.side === 'flat' ? '$0' : money(a.notional)}</b></span>
@@ -449,7 +474,8 @@ function chatCards(){
         ${a.invalidation ? `invalidation: <b>${a.invalidation.operator === 'price_at_or_below' ? '≤' : '≥'} ${px(a.invalidation.level)} (${a.invalidation.timeframe})</b> — ${a.invalidation.status}<br>` : ''}
         ${a.watch ? `watch: <b>${a.watch.operator === 'price_at_or_below' ? '≤' : '≥'} ${px(a.watch.level)}</b><br>` : ''}
         account equity: <b>${money(a.equity)}</b> · fees: <b>${money(a.fees)}</b><br>
-        attempts: <b>first attempt valid</b> · pair status: <b>PAIR_COMMITTED (demo)</b>
+        pair status: <b>${mode === 'DEMO' ? 'PAIR_COMMITTED (demo)'
+          : ps ? ps.status + (ps.reason ? ' — ' + ps.reason : '') : '—'}</b>
       </div></div></div>`;
   }).join('') || '<div class="sub">No entries match the filters.</div>';
 }
@@ -458,7 +484,7 @@ function tradeCards(){
     (a.trades || []).map(t => ({...t, a})));
   if (!trades.length)
     return `<div class="mcard" style="border-left-color:var(--mut)">
-      <div class="thesis" style="color:var(--mut)">No completed trades${demo ? ' in this demo scenario view' : ' — waiting for pilot'}.</div></div>`;
+      <div class="thesis" style="color:var(--mut)">No completed trades${demo ? ' in this demo scenario view' : uiMode() === 'PILOT' ? ' yet in this pilot' : ' — waiting for pilot'}.</div></div>`;
   return trades.map(t => {
     const pnl = N(t.pnl);
     const cls = pnl > 0 ? 'up' : pnl < 0 ? 'down' : 'zero';
@@ -482,7 +508,7 @@ function openCards(){
   const open = allAccounts().filter(a => filt(a) && a.side !== 'flat');
   if (!open.length)
     return `<div class="mcard" style="border-left-color:var(--mut)">
-      <div class="thesis" style="color:var(--mut)">No open positions — ${demo ? 'demo scenario' : 'waiting for pilot'}.</div></div>`;
+      <div class="thesis" style="color:var(--mut)">No open positions — ${demo ? 'demo scenario' : uiMode() === 'PILOT' ? 'all accounts currently flat' : 'waiting for pilot'}.</div></div>`;
   return open.map(a => {
     const mark = N(a.notional) / Math.abs(N(a.qty));
     const u = N(a.unrealized_pnl);
@@ -511,10 +537,15 @@ function pairCards(){
       if (fm && m !== fm) continue;
       const raw = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'raw');
       const ta = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'ta');
-      const started = demo && (raw.n_decisions + ta.n_decisions > 0);
+      // genuine live/demo data decides "started" — never the demo Boolean
+      const started = raw.n_decisions + ta.n_decisions > 0;
+      const ps = uiMode() === 'PILOT' ? pairStatus(coin, m) : null;
+      const sub = started ? (raw.side === ta.side ? 'direction AGREE' : 'direction DISAGREE')
+        : (uiMode() === 'PILOT' && D.round_lifecycle === 'THINKING'
+           ? 'THINKING / AWAITING RESPONSE' : 'Awaiting first paired decision.');
       out += `<div class="tcard" style="border-left-color:${MODEL[m].c}">
         <div class="row1">${icon(m)}<div><div class="who" style="font-size:14.5px;font-weight:800">${MODEL[m].name} · ${coin}</div>
-          <div class="sub">${started ? (raw.side === ta.side ? 'direction AGREE' : 'direction DISAGREE') : 'Awaiting first paired decision.'}</div></div></div>
+          <div class="sub">${sub}${ps ? ` · last round: ${ps.status}${ps.reason ? ' — ' + ps.reason : ''}` : ''}</div></div></div>
         <div class="grid" style="margin-top:8px">
           <span>Raw equity</span><b>${money(raw.equity)}</b>
           <span>Feature equity</span><b>${money(ta.equity)}</b>
@@ -547,7 +578,7 @@ function leaderboard(){
   const tied = rows.every(r => r.ret === rows[0].ret);
   rows.sort((x, y) => y.ret - x.ret);
   $('leaderboard').innerHTML = `<div class="rulehead"><h2>LEADERBOARD</h2>
-    <span class="sub">${tied ? 'all accounts tied at start — no ranking' : 'ranked by return (demonstration scenario)'}</span></div>
+    <span class="sub">${tied ? 'all accounts tied at start — no ranking' : uiMode() === 'DEMO' ? 'ranked by return (demonstration scenario)' : 'ranked by return'}</span></div>
     <div class="twrap"><table><tr><th>#</th><th>Coin</th><th>Model</th><th>Arm</th>
     <th>Equity</th><th>Return</th><th>Drawdown</th><th>Fees</th><th>Status</th></tr>
     ${rows.map((a, i) => `<tr><td>${tied ? '—' : i + 1}</td><td>${a.coin}</td>

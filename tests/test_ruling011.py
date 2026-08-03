@@ -14,8 +14,8 @@ import pytest
 from conftest import T0, ScriptedCaller, load_fix, long_decision
 from engine import (config, dashboard, marketdata, persistence, pilot,
                     publisher, state)
-from test_ruling010 import (FakePublisher, fake_fetch, no_sleep, parse_payload,
-                            provisioned_pilot, digests, run, FAR_FUTURE)
+from test_ruling010 import (FakePublisher, PilotClock, fake_fetch,
+                            parse_payload, provisioned_pilot, digests, run)
 
 COINS = ("BTC", "ETH", "SOL")
 MANIFEST_STUB = {"files": {}, "combined": "test"}
@@ -120,8 +120,8 @@ def test_open_position_with_data_blocked_coin_publishes_null_equity(cfg):
         return fake_fetch(coin, T, first)
     caller = ScriptedCaller({"sol_haiku_raw": [long_decision(float(p), 2000)]})
     pub = FakePublisher()
-    pilot.run_pilot(store, cfg, caller, flaky, pub,
-                    clock=lambda: FAR_FUTURE, sleep=no_sleep)
+    vc = PilotClock()
+    pilot.run_pilot(store, cfg, caller, flaky, pub, clock=vc, sleep=vc.sleep)
     pl = pub.by_lifecycle("ROUND_COMMITTED")[1]
     row = [a for a in pl["coins"]["SOL"]["accounts"]
            if a["id"] == "sol_haiku_raw"][0]

@@ -29,18 +29,23 @@ def fake_fetch(coin, T, first):
 
 class FakePublisher:
     """Records exactly what was published. `ok_first` calls succeed, then
-    `fail_times` calls fail, then everything succeeds."""
+    `fail_lifecycles` members always fail, then `fail_times` calls fail,
+    then everything succeeds."""
 
-    def __init__(self, fail_times=0, ok_first=0):
+    def __init__(self, fail_times=0, ok_first=0, fail_lifecycles=None):
         self.published = []
         self.fail_times = fail_times
         self.ok_first = ok_first
+        self.fail_lifecycles = fail_lifecycles or set()
         self._lock = threading.Lock()
 
     def __call__(self, text):
         with self._lock:
+            lc = parse_payload(text).get("round_lifecycle")
             if self.ok_first > 0:
                 self.ok_first -= 1
+            elif lc in self.fail_lifecycles:
+                raise RuntimeError("simulated publish transport failure")
             elif self.fail_times > 0:
                 self.fail_times -= 1
                 raise RuntimeError("simulated publish transport failure")
@@ -52,8 +57,18 @@ class FakePublisher:
                 if p["round_lifecycle"] == lifecycle]
 
 
-def no_sleep(_):
-    pytest.fail("pilot slept although the boundary time had passed")
+class PilotClock:
+    """Virtual epoch clock: run_pilot's grace waits advance it via sleep();
+    nothing else moves it, so collection deadlines are deterministic."""
+
+    def __init__(self, t=float(T0)):
+        self.t = t
+
+    def __call__(self):
+        return self.t
+
+    def sleep(self, s):
+        self.t += s
 
 
 def digests():
@@ -73,9 +88,9 @@ def parse_payload(text):
 
 
 def run(store, cfg, caller, pub, crash_at=None):
+    vc = PilotClock()
     return pilot.run_pilot(store, cfg, caller, fake_fetch, pub,
-                           clock=lambda: FAR_FUTURE, sleep=no_sleep,
-                           crash_at=crash_at)
+                           clock=vc, sleep=vc.sleep, crash_at=crash_at)
 
 
 # ---- 1. externally approved digests: pre-launch code cannot approve itself ----
@@ -226,7 +241,7 @@ def test_rerun_after_completion_publishes_nothing_new(cfg):
 def test_publication_failure_keeps_engine_state_and_marks_failed(cfg):
     store = provisioned_pilot(n=2)
     caller = ScriptedCaller({})
-    pub = FakePublisher(ok_first=1, fail_times=999)  # READY ok, then all fail
+    pub = FakePublisher(fail_lifecycles={"ROUND_COMMITTED"})
     sched = run(store, cfg, caller, pub)
     assert len(sched["completed"]) == 2              # trading unaffected
     log = publisher.read_log(store)
@@ -240,7 +255,7 @@ def test_publication_failure_keeps_engine_state_and_marks_failed(cfg):
 def test_retry_republishes_only_no_model_calls_no_trades(cfg):
     store = provisioned_pilot(n=2)
     caller = ScriptedCaller({})
-    failing = FakePublisher(ok_first=1, fail_times=999)
+    failing = FakePublisher(fail_lifecycles={"ROUND_COMMITTED"})
     run(store, cfg, caller, failing)
     n_calls = len(caller.calls)
     spath = os.path.join(store, "state.json")

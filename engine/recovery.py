@@ -52,8 +52,16 @@ def _seed(T):
 
 
 def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
-                     replay_spec=None, clock=None):
-    """Returns (ledger_entries, attempt_records, archived_user_prompts)."""
+                     replay_spec=None, clock=None, deadline=None):
+    """Returns (ledger_entries, attempt_records, archived_user_prompts).
+
+    `deadline` (Ruling 012.3): the authoritative ABSOLUTE collection deadline
+    in `clock`'s domain. Production always passes T + collection_deadline_
+    seconds anchored at the SCHEDULED boundary, so publication, market
+    retrieval, grace waits, and restarts all consume the same T..T+12min
+    budget — entering this coordinator late never grants new time, and a
+    restart never resets the deadline. When omitted (offline tooling/tests),
+    the legacy anchor `clock() + collection_deadline_seconds` applies."""
     # RUNTIME INTEGRITY GATE (Ruling 009.1): load the immutable APPROVED
     # launch manifest (never rebuilt from the working tree) and verify every
     # engine/script/config/prompt/schema byte BEFORE touching state, prompts,
@@ -126,8 +134,9 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
         raise PromptArchiveError(str(e))          # zero model calls
     _crash(crash_at, "after_prompts")
 
-    # 4/5. wave collection + pair resolution under one monotonic deadline
-    deadline = clock() + cfg["collection"]["collection_deadline_seconds"]
+    # 4/5. wave collection + pair resolution under ONE hard deadline
+    if deadline is None:
+        deadline = clock() + cfg["collection"]["collection_deadline_seconds"]
     timeout_s = cfg["request_payloads"]["common"]["timeout_seconds"]
     concurrency = cfg["collection"]["concurrency_max_simultaneous_requests"]
     n_written = [0]

@@ -1,20 +1,25 @@
-/* Offline front-end payload-contract harness (Ruling 011.1/011.3).
+/* Offline front-end payload-contract harness (Rulings 011.1 + 012.1).
  *
  * Executes the production page's inline scripts under a permissive DOM stub
- * with a given payload and reports any JavaScript error. No network: fetch is
- * stubbed (ticker URLs fail like an offline browser; live_payload fetches are
- * served from a local file), so this proves the exact production payload
- * renders without JS errors, and that an already-"open" page picks up the
- * NEXT published payload automatically via its cache-busted poll.
+ * with a given payload, captures the RENDERED text of every element and each
+ * panel tab, and reports any JavaScript error. No network: fetch is stubbed
+ * (ticker URLs fail like an offline browser; live_payload fetches are served
+ * from a local file). This proves the exact production payload renders
+ * without JS errors, WHAT it renders, and that an already-open page picks up
+ * the NEXT published payload automatically via its cache-busted poll.
  *
- * usage: node frontend_harness.js <index.html> <payloadA.js|none> [payloadB.js]
- * stdout: single JSON line {ok, boot_live_id, polled_live_id, mode, error?}
+ * usage: node frontend_harness.js <index.html> <payloadA.js|none>
+ *                                 [payloadB.js|-] [querystring]
+ * stdout: one JSON line {ok, boot_live_id, polled_live_id, mode,
+ *                        dom: {id|panel:NAME: text}, dom2: {...}, error?}
  */
 'use strict';
 const fs = require('fs');
 
-const [, , indexPath, payloadA, payloadB] = process.argv;
+const [, , indexPath, payloadA, payloadB, query] = process.argv;
 const html = fs.readFileSync(indexPath, 'utf8');
+const PANELS = ['MODEL CHAT', 'COMPLETED TRADES', 'OPEN POSITIONS',
+                'PAIR DETAILS'];
 
 /* ---------------- permissive DOM stub ---------------- */
 function makeEl(id) {
@@ -65,12 +70,24 @@ async function stubFetch(url) {
   throw new Error('offline: ' + url);   // ticker etc. behave like no network
 }
 
-/* ---------------- load payload globals like <script src> ---------------- */
 function evalPayloadFile(path) {
-  // payload files are "window.ARENA_X = {...};"
-  const src = fs.readFileSync(path, 'utf8');
-  const fn = new Function('window', src);
-  fn(sandboxWindow);
+  const src = fs.readFileSync(path, 'utf8');   // "window.ARENA_X = {...};"
+  new Function('window', src)(sandboxWindow);
+}
+
+function snapshotDom() {
+  const dom = {};
+  for (const [id, el] of byId)
+    dom[id] = String(el.innerHTML || '') + '|' + String(el.textContent || '');
+  // capture every panel tab's rendered content via the page's own switcher
+  if (typeof sandboxWindow.setPanel === 'function') {
+    for (const p of PANELS) {
+      sandboxWindow.setPanel(p);
+      dom['panel:' + p] = String(document.getElementById('plist').innerHTML);
+    }
+    sandboxWindow.setPanel('MODEL CHAT');
+  }
+  return dom;
 }
 
 /* ---------------- run the page ---------------- */
@@ -85,36 +102,32 @@ async function main() {
 
   const sandbox = {
     window: sandboxWindow, document,
-    location: { search: '' },
+    location: { search: query || '' },
     fetch: stubFetch,
     setInterval: (fn, ms) => { intervals.push({ fn, ms }); return intervals.length; },
     clearInterval() {}, setTimeout: (fn) => { fn(); return 0; },
-    Date, Math, JSON, Number, String, Array, Object, isFinite, parseFloat,
-    parseInt, URLSearchParams, console,
     requestAnimationFrame: (fn) => fn(),
   };
-  sandboxWindow.ARENA_STUB = true;
-  // page code assigns window.setCoin etc. and reads bare globals
   const keys = Object.keys(sandbox);
-  const body = scripts.join('\n;\n');
-  const fn = new Function(...keys, `"use strict";\n${body}`);
+  const fn = new Function(...keys, `"use strict";\n${scripts.join('\n;\n')}`);
   fn(...keys.map((k) => sandbox[k]));
-  // allow queued microtasks (pollTicker/pollLive) to settle
   await new Promise((r) => setTimeout(r, 0));
   await Promise.resolve();
 
   const bootId = sandboxWindow.ARENA_LIVE
     ? sandboxWindow.ARENA_LIVE.publication_id : null;
+  const dom = snapshotDom();
 
-  let polledId = null;
-  if (payloadB) {
+  let polledId = null, dom2 = null;
+  if (payloadB && payloadB !== '-') {
     // arm the "next published state" and fire the page's own poll interval —
-    // this is exactly what an already-open browser does on its timer
+    // exactly what an already-open browser does on its timer
     liveText = fs.readFileSync(payloadB, 'utf8');
     for (const { fn: cb } of intervals) await cb();
     await new Promise((r) => setTimeout(r, 0));
     polledId = sandboxWindow.ARENA_LIVE
       ? sandboxWindow.ARENA_LIVE.publication_id : null;
+    dom2 = snapshotDom();
   }
 
   process.stdout.write(JSON.stringify({
@@ -123,6 +136,7 @@ async function main() {
     polled_live_id: polledId,
     mode: sandboxWindow.ARENA_LIVE ? sandboxWindow.ARENA_LIVE.mode
       : (sandboxWindow.ARENA_PRESTART || {}).mode || null,
+    dom, dom2,
   }) + '\n');
 }
 

@@ -105,9 +105,18 @@ def run_pilot(store, cfg, caller, fetch_market, publish, clock, sleep,
             recovery.recover(store)      # finish/abort the SAME boundary first
         while clock() < T + grace:
             sleep(max(1, min(30, T + grace - clock())))
-        # lifecycle A: THINKING published BEFORE any model request
-        publisher_mod.publish_thinking(store, T, len(sched["completed"]),
-                                       sched["total"], cfg, publish)
+        # lifecycle A: THINKING published BEFORE any model request. This is a
+        # HARD GATE (Ruling 012.2): if the public site did not verifiably
+        # receive it, the boundary stays incomplete with ZERO model calls and
+        # ZERO state mutation; a restart retries this same publication and
+        # then resumes this same boundary — never a new one.
+        entry = publisher_mod.publish_thinking(store, T, len(sched["completed"]),
+                                               sched["total"], cfg, publish)
+        if entry["status"] != "PUBLISHED":
+            raise publisher_mod.PublicationError(
+                f"THINKING for boundary {T} not publicly verified "
+                f"({entry.get('reason')}); zero model calls made, boundary "
+                "left incomplete for publication-only retry")
         snaps, spec = {}, {}
         first = not sched["completed"]
         for coin in ("BTC", "ETH", "SOL"):
@@ -115,11 +124,15 @@ def run_pilot(store, cfg, caller, fetch_market, publish, clock, sleep,
                 snaps[coin], spec[coin] = fetch_market(coin, T, first)
             except Exception:
                 snaps[coin] = None
+        # HARD ABSOLUTE DEADLINE (Ruling 012.3): anchored at the SCHEDULED
+        # boundary T. Grace waits, THINKING publication+verification, and
+        # market retrieval above all consumed this same T..T+12min budget.
         recovery.run_checkpointed(
             T, snaps, caller, cfg, store,
             replay_spec={c: s for c, s in spec.items()
                          if snaps.get(c) is not None},
-            crash_at=crash_at)
+            crash_at=crash_at, clock=clock,
+            deadline=T + cfg["collection"]["collection_deadline_seconds"])
         sched = mark_completed(store, T)
         # lifecycle B: ROUND_COMMITTED after the atomic engine commit
         publisher_mod.publish_boundary(store, T, len(sched["completed"]),
