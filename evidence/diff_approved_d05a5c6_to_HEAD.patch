@@ -1,8 +1,8 @@
 diff --git a/.gitignore b/.gitignore
-index 7707535..5732fc1 100644
+index 7707535..a177fcd 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -9,3 +9,15 @@
+@@ -9,3 +9,18 @@
  MANIFEST.sha256.json
  .DS_Store
  offline_audit_bundle_v1/
@@ -18,6 +18,9 @@ index 7707535..5732fc1 100644
 +offline_audit_bundle_v5.tar.gz
 +offline_audit_bundle_v5.tar.gz.sha256
 +offline_audit_bundle_v5/
++offline_audit_bundle_v6.tar.gz
++offline_audit_bundle_v6.tar.gz.sha256
++offline_audit_bundle_v6/
 diff --git a/README.md b/README.md
 index 2484ab4..ddb112e 100644
 --- a/README.md
@@ -87,10 +90,10 @@ index e38268a..acee8fb 100644
  ## 1. Mobile fit (bug)
  Page is slightly wider than the phone viewport — wiggles left/right when
 diff --git a/config/v1/experiment.json b/config/v1/experiment.json
-index 6668136..1a0b16d 100644
+index 6668136..376fa02 100644
 --- a/config/v1/experiment.json
 +++ b/config/v1/experiment.json
-@@ -1,432 +1,446 @@
+@@ -1,432 +1,443 @@
  {
 -  "experiment": "v1.3",
 -  "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?",
@@ -626,20 +629,17 @@ index 6668136..1a0b16d 100644
 + },
 + "collection": {
 +  "procedure": [
-+   "freeze all three market snapshots",
-+   "freeze all 18 account snapshots",
++   "complete pre-decision replay of all required 1m candles strictly before T against the pre-T account state (phase persisted)",
++   "freeze all three market snapshots and all 18 account snapshots at T",
 +   "generate and archive all 18 first-attempt prompts before sending any model request",
-+   "submit calls with bounded concurrency",
++   "submit calls with bounded concurrency under the T+510s model-collection deadline",
 +   "identical frozen prompts, state, and P_T regardless of response order",
-+   "resolve commit/abort independently per matched pair",
++   "resolve commit/abort independently per matched pair, transactionally, by the T+630s resolution deadline",
 +   "apply committed decisions logically at boundary T only after collection closes",
-+   "one common post-T candle replay per coin"
++   "durable direct publication by the T+690s target; boundary terminal by the T+720s hard deadline; NO post-decision replay in the official runner"
 +  ],
 +  "concurrency_max_simultaneous_requests": 6,
-+  "global_collection_deadline": "T+12 minutes, hard; transport retries must complete inside it",
 +  "concurrency_lock": "preflight verifies 6-way concurrency against rate limits; the final value is locked before launch and cannot change during V1",
-+  "collection_deadline_seconds": 720,
-+  "deadline_note": "hard monotonic wall-clock deadline for the whole collection stage, anchored at collection start; results arriving after it never execute; retries may not begin unless their full budget fits inside it (Ruling 008.9)",
 +  "model_collection_deadline_seconds_after_T": 510,
 +  "resolution_replay_deadline_seconds_after_T": 630,
 +  "final_publication_target_seconds_after_T": 690,
@@ -664,8 +664,8 @@ index 6668136..1a0b16d 100644
 +  "thesis_memory_not_updated_from_aborted_attempt": true,
 +  "existing_stop_target_position_lifecycle_invalidation_unchanged": true,
 +  "all_attempts_and_rejection_reasons_still_archived": true,
-+  "post_T_replay_continues_for_both_accounts": true,
-+  "market_driven_exits_never_suspended": "stops, targets, liquidation, and invalidation monitoring never pause because a discretionary round aborted or was skipped"
++  "market_driven_exits_never_suspended": "stops, targets, liquidation, and invalidation monitoring never pause because a discretionary round aborted or was skipped",
++  "replay_continues_for_both_accounts": "the pre-decision replay of subsequent boundaries continues to enforce stops, targets, liquidation and invalidation for both twins regardless of the abort"
 + },
 + "terminal_account_policy": {
 +  "trigger": "post-fee equity reaches exactly 0 (permanent closure)",
@@ -2019,10 +2019,10 @@ index 145185a..1c1786a 100644
          "entry": str(a["entry"]) if a["entry"] is not None else None,
 diff --git a/engine/official.py b/engine/official.py
 new file mode 100644
-index 0000000..c38802c
+index 0000000..1762ec5
 --- /dev/null
 +++ b/engine/official.py
-@@ -0,0 +1,778 @@
+@@ -0,0 +1,861 @@
 +"""OFFICIAL 14-DAY RUN orchestration (Mentor Rulings 1, 2, 3, 6, 8).
 +
 +Differences from the pilot loop (engine.pilot), each mandated by a ruling:
@@ -2207,7 +2207,8 @@ index 0000000..c38802c
 +    preflight attestation (Mentor Rulings 016.7 + 017.3)."""
 +
 +
-+def verify_preflight_attestation(act, engine_digest, site_digest, now):
++def verify_preflight_attestation(act, engine_digest, site_digest, now,
++                                 waive_freshness=False):
 +    """STRICT attestation verification (Mentor Ruling 017.3). The activation
 +    record must carry {'preflight': {'report_path', 'report_sha256'}}; the
 +    referenced report must exist and hash to exactly the recorded SHA-256.
@@ -2226,7 +2227,13 @@ index 0000000..c38802c
 +
 +    Timestamp policy: not in the future beyond CLOCK_TOLERANCE_S; not older
 +    than PREFLIGHT_VALIDITY_S at activation; and the selected T0
-+    (act['start_utc']) must occur BEFORE the attestation expires."""
++    (act['start_utc']) must occur BEFORE the attestation expires.
++
++    `waive_freshness` (Mentor Ruling 018.3): ONLY the 24-hour freshness and
++    T0-expiry rules are waived — used exclusively for started/complete
++    restarts validating the immutable in-store attestation copy. Digest,
++    endpoint, report-hash, strict-PASS and model-identity checks are NEVER
++    waived."""
 +    def fail(msg):
 +        raise PreflightAttestationError(msg)
 +    p = act.get("preflight")
@@ -2295,12 +2302,83 @@ index 0000000..c38802c
 +    if ts > now + CLOCK_TOLERANCE_S:
 +        fail(f"preflight timestamp is in the future beyond the "
 +             f"{CLOCK_TOLERANCE_S}s clock tolerance")
-+    if now - ts > PREFLIGHT_VALIDITY_S:
-+        fail(f"preflight report stale (validity {PREFLIGHT_VALIDITY_S}s)")
-+    t0 = act.get("start_utc")
-+    if isinstance(t0, (int, float)) and t0 >= ts + PREFLIGHT_VALIDITY_S:
-+        fail("selected T0 occurs after the preflight attestation expires")
++    if not waive_freshness:
++        if now - ts > PREFLIGHT_VALIDITY_S:
++            fail(f"preflight report stale (validity {PREFLIGHT_VALIDITY_S}s)")
++        t0 = act.get("start_utc")
++        if isinstance(t0, (int, float)) and t0 >= ts + PREFLIGHT_VALIDITY_S:
++            fail("selected T0 occurs after the preflight attestation expires")
 +    return True
++
++
++class TrustRecordError(Exception):
++    """Durable trust evidence missing/modified/mismatched at restart
++    (Mentor Ruling 018.3) => integrity halt; the run must NOT resume merely
++    because the schedule says a boundary completed."""
++
++
++def verify_durable_trust(store, now, waive_freshness=False):
++    """Mentor Ruling 018.3: MANDATORY validation of the in-store durable
++    trust records before ANY reconciliation, publication, network operation
++    or model call on an unstarted/started/complete schedule:
++
++      1. both approved manifests exist and the CURRENT engine + site verify
++         against them;
++      2. activation_accepted.json exists; its engine/site digests equal the
++         approved manifest digests; its start/total equal the persisted
++         schedule;
++      3. activation_binding.json exists and matches the accepted activation
++         SHA, digests, start and total;
++      4. preflight_attestation.json exists, hashes to the accepted preflight
++         SHA-256, and passes the FULL strict verification (PASS fields,
++         18-account results, model identities, canonical endpoint);
++      5. freshness is waived ONLY when waive_freshness=True (after boundary
++         1); nothing else is ever waived.
++
++    Raises IntegrityError / TrustRecordError / PreflightAttestationError on
++    any failure; returns the accepted activation record. Read-only."""
++    launch = config_mod.load_launch_manifest(store)
++    site = config_mod.load_site_manifest(store)
++    config_mod.verify_integrity(launch)
++    config_mod.verify_site_integrity(site)
++    apath = os.path.join(store, ACCEPTED_ACTIVATION_NAME)
++    try:
++        with open(apath) as f:
++            stored = json.load(f)
++    except Exception as e:
++        raise TrustRecordError(f"durable accepted activation unavailable: {e}")
++    rec = stored.get("record") or {}
++    if rec.get("engine_digest") != launch["combined"]:
++        raise TrustRecordError("accepted activation engine digest does not "
++                               "match the approved launch manifest")
++    if rec.get("site_digest") != site["combined"]:
++        raise TrustRecordError("accepted activation site digest does not "
++                               "match the approved site manifest")
++    sched = pilot.load_schedule(store)
++    if rec.get("start_utc") != sched["start"] \
++            or rec.get("total") != sched["total"]:
++        raise TrustRecordError("accepted activation start/total do not "
++                               "match the persisted schedule")
++    try:
++        with open(os.path.join(store, BINDING_NAME)) as f:
++            binding = json.load(f)
++    except Exception as e:
++        raise TrustRecordError(f"schedule binding unavailable: {e}")
++    if (binding.get("start") != sched["start"]
++            or binding.get("total") != sched["total"]
++            or binding.get("engine_digest") != launch["combined"]
++            or binding.get("site_digest") != site["combined"]
++            or binding.get("activation_sha") != stored.get("activation_sha")):
++        raise TrustRecordError("schedule binding does not match the "
++                               "accepted activation and approved manifests")
++    ppath = os.path.join(store, ACCEPTED_PREFLIGHT_NAME)
++    if not os.path.exists(ppath):
++        raise TrustRecordError("archived preflight attestation missing")
++    act2 = dict(rec, preflight=dict(rec.get("preflight") or {},
++                                    report_path=ppath))
++    verify_preflight_attestation(act2, launch["combined"], site["combined"],
++                                 now, waive_freshness=waive_freshness)
++    return rec
 +
 +
 +BINDING_NAME = "activation_binding.json"
@@ -2674,7 +2752,12 @@ index 0000000..c38802c
 +    record disappears or changes before then, Disarmed is raised with zero
 +    model calls and zero boundary work. Once boundary 1 has started the
 +    predicate is never consulted again — halting requires a service stop."""
-+    assert cfg["collection"]["collection_deadline_seconds"] == HARD_DEADLINE_S
++    # separate machine-readable concepts (Ruling 018.2): the model-collection
++    # limit and the hard terminal limit are distinct fields and constants
++    assert cfg["collection"][
++        "model_collection_deadline_seconds_after_T"] == COLLECTION_DEADLINE_S
++    assert cfg["collection"][
++        "hard_terminal_deadline_seconds_after_T"] == HARD_DEADLINE_S
 +    sched = pilot.load_schedule(store)
 +    notes = []
 +
@@ -2837,6 +2920,20 @@ index 08f4e1a..b235400 100644
  
  
  def _validate_account(aid, a):
+diff --git a/engine/pilot.py b/engine/pilot.py
+index 0cad599..9c4be07 100644
+--- a/engine/pilot.py
++++ b/engine/pilot.py
+@@ -132,7 +132,8 @@
+             replay_spec={c: s for c, s in spec.items()
+                          if snaps.get(c) is not None},
+             crash_at=crash_at, clock=clock,
+-            deadline=T + cfg["collection"]["collection_deadline_seconds"])
++            deadline=T + cfg["collection"][
++                "hard_terminal_deadline_seconds_after_T"])
+         sched = mark_completed(store, T)
+         # lifecycle B: ROUND_COMMITTED after the atomic engine commit
+         publisher_mod.publish_boundary(store, T, len(sched["completed"]),
 diff --git a/engine/publisher.py b/engine/publisher.py
 index 62e15bb..e810820 100644
 --- a/engine/publisher.py
@@ -2946,7 +3043,7 @@ index 62e15bb..e810820 100644
          results.append((T, entry["status"]))
      return results
 diff --git a/engine/recovery.py b/engine/recovery.py
-index 68c2194..10ad808 100644
+index 68c2194..95b832a 100644
 --- a/engine/recovery.py
 +++ b/engine/recovery.py
 @@ -23,6 +23,7 @@
@@ -2969,12 +3066,13 @@ index 68c2194..10ad808 100644
      """Returns (ledger_entries, attempt_records, archived_user_prompts).
  
      `deadline` (Ruling 012.3): the authoritative ABSOLUTE collection deadline
-@@ -61,7 +65,37 @@
+@@ -61,7 +65,38 @@
      retrieval, grace waits, and restarts all consume the same T..T+12min
      budget — entering this coordinator late never grants new time, and a
      restart never resets the deadline. When omitted (offline tooling/tests),
 -    the legacy anchor `clock() + collection_deadline_seconds` applies."""
-+    the legacy anchor `clock() + collection_deadline_seconds` applies.
++    the legacy anchor `clock() + hard_terminal_deadline_seconds_after_T`
++    applies.
 +
 +    `abort_all_reason` (official-run Mentor Ruling 2): when set, the caller
 +    is NEVER invoked — every non-finalized pair aborts with exactly this
@@ -3008,7 +3106,7 @@ index 68c2194..10ad808 100644
      # RUNTIME INTEGRITY GATE (Ruling 009.1): load the immutable APPROVED
      # launch manifest (never rebuilt from the working tree) and verify every
      # engine/script/config/prompt/schema byte BEFORE touching state, prompts,
-@@ -78,7 +112,9 @@
+@@ -78,7 +113,9 @@
          # boundary start. Publication uses ONLY these persisted marks; a
          # crash-restart of the same boundary keeps the frozen values.
          meta = {"boundary": T, "finalized_pairs": {},
@@ -3018,7 +3116,7 @@ index 68c2194..10ad808 100644
                  "boundary_complete": False,
                  "coin_terminated": meta.get("coin_terminated", {}),
                  "replay_state": meta.get("replay_state", {}),
-@@ -100,6 +136,145 @@
+@@ -100,6 +137,145 @@
      # 2. reconcile any unflushed outbox from a prior crash (idempotent)
      persistence.flush_outbox(store, accounts, meta)
  
@@ -3164,7 +3262,7 @@ index 68c2194..10ad808 100644
      # 3. durable prompt archive BEFORE any request (Ruling 008.3)
      archived = persistence.read_prompt_archive(store, _seed(T))
      entries, pregen = [], {}
-@@ -113,6 +288,12 @@
+@@ -113,6 +289,12 @@
              e = archived[aid]
              if "user" in e:
                  pregen[aid] = (e["system"], e["user"])   # bytes reused verbatim
@@ -3177,7 +3275,17 @@ index 68c2194..10ad808 100644
              continue
          if blocked:
              entries.append({"account_id": aid,
-@@ -165,7 +346,9 @@
+@@ -136,7 +318,8 @@
+ 
+     # 4/5. wave collection + pair resolution under ONE hard deadline
+     if deadline is None:
+-        deadline = clock() + cfg["collection"]["collection_deadline_seconds"]
++        deadline = clock() + cfg["collection"][
++            "hard_terminal_deadline_seconds_after_T"]
+     timeout_s = cfg["request_payloads"]["common"]["timeout_seconds"]
+     concurrency = cfg["collection"]["concurrency_max_simultaneous_requests"]
+     n_written = [0]
+@@ -165,7 +348,9 @@
                  continue
              a_raw = accounts[state.account_id(coin, model, "raw")]
              a_ta = accounts[state.account_id(coin, model, "ta")]
@@ -3188,7 +3296,7 @@ index 68c2194..10ad808 100644
                  pair_meta[pid] = ("abort", rid, "crash_recovery", None)
              elif meta["coin_terminated"].get(coin):
                  pair_meta[pid] = ("abort", rid, "COIN_TERMINATED", None)
-@@ -207,52 +390,116 @@
+@@ -207,52 +392,116 @@
              if pid in recovered or pid not in pair_meta:
                  continue
              kind, rid, reason, terminal_ids = pair_meta[pid]
@@ -3324,7 +3432,7 @@ index 68c2194..10ad808 100644
              _crash(crash_at, "after_checkpoint")
              persistence.flush_outbox(store, accounts, meta,
                                       crash=lambda p: _crash(crash_at, p))
-@@ -262,81 +509,10 @@
+@@ -262,81 +511,10 @@
                  done_one = True
                  _crash(crash_at, "after_one_pair")
  
@@ -3410,7 +3518,7 @@ index 68c2194..10ad808 100644
      # DURABLE EQUITY HISTORY (Ruling 011.2): one point per completed boundary,
      # equity computed with THIS boundary's persisted mark; explicit null when
      # an open position has no valid mark. Idempotent across same-T re-runs.
-@@ -355,7 +531,19 @@
+@@ -355,7 +533,19 @@
          meta["equity_history_last"] = T
      meta["boundary_complete"] = True
      meta.pop("_recovering", None)
@@ -3431,7 +3539,7 @@ index 68c2194..10ad808 100644
      return ledger, all_attempts, {aid: p[1] for aid, p in pregen.items()}
  
  
-@@ -371,12 +559,22 @@
+@@ -371,12 +561,22 @@
  
  
  def recover(store):
@@ -4609,10 +4717,10 @@ index 0000000..f1def75
 +    main()
 diff --git a/scripts/run_official_14d.py b/scripts/run_official_14d.py
 new file mode 100644
-index 0000000..7afca0f
+index 0000000..0c74019
 --- /dev/null
 +++ b/scripts/run_official_14d.py
-@@ -0,0 +1,381 @@
+@@ -0,0 +1,418 @@
 +"""OFFICIAL 14-DAY EXPERIMENT SERVICE — INSTALLED ARMED/OFF, NEVER SELF-ACTIVATING.
 +
 +Runs under systemd (deploy/arena-official.service, Restart=on-failure —
@@ -4687,23 +4795,38 @@ index 0000000..7afca0f
 +    return a if ok else None
 +
 +
-+def fetch_market(coin, T, first):
-+    from engine import marketdata
++def kraken_ohlc(pair, interval_min):
++    url = (f"https://api.kraken.com/0/public/OHLC?pair={pair}"
++           f"&interval={interval_min}")
++    with urllib.request.urlopen(url, timeout=15) as r:
++        raw = json.loads(r.read().decode())
++    key = [k for k in raw["result"] if k != "last"][0]
++    return [{"t": int(x[0]), "o": float(x[1]), "h": float(x[2]),
++             "l": float(x[3]), "c": float(x[4]), "v": float(x[6])}
++            for x in raw["result"][key]]
 +
-+    def ohlc(pair, interval_min):
-+        url = (f"https://api.kraken.com/0/public/OHLC?pair={pair}"
-+               f"&interval={interval_min}")
-+        with urllib.request.urlopen(url, timeout=15) as r:
-+            raw = json.loads(r.read().decode())
-+        key = [k for k in raw["result"] if k != "last"][0]
-+        return [{"t": int(x[0]), "o": float(x[1]), "h": float(x[2]),
-+                 "l": float(x[3]), "c": float(x[4]), "v": float(x[6])}
-+                for x in raw["result"][key]]
++
++def fetch_market(coin, T, first):
++    """Mentor Ruling 018.1: the 1-MINUTE REPLAY SERIES is retrieved and
++    validated INDEPENDENTLY of the hourly/daily prompt data.
++
++    * 1m failure raises => run_official installs the explicit empty interval
++      and the coordinator persists the exact replay gap (CATCHUP_REQUIRED).
++    * 1m success with 1h/1d (or snapshot-build) failure returns
++      (None, valid_spec): new model calls for the coin are blocked, but the
++      complete 1m data still replays stops, targets, liquidations and
++      invalidations. Hourly/daily failure is NEVER substituted for a 1m
++      failure."""
++    from engine import marketdata
 +    pair = KRAKEN[coin]
-+    k1m, k1h, k1d = ohlc(pair, 1), ohlc(pair, 60), ohlc(pair, 1440)
-+    snap = marketdata.build_snapshot(coin, k1m, k1h, k1d, T)
++    k1m = kraken_ohlc(pair, 1)                   # 1m failure => raise (total)
 +    spec = {"start": T if first else T - 3600, "end": T,
-+            "candles": marketdata.to_dec(k1m)}
++            "candles": marketdata.to_dec(k1m)}   # validated conversion
++    try:
++        k1h, k1d = kraken_ohlc(pair, 60), kraken_ohlc(pair, 1440)
++        snap = marketdata.build_snapshot(coin, k1m, k1h, k1d, T)
++    except Exception:
++        snap = None                              # prompts blocked; replay intact
 +    return snap, spec
 +
 +
@@ -4872,6 +4995,28 @@ index 0000000..7afca0f
 +        config.verify_site_integrity(config.load_site_manifest(OFFICIAL_STORE))
 +
 +
++def validate_trust_or_halt(kind):
++    """Mentor Ruling 018.3: MANDATORY durable trust-record validation for any
++    provisioned schedule (unstarted, started or complete) BEFORE any
++    reconciliation, publication, network operation or model call. Only the
++    24-hour freshness rule is waived after boundary 1; missing or modified
++    durable trust evidence is an INTEGRITY HALT — the run never resumes
++    merely because the schedule says a boundary completed."""
++    from engine import official
++    try:
++        return official.verify_durable_trust(
++            OFFICIAL_STORE, time.time(),
++            waive_freshness=(kind in ("started", "complete")))
++    except Exception as e:
++        official.write_health(public_dir(), {
++            "state": "INTEGRITY_HALT", "pid": os.getpid(),
++            "mode": official.MODE, "updated": time.time(),
++            "note": "durable trust validation failed"})
++        print(f"INTEGRITY HALT: durable trust validation failed ({e}). "
++              "No reconciliation, no publication, no model call was made.")
++        sys.exit(3)
++
++
 +def main():
 +    from engine import config, official
 +    lock = official.acquire_runner_lock(LOCK_PATH)   # noqa: F841 (held open)
@@ -4885,21 +5030,21 @@ index 0000000..7afca0f
 +    #   complete    -> COMPLETE health, clean exit, zero publications/calls
 +    verify_store_integrity()         # integrity BEFORE any reconciliation
 +    kind = official.classify_official_store(OFFICIAL_STORE)
++    if kind != "no_schedule":
++        # MANDATORY durable trust validation (Ruling 018.3) — before the
++        # COMPLETE report, before resume, before unstarted reconciliation
++        validate_trust_or_halt(kind)
 +    if kind == "complete":
 +        official.write_health(public_dir(), official.health_info(
 +            OFFICIAL_STORE, "COMPLETE", time.time()))
-+        print("OFFICIAL RUN ALREADY COMPLETE: all boundaries terminal. "
-+              "Zero publications, zero model calls. Exiting cleanly.")
++        print("OFFICIAL RUN ALREADY COMPLETE (durable trust validated): all "
++              "boundaries terminal. Zero publications, zero model calls. "
++              "Exiting cleanly.")
 +        return
 +    if kind == "started":
-+        stored = os.path.join(OFFICIAL_STORE,
-+                              official.ACCEPTED_ACTIVATION_NAME)
-+        if os.path.exists(stored):
-+            print(f"RESUMING started schedule from the durable accepted "
-+                  f"activation ({stored}).")
-+        else:
-+            print("RESUMING started schedule (per contract the activation "
-+                  "record is no longer consulted after boundary 1).")
++        print("RESUMING started schedule from the validated durable trust "
++              "record (external activation file and freshness rule no "
++              "longer apply).")
 +        cfg = config.load_config()
 +        publish = direct_publisher()
 +        sched = official.run_official(
@@ -5274,7 +5419,7 @@ index 0000000..6385bf3
 +    main()
 diff --git a/tests/test_official.py b/tests/test_official.py
 new file mode 100644
-index 0000000..a59bed9
+index 0000000..6da49d9
 --- /dev/null
 +++ b/tests/test_official.py
 @@ -0,0 +1,362 @@
@@ -5460,7 +5605,7 @@ index 0000000..a59bed9
 +    assert seen["abort_all_reason"] is None
 +    assert sched["completed"] == [T0]
 +    assert official.HARD_DEADLINE_S == \
-+        cfg["collection"]["collection_deadline_seconds"] == 720
++        cfg["collection"]["hard_terminal_deadline_seconds_after_T"] == 720
 +
 +
 +def test_committed_boundary_publishes_official_branding(cfg):
@@ -7464,7 +7609,7 @@ index 0000000..6877d07
 +    assert "failed" in notes[0]
 diff --git a/tests/test_ruling017.py b/tests/test_ruling017.py
 new file mode 100644
-index 0000000..e03808b
+index 0000000..3d9a1a3
 --- /dev/null
 +++ b/tests/test_ruling017.py
 @@ -0,0 +1,455 @@
@@ -7904,8 +8049,8 @@ index 0000000..e03808b
 +    assert col["final_publication_target_seconds_after_T"] \
 +        == official.FINAL_PUBLISH_S == 690
 +    assert col["hard_terminal_deadline_seconds_after_T"] \
-+        == official.HARD_DEADLINE_S \
-+        == col["collection_deadline_seconds"] == 720
++        == official.HARD_DEADLINE_S == 720
++    assert "collection_deadline_seconds" not in col     # old dual-use gone
 +    assert "SCHEDULED boundary T" in col["deadline_anchor"]
 +
 +
@@ -7923,3 +8068,301 @@ index 0000000..e03808b
 +    osrc = open(os.path.join(config.ROOT, "engine", "official.py")).read()
 +    assert "pre_replay_spec=spec" in osrc
 +    assert "replay_spec=" not in osrc.replace("pre_replay_spec=", "")
+diff --git a/tests/test_ruling018.py b/tests/test_ruling018.py
+new file mode 100644
+index 0000000..cdc2005
+--- /dev/null
++++ b/tests/test_ruling018.py
+@@ -0,0 +1,292 @@
++"""Mentor Ruling 018 remediation regressions: independent production 1m
++replay fetch, removal of contradictory configuration fields, and mandatory
++durable trust-record validation on unstarted/started/complete restarts.
++All offline and deterministic."""
++import json
++import os
++import time
++
++import pytest
++
++from conftest import T0, ScriptedCaller, load_fix, long_decision
++from engine import config, official, persistence, recovery
++from test_official import direct, provisioned_official, run_official
++from test_ruling010 import PilotClock, digests
++from test_ruling011 import _sol_price
++from test_ruling014 import NeverPublish
++from test_ruling016 import (_load_script, _passing_report, mk_candles,
++                            snapshots_at, _prod_store)
++from test_ruling017 import LifecycleRecorder
++
++HOUR = 3600
++T1, T2 = T0 + HOUR, T0 + 2 * HOUR
++PAIR_TO_COIN = {"XBTUSD": "BTC", "ETHUSD": "ETH", "SOLUSD": "SOL"}
++
++
++# ---- 018.1 production 1m replay fetch independent of prompt data ----
++
++def _kraken_stub(sol_1m=None, fail=frozenset()):
++    """Stands in for the network layer ONLY; the production fetch_market()
++    parsing/splitting logic runs for real. `fail` holds (pair, interval)
++    tuples; `sol_1m` optionally overrides the SOL 1m series."""
++    def kraken_ohlc(pair, interval_min):
++        if (pair, interval_min) in fail:
++            raise RuntimeError("kraken transport down")
++        coin = PAIR_TO_COIN[pair]
++        if coin == "SOL" and interval_min == 1 and sol_1m is not None:
++            return sol_1m
++        tf = {1: "1m", 60: "1h", 1440: "1d"}[interval_min]
++        return load_fix(coin, tf)
++    return kraken_ohlc
++
++
++def _open_sol(cfg, decision=None):
++    store = _prod_store()
++    d = decision or long_decision(float(_sol_price()), 2000)
++    recovery.run_checkpointed(T0, snapshots_at(T0),
++                              ScriptedCaller({"sol_haiku_raw": dict(d)}),
++                              cfg, store)
++    return store
++
++
++@pytest.mark.parametrize("fail_interval,move,reason", [
++    (60, "dip_to", "stop_loss"),                 # 1h fails -> stop still runs
++    (1440, "rise_to", "take_profit"),            # 1d fails -> tp still runs
++])
++def test_prompt_data_failure_never_discards_valid_1m(cfg, monkeypatch,
++                                                     fail_interval, move,
++                                                     reason):
++    mod = _load_script("run_official_14d")
++    p = float(_sol_price())
++    factor = 0.968 if move == "dip_to" else 1.06
++    sol_1m = mk_candles(T0, 120, p, at=30, **{move: p * factor})
++    monkeypatch.setattr(mod, "kraken_ohlc", _kraken_stub(
++        sol_1m=sol_1m, fail={("SOLUSD", fail_interval)}))
++    snap, spec = mod.fetch_market("SOL", T1, False)      # PRODUCTION path
++    assert snap is None                          # prompts blocked
++    assert spec["start"] == T0 and spec["end"] == T1
++    assert len(spec["candles"]) == 120           # valid 1m data RETAINED
++    store = _open_sol(cfg)
++    caller = ScriptedCaller({})
++    snaps = snapshots_at(T1)
++    snaps["SOL"] = snap
++    ledger, _, _ = recovery.run_checkpointed(
++        T1, snaps, caller, cfg, store, pre_replay_spec={"SOL": spec})
++    accounts, meta = persistence.load_state(store + "/state.json")
++    tr = accounts["sol_haiku_raw"]["trades"][0]
++    assert tr["reason"] == reason                # resting exit EXECUTED
++    assert not [c for c in caller.calls if c["id"].startswith("sol")]
++    sol = [e for e in ledger if e.get("pair") == "sol_haiku"][0]
++    assert sol["reason"] == "DATA_UNAVAILABLE"   # honest prompt block
++    assert meta["replay_state"]["SOL"]["status"] == "REPLAY_COMPLETE"
++
++
++def test_true_1m_failure_still_raises_and_creates_catchup(cfg, monkeypatch):
++    mod = _load_script("run_official_14d")
++    monkeypatch.setattr(mod, "kraken_ohlc",
++                        _kraken_stub(fail={("SOLUSD", 1)}))
++    with pytest.raises(RuntimeError):            # total failure => raise
++        mod.fetch_market("SOL", T1, False)
++    # full production path: run_official + the real fetch_market wiring
++    store = provisioned_official(n=2)
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    caller = ScriptedCaller({})
++    official.run_official(store, cfg, caller, mod.fetch_market, dp, vc,
++                          vc.sleep)
++    _, meta = persistence.load_state(os.path.join(store, "state.json"))
++    assert meta["replay_next_required"]["SOL"] == T0     # exact gap persisted
++    assert meta["replay_state"]["SOL"]["status"] == "CATCHUP_REQUIRED"
++    assert not [c for c in caller.calls if c["id"].startswith("sol")]
++    assert [c for c in caller.calls if c["id"].startswith("btc")]  # others ran
++
++
++def test_fetch_market_split_is_structural():
++    src = open(os.path.join(config.ROOT, "scripts",
++                            "run_official_14d.py")).read()
++    body = src[src.index("def fetch_market"):src.index("def live_caller")]
++    assert body.index("kraken_ohlc(pair, 1)") \
++        < body.index('"candles"') < body.index("kraken_ohlc(pair, 60)")
++    assert "snap = None" in body                 # 1h/1d failure != 1m failure
++
++
++# ---- 018.2 contradictory configuration removed ----
++
++def test_old_contradictory_fields_and_phrases_are_gone(cfg):
++    col = cfg["collection"]
++    for stale in ("collection_deadline_seconds", "global_collection_deadline",
++                  "deadline_note"):
++        assert stale not in col
++    blob = json.dumps(cfg)
++    for phrase in ("one common post-T", "T+12 minutes",
++                   "anchored at collection start", "post_T_replay",
++                   "post-T"):
++        assert phrase not in blob, phrase
++    assert "pre-decision replay" in col["procedure"][0]
++    assert "NO post-decision replay" in col["procedure"][-1]
++    pas = cfg["pair_abort_semantics"]
++    assert "post_T_replay_continues_for_both_accounts" not in pas
++    assert "pre-decision replay" in pas["replay_continues_for_both_accounts"]
++
++
++def test_separate_machine_readable_deadline_concepts(cfg):
++    col = cfg["collection"]
++    assert col["model_collection_deadline_seconds_after_T"] == 510 \
++        == official.COLLECTION_DEADLINE_S
++    assert col["hard_terminal_deadline_seconds_after_T"] == 720 \
++        == official.HARD_DEADLINE_S
++    assert official.COLLECTION_DEADLINE_S != official.HARD_DEADLINE_S
++    for rel in ("engine/pilot.py", "engine/recovery.py"):
++        src = open(os.path.join(config.ROOT, rel)).read()
++        assert 'cfg["collection"]["collection_deadline_seconds"]' not in src
++    osrc = open(os.path.join(config.ROOT, "engine", "official.py")).read()
++    assert "model_collection_deadline_seconds_after_T" in osrc
++    assert "hard_terminal_deadline_seconds_after_T" in osrc
++
++
++# ---- 018.3 mandatory durable trust record ----
++
++def _trusted_store(tmp_path, n=2, ts=None, endpoint=None, start=T0):
++    eng, site = digests()
++    over = {}
++    if endpoint is not None:
++        over["canonical_endpoint"] = endpoint
++    path, sha = _passing_report(tmp_path, eng, site, ts=ts,
++                                name=f"report_{n}_{start}.json", **over)
++    act = {"approved": "YES-OFFICIAL-RUN-APPROVED", "engine_digest": eng,
++           "site_digest": site, "start_utc": start, "total": n,
++           "preflight": {"report_path": path, "report_sha256": sha}}
++    act_path = tmp_path / f"act_{n}_{start}.json"
++    act_path.write_text(json.dumps(act))
++    act_sha = official.activation_sha(str(act_path))
++    import tempfile
++    store = tempfile.mkdtemp(prefix="arena-r18-")
++    official.provision_official(store, eng, site, start, total=n,
++                                activation_sha=act_sha)
++    official.archive_activation(store, act, act_sha)
++    return store, str(act_path), act_sha
++
++
++def test_valid_trust_record_verifies_read_only(cfg, tmp_path):
++    store, _, _ = _trusted_store(tmp_path)
++    before = {f: os.path.getsize(os.path.join(store, f))
++              for f in os.listdir(store)}
++    rec = official.verify_durable_trust(store, time.time())
++    assert rec["start_utc"] == T0 and rec["total"] == 2
++    after = {f: os.path.getsize(os.path.join(store, f))
++             for f in os.listdir(store)}
++    assert before == after                       # strictly read-only
++
++
++def test_valid_48h_midrun_restart_without_control_file(cfg, tmp_path):
++    now = time.time()
++    store, act_path, _ = _trusted_store(tmp_path, ts=now - 30 * HOUR)
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    rec1 = LifecycleRecorder(dp)
++    with pytest.raises(recovery.CrashError):
++        run_official(store, cfg, ScriptedCaller({}), rec1, vc,
++                     crash_at="after_one_pair")
++    os.remove(act_path)                          # external file gone
++    # started restart: freshness WAIVED, everything else still verified
++    assert official.verify_durable_trust(store, now, waive_freshness=True)
++    with pytest.raises(official.PreflightAttestationError):
++        official.verify_durable_trust(store, now, waive_freshness=False)
++    vc.t += 48 * HOUR
++    dp2, _ = direct(vc)
++    rec2 = LifecycleRecorder(dp2)
++    sched = run_official(store, cfg, ScriptedCaller({}), rec2, vc)
++    assert len(sched["completed"]) == 2          # resumed
++    assert "READY" not in rec2.lifecycles
++
++
++MISSING_CASES = {
++    "accepted_activation": official.ACCEPTED_ACTIVATION_NAME,
++    "archived_preflight": official.ACCEPTED_PREFLIGHT_NAME,
++    "launch_manifest": config.LAUNCH_MANIFEST_NAME,
++    "site_manifest": config.SITE_MANIFEST_NAME,
++    "binding": official.BINDING_NAME,
++}
++
++
++@pytest.mark.parametrize("case", sorted(MISSING_CASES))
++def test_missing_durable_trust_evidence_refuses(cfg, tmp_path, case):
++    store, _, _ = _trusted_store(tmp_path)
++    os.remove(os.path.join(store, MISSING_CASES[case]))
++    with pytest.raises((official.TrustRecordError, config.IntegrityError,
++                        official.PreflightAttestationError)):
++        official.verify_durable_trust(store, time.time(),
++                                      waive_freshness=True)
++
++
++def test_modified_preflight_copy_refuses(cfg, tmp_path):
++    store, _, _ = _trusted_store(tmp_path)
++    with open(os.path.join(store, official.ACCEPTED_PREFLIGHT_NAME), "a") as f:
++        f.write(" ")
++    with pytest.raises(official.PreflightAttestationError):
++        official.verify_durable_trust(store, time.time(),
++                                      waive_freshness=True)
++
++
++def test_mismatched_trust_fields_refuse(cfg, tmp_path):
++    # engine digest tampered in the accepted record
++    store, _, _ = _trusted_store(tmp_path)
++    apath = os.path.join(store, official.ACCEPTED_ACTIVATION_NAME)
++    stored = json.load(open(apath))
++    stored["record"]["engine_digest"] = "f" * 64
++    json.dump(stored, open(apath, "w"))
++    with pytest.raises(official.TrustRecordError):
++        official.verify_durable_trust(store, time.time(),
++                                      waive_freshness=True)
++    # start/total mismatch vs the persisted schedule
++    store2, _, _ = _trusted_store(tmp_path, n=2, start=T0 + HOUR)
++    apath2 = os.path.join(store2, official.ACCEPTED_ACTIVATION_NAME)
++    stored2 = json.load(open(apath2))
++    stored2["record"]["start_utc"] = T0
++    json.dump(stored2, open(apath2, "w"))
++    with pytest.raises(official.TrustRecordError):
++        official.verify_durable_trust(store2, time.time(),
++                                      waive_freshness=True)
++    # endpoint mismatch inside the attested report
++    store3, _, _ = _trusted_store(tmp_path, n=3,
++                                  endpoint="https://evil.example/x.js")
++    with pytest.raises(official.PreflightAttestationError):
++        official.verify_durable_trust(store3, time.time(),
++                                      waive_freshness=True)
++    # binding tampered
++    store4, _, _ = _trusted_store(tmp_path, n=4)
++    bpath = os.path.join(store4, official.BINDING_NAME)
++    b = json.load(open(bpath))
++    b["activation_sha"] = "0" * 64
++    json.dump(b, open(bpath, "w"))
++    with pytest.raises(official.TrustRecordError):
++        official.verify_durable_trust(store4, time.time(),
++                                      waive_freshness=True)
++
++
++def test_completed_run_validates_trust_then_reports_complete(cfg, tmp_path):
++    store, _, _ = _trusted_store(tmp_path, n=1)
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    run_official(store, cfg, ScriptedCaller({}), dp, vc)
++    assert official.classify_official_store(store) == "complete"
++    assert official.verify_durable_trust(store, time.time(),
++                                         waive_freshness=True)
++    caller = ScriptedCaller({})
++    official.run_official(store, cfg, caller, None, NeverPublish(), vc,
++                          vc.sleep)
++    assert caller.calls == []                    # zero calls, zero pubs
++
++
++def test_runner_validates_trust_before_any_action():
++    src = open(os.path.join(config.ROOT, "scripts",
++                            "run_official_14d.py")).read()
++    i_trust = src.index("validate_trust_or_halt(kind)")
++    assert src.index("verify_store_integrity()") < i_trust
++    assert i_trust < src.index('kind == "complete"')
++    assert i_trust < src.index("official.reconcile_unstarted_schedule")
++    assert i_trust < src.index("run_official(")
++    fn = src[src.index("def validate_trust_or_halt"):
++             src.index("def main")]
++    assert "verify_durable_trust" in fn and "sys.exit(3)" in fn
++    assert "INTEGRITY_HALT" in fn                # public health reflects it

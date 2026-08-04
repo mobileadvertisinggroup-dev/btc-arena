@@ -1,7 +1,7 @@
 Name                    Stmts   Miss Branch BrPart  Cover
 ---------------------------------------------------------
 engine/__init__.py          0      0      0      0   100%
-engine/config.py          104      5     20      3    94%
+engine/config.py          104      3     20      3    95%
 engine/dashboard.py        38      0     16      0   100%
 engine/decisions.py        80      0     46      0   100%
 engine/execution.py        95      0     26      1    99%
@@ -9,7 +9,7 @@ engine/features.py         64      3     22      3    93%
 engine/lifecycle.py        23      0     10      0   100%
 engine/marketdata.py       57      5     26      5    88%
 engine/metrics.py          85      0     32      0   100%
-engine/official.py        432     32    146     18    91%
+engine/official.py        467     33    158     19    92%
 engine/persistence.py     234     16     88     11    92%
 engine/pilot.py            67      1     20      2    97%
 engine/prompts.py          74      0     22      0   100%
@@ -19,4 +19,4 @@ engine/replay.py           73      0     46      2    98%
 engine/rounds.py          101      4     32      4    94%
 engine/state.py            48      0     14      0   100%
 ---------------------------------------------------------
-TOTAL                    2040     79    722     57    95%
+TOTAL                    2075     78    734     58    95%
