@@ -9,14 +9,14 @@ engine/features.py         64      3     22      3    93%
 engine/lifecycle.py        23      0     10      0   100%
 engine/marketdata.py       57      5     26      5    88%
 engine/metrics.py          85      0     32      0   100%
-engine/official.py        315     26     84     12    90%
-engine/persistence.py     228     17     86     13    90%
+engine/official.py        359     33    110     15    90%
+engine/persistence.py     234     17     88     12    91%
 engine/pilot.py            67      1     20      2    97%
 engine/prompts.py          74      0     22      0   100%
 engine/publisher.py       148      8     22      2    94%
-engine/recovery.py        288     10    120     11    95%
+engine/recovery.py        314      6    132      7    97%
 engine/replay.py           73      0     46      2    98%
-engine/rounds.py           87      5     28      5    91%
+engine/rounds.py          101      4     32      4    94%
 engine/state.py            48      0     14      0   100%
 ---------------------------------------------------------
-TOTAL                    1874     80    640     59    94%
+TOTAL                    1964     82    684     56    95%

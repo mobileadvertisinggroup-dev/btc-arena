@@ -1,6 +1,6 @@
 {
  "files": {
-  "config/v1/experiment.json": "f7da51051a7031c26e5b5905979eeb33a4473739c901f766f25638472f39ef70",
+  "config/v1/experiment.json": "4487f9f9acb8bdc5dace3cd3cfe69e0e3bcb158299e076433ea8d0deffcbe381",
   "deploy/arena-official.service": "f918bd1dff679955acb054a2bf22fbba5902e63fc4176a5a2debbd84b287ca94",
   "deploy/nginx-arena.conf": "b2ead8442059cfc686d3c61c1b342c39f53696468e83b2b4c95a79d678a677ab",
   "deploy/requirements-official.txt": "4d802d7c1ca0eff85563b5e1aa5ae100dcc789a32049fcc0d65e710e3c551f31",
@@ -13,14 +13,14 @@
   "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872",
   "engine/marketdata.py": "0b035211e44d0b3978dfbd56230c342dfb2bf77a9f3b310211748b8dede19a28",
   "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9",
-  "engine/official.py": "68d482f340dc7f8960895a460b90113d850d24f4574cba256bde3fccf14cb65d",
-  "engine/persistence.py": "0ea8013e46d855fdfca1446b27d44eebec94b0741fb606a3500840c7a9740005",
+  "engine/official.py": "ec9aaf39f15627c5ce5a304a85c1f9c6dcd280eb5e2352bcaccab92bd3c14cf2",
+  "engine/persistence.py": "08802532f7e3ad1023730f4d4c2a6c2092710bc356f2bff720766d1120d21c73",
   "engine/pilot.py": "bb8af7eb4a4de5a1af17768234bed815363a69f9cc46d4f88dbd15da66823228",
   "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22",
   "engine/publisher.py": "739560008fd90b0ebb492b58338034ee75c63dd459bb674852f6bc2c2511e30e",
-  "engine/recovery.py": "335ef4082acf2b50ac07f6fbda8c0551560bdaa034d374b2be62c14eba3e8beb",
+  "engine/recovery.py": "2f05bfeda85f95e27d6ce8e58242920df8299f8e1eab1c93bfd35ccb2da5bf5f",
   "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42",
-  "engine/rounds.py": "e80db03a868260e9d1ee8361553452e0c5e8d434cbea0f27381338be2126e036",
+  "engine/rounds.py": "9faa51d6194c198ede7a842e274393c9d6eefe83d2e5e5c22f36c56c40a5c5fc",
   "engine/state.py": "ca395fb36b0f4a3798309e8f1d254c55d330ed2dabb9d219c3d18cfd2abf5b70",
   "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b",
   "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c",
@@ -28,17 +28,17 @@
   "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04",
   "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63",
   "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64",
-  "schemas/v1/records.schema.json": "eaf34924cbbc1f9606f9e272c6df6acf337b5e39f0a467bea2751694c9c347e2",
+  "schemas/v1/records.schema.json": "3ab57bedf3ae0696a1be93507b2fac7a37ee912fee25f805bd32257ccf8d75d0",
   "scripts/archive_official.py": "e6da95fe4cd1c8ede79d257d8f924d1bcb6b170f97b18dafd61ec540d5c85035",
   "scripts/archive_pilot_reset.py": "9a6bbbed3da4634317013fa6c19851218ddfb80dc8afb48cc25a998dbd5b9694",
-  "scripts/arm_official.py": "23d36c6f5f014dda8a662e4faa669f39b908c2998e35c8885637adc8d4dff796",
+  "scripts/arm_official.py": "c2960cba0fedd97e8e8f589c5f8b959ba17b54eec473f67e8105f3fcade5fa35",
   "scripts/gen_demo_dashboard.py": "fb4fbf46ee4ac21a38c37bab6d3db3b37fe0954dfba1d00ead532c56227bb394",
   "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02",
   "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752",
-  "scripts/preflight_official.py": "b3f4eabd3006a8ce6a4271fb452d540a3fccf9e6225b1c62f30111f480198a3f",
-  "scripts/run_official_14d.py": "0fca6ae077e15cc613e6d7a529be5372f464670c70361f85c1f3019144cf3915",
+  "scripts/preflight_official.py": "e484b825c105cf465e6902e2c09421d942f756c13298c07a7e39593ee19924c4",
+  "scripts/run_official_14d.py": "b4ba51168a3a3e2d4fcc065778fb5f3254f5c12783c3368d9b8447245906da08",
   "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d",
-  "scripts/verify_deployment.py": "6e8112f6ae9fda8c3fb632b86f00943ac185d8a3eb2d1784f3eddf01b2426d4b"
+  "scripts/verify_deployment.py": "5f902023980d133ba7183482b0bf951117350aec6dda6f09c41ccf0260b16de2"
  },
- "combined": "a5c4bc5e8f42a8aeca5cf79127fc7cf0fd239ff5f08c110ea956e471d8938056"
+ "combined": "303a577660323f56c3daab0c418c1eedae82d9e65c0926a26591962e4fbe331c"
 }

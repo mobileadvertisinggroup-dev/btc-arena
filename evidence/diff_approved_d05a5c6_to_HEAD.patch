@@ -1,8 +1,8 @@
 diff --git a/.gitignore b/.gitignore
-index 7707535..db02532 100644
+index 7707535..543b66e 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -9,3 +9,9 @@
+@@ -9,3 +9,12 @@
  MANIFEST.sha256.json
  .DS_Store
  offline_audit_bundle_v1/
@@ -12,6 +12,9 @@ index 7707535..db02532 100644
 +offline_audit_bundle_v3.tar.gz
 +offline_audit_bundle_v3.tar.gz.sha256
 +offline_audit_bundle_v3/
++offline_audit_bundle_v4.tar.gz
++offline_audit_bundle_v4.tar.gz.sha256
++offline_audit_bundle_v4/
 diff --git a/README.md b/README.md
 index 2484ab4..ddb112e 100644
 --- a/README.md
@@ -80,12 +83,884 @@ index e38268a..acee8fb 100644
  
  ## 1. Mobile fit (bug)
  Page is slightly wider than the phone viewport — wiggles left/right when
+diff --git a/config/v1/experiment.json b/config/v1/experiment.json
+index 6668136..7d472be 100644
+--- a/config/v1/experiment.json
++++ b/config/v1/experiment.json
+@@ -1,432 +1,439 @@
+ {
+-  "experiment": "v1.3",
+-  "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?",
+-  "classification": "DESIGN PROPOSAL — trading engine implementation NOT yet authorized",
+-  "instrument_wording": "Synthetic USD-settled perpetual paper contract, marked and executed using Kraken {COIN}/USD spot-market OHLC data",
+-  "coins": {
+-    "BTC": {
+-      "kraken_pair": "XBTUSD",
+-      "price_decimals": 2,
+-      "qty_decimals": 6,
+-      "volume_decimals": 1
+-    },
+-    "ETH": {
+-      "kraken_pair": "ETHUSD",
+-      "price_decimals": 2,
+-      "qty_decimals": 5,
+-      "volume_decimals": 1
+-    },
+-    "SOL": {
+-      "kraken_pair": "SOLUSD",
+-      "price_decimals": 2,
+-      "qty_decimals": 3,
+-      "volume_decimals": 1
++ "experiment": "v1.3",
++ "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?",
++ "classification": "OFFICIAL V1 IMPLEMENTATION \u2014 mentor-audited engine; activation gated by externally issued digests, a passing server preflight attestation, and the owner's explicit activation command",
++ "instrument_wording": "Synthetic USD-settled perpetual paper contract, marked and executed using Kraken {COIN}/USD spot-market OHLC data",
++ "coins": {
++  "BTC": {
++   "kraken_pair": "XBTUSD",
++   "price_decimals": 2,
++   "qty_decimals": 6,
++   "volume_decimals": 1
++  },
++  "ETH": {
++   "kraken_pair": "ETHUSD",
++   "price_decimals": 2,
++   "qty_decimals": 5,
++   "volume_decimals": 1
++  },
++  "SOL": {
++   "kraken_pair": "SOLUSD",
++   "price_decimals": 2,
++   "qty_decimals": 3,
++   "volume_decimals": 1
++  }
++ },
++ "market_data": {
++  "canonical_source": "kraken_spot_ohlc",
++  "coinbase_role": "monitoring, alerting reference, and offline test fixtures ONLY \u2014 never a source for committed decisions, fills, exits, invalidation evaluation, or equity",
++  "hourly_candles_supplied": 72,
++  "daily_closes_supplied": 40,
++  "completeness_policy": "exactly 72 real, contiguous, fully closed Kraken hourly candles; exactly 40 real, contiguous, fully closed Kraken daily observations; complete real Kraken 1-minute coverage for every replay interval",
++  "missing_interval_policy": "any missing interval invalidates the affected snapshot or replay: affected pairs record PAIR_ABORTED with DATA_UNAVAILABLE, no new decisions execute, and resting stop/target/liquidation/invalidation rules remain active only where complete 1-minute replay data exists; no interpolation, forward-fill, fabrication, or venue substitution of candles",
++  "final_candle_must_be_closed": true,
++  "execution_price": "close of last completed 1m candle at boundary T (P_T)",
++  "max_auto_catchup_hours": 10,
++  "beyond_catchup": "INTEGRITY HALT C: that coin's V1 arena is terminated for the remainder of the run; last trustworthy state preserved; other coin arenas continue normally",
++  "gap_fill_wording": "If a one-minute candle opens beyond a resting execution level, the fill occurs at that candle's opening price. For a protective stop or liquidation this may be worse than the trigger level; for a take-profit it may be better than the target level.",
++  "freshness": {
++   "latest_1m_open_must_equal": "T - 60",
++   "latest_1h_open_must_equal": "T - 3600",
++   "latest_1d_open_must_equal": "UTC_day_start(T) - 86400",
++   "note": "stale-but-contiguous series are DATA_UNAVAILABLE (Ruling 008.4)"
++  },
++  "replay_gap_policy": {
++   "states": [
++    "REPLAY_COMPLETE",
++    "CATCHUP_REQUIRED",
++    "COIN_TERMINATED"
++   ],
++   "rule": "a replay gap preserves the last trustworthy watermark and sets CATCHUP_REQUIRED; no candles after an unresolved gap are processed; no interpolation or venue substitution; the coin's pairs abort DATA_UNAVAILABLE while its state cannot be brought exactly to T; only unresolved required history exceeding 10 hours terminates the coin's arena (Ruling 008.6)"
++  }
++ },
++ "models": {
++  "haiku": {
++   "model": "claude-haiku-4-5-20251001",
++   "pinning": "dated fixed snapshot"
++  },
++  "sonnet": {
++   "model": "claude-sonnet-5",
++   "pinning": "fixed dateless snapshot (immutable)"
++  },
++  "opus": {
++   "model": "claude-opus-4-8",
++   "pinning": "fixed dateless snapshot (immutable)"
++  }
++ },
++ "request_payloads": {
++  "common": {
++   "endpoint": "POST https://api.anthropic.com/v1/messages",
++   "anthropic-version": "2023-06-01",
++   "beta_headers": [],
++   "max_tokens": 1500,
++   "tools": [
++    "schemas/v1/decision.schema.json (strict: true)"
++   ],
++   "tool_choice": {
++    "type": "tool",
++    "name": "submit_decision",
++    "disable_parallel_tool_use": true
++   },
++   "sampling_parameters": "temperature/top_p/top_k NOT SENT",
++   "timeout_seconds": 120,
++   "transport_retries": 3,
++   "validation_retries": 1,
++   "messages": "single user message (round prompt); the single validation retry appends the fixed rejection text as a SECOND user message in the same conversation (decisions.retry_message); same 4-attempt transport policy",
++   "transport_attempts_total": 4,
++   "transport_note": "transport_retries=3 means 1 initial attempt + 3 retries = 4 total transport attempts; the single validation-retry conversation obeys the same 4-attempt transport policy (Ruling 008.7)"
++  },
++  "per_model": {
++   "claude-haiku-4-5-20251001": {
++    "thinking": "parameter omitted (model runs without extended thinking)"
++   },
++   "claude-sonnet-5": {
++    "thinking": {
++     "type": "disabled"
+     }
+-  },
+-  "market_data": {
+-    "canonical_source": "kraken_spot_ohlc",
+-    "coinbase_role": "monitoring, alerting reference, and offline test fixtures ONLY — never a source for committed decisions, fills, exits, invalidation evaluation, or equity",
+-    "hourly_candles_supplied": 72,
+-    "daily_closes_supplied": 40,
+-    "completeness_policy": "exactly 72 real, contiguous, fully closed Kraken hourly candles; exactly 40 real, contiguous, fully closed Kraken daily observations; complete real Kraken 1-minute coverage for every replay interval",
+-    "missing_interval_policy": "any missing interval invalidates the affected snapshot or replay: affected pairs record PAIR_ABORTED with DATA_UNAVAILABLE, no new decisions execute, and resting stop/target/liquidation/invalidation rules remain active only where complete 1-minute replay data exists; no interpolation, forward-fill, fabrication, or venue substitution of candles",
+-    "final_candle_must_be_closed": true,
+-    "execution_price": "close of last completed 1m candle at boundary T (P_T)",
+-    "max_auto_catchup_hours": 10,
+-    "beyond_catchup": "INTEGRITY HALT C: that coin's V1 arena is terminated for the remainder of the run; last trustworthy state preserved; other coin arenas continue normally",
+-    "gap_fill_wording": "If a one-minute candle opens beyond a resting execution level, the fill occurs at that candle's opening price. For a protective stop or liquidation this may be worse than the trigger level; for a take-profit it may be better than the target level.",
+-    "freshness": {
+-      "latest_1m_open_must_equal": "T - 60",
+-      "latest_1h_open_must_equal": "T - 3600",
+-      "latest_1d_open_must_equal": "UTC_day_start(T) - 86400",
+-      "note": "stale-but-contiguous series are DATA_UNAVAILABLE (Ruling 008.4)"
+-    },
+-    "replay_gap_policy": {
+-      "states": [
+-        "REPLAY_COMPLETE",
+-        "CATCHUP_REQUIRED",
+-        "COIN_TERMINATED"
+-      ],
+-      "rule": "a replay gap preserves the last trustworthy watermark and sets CATCHUP_REQUIRED; no candles after an unresolved gap are processed; no interpolation or venue substitution; the coin's pairs abort DATA_UNAVAILABLE while its state cannot be brought exactly to T; only unresolved required history exceeding 10 hours terminates the coin's arena (Ruling 008.6)"
++   },
++   "claude-opus-4-8": {
++    "thinking": {
++     "type": "disabled"
+     }
+-  },
+-  "models": {
+-    "haiku": {
+-      "model": "claude-haiku-4-5-20251001",
+-      "pinning": "dated fixed snapshot"
+-    },
+-    "sonnet": {
+-      "model": "claude-sonnet-5",
+-      "pinning": "fixed dateless snapshot (immutable)"
+-    },
+-    "opus": {
+-      "model": "claude-opus-4-8",
+-      "pinning": "fixed dateless snapshot (immutable)"
+-    }
+-  },
+-  "request_payloads": {
+-    "common": {
+-      "endpoint": "POST https://api.anthropic.com/v1/messages",
+-      "anthropic-version": "2023-06-01",
+-      "beta_headers": [],
+-      "max_tokens": 1500,
+-      "tools": [
+-        "schemas/v1/decision.schema.json (strict: true)"
+-      ],
+-      "tool_choice": {
+-        "type": "tool",
+-        "name": "submit_decision",
+-        "disable_parallel_tool_use": true
+-      },
+-      "sampling_parameters": "temperature/top_p/top_k NOT SENT",
+-      "timeout_seconds": 120,
+-      "transport_retries": 3,
+-      "validation_retries": 1,
+-      "messages": "single user message (round prompt); validation retry appends assistant tool_use + tool_result acknowledgment + fixed rejection message",
+-      "transport_attempts_total": 4,
+-      "transport_note": "transport_retries=3 means 1 initial attempt + 3 retries = 4 total transport attempts; the single validation-retry conversation obeys the same 4-attempt transport policy (Ruling 008.7)"
+-    },
+-    "per_model": {
+-      "claude-haiku-4-5-20251001": {
+-        "thinking": "parameter omitted (model runs without extended thinking)"
+-      },
+-      "claude-sonnet-5": {
+-        "thinking": {
+-          "type": "disabled"
+-        }
+-      },
+-      "claude-opus-4-8": {
+-        "thinking": {
+-          "type": "disabled"
+-        }
+-      }
+-    },
+-    "twin_parity": "Raw and TA requests for the same model are byte-identical except the user prompt text"
+-  },
+-  "collection": {
+-    "procedure": [
+-      "freeze all three market snapshots",
+-      "freeze all 18 account snapshots",
+-      "generate and archive all 18 first-attempt prompts before sending any model request",
+-      "submit calls with bounded concurrency",
+-      "identical frozen prompts, state, and P_T regardless of response order",
+-      "resolve commit/abort independently per matched pair",
+-      "apply committed decisions logically at boundary T only after collection closes",
+-      "one common post-T candle replay per coin"
+-    ],
+-    "concurrency_max_simultaneous_requests": 6,
+-    "global_collection_deadline": "T+12 minutes, hard; transport retries must complete inside it",
+-    "concurrency_lock": "preflight verifies 6-way concurrency against rate limits; the final value is locked before launch and cannot change during V1",
+-    "collection_deadline_seconds": 720,
+-    "deadline_note": "hard monotonic wall-clock deadline for the whole collection stage, anchored at collection start; results arriving after it never execute; retries may not begin unless their full budget fits inside it (Ruling 008.9)"
+-  },
+-  "arms": [
+-    "raw",
+-    "ta"
+-  ],
+-  "atomic_unit": "matched Raw/TA pair (same model, same coin); 9 independent pairs",
+-  "pair_records": [
+-    "PAIR_COMMITTED",
+-    "PAIR_ABORTED",
+-    "PAIR_TERMINAL_SPLIT"
+-  ],
+-  "pair_abort_semantics": {
+-    "meaning": "zero DECISION-GENERATED state change at T for both twins",
+-    "no_new_discretionary_execution": true,
+-    "thesis_memory_not_updated_from_aborted_attempt": true,
+-    "existing_stop_target_position_lifecycle_invalidation_unchanged": true,
+-    "all_attempts_and_rejection_reasons_still_archived": true,
+-    "post_T_replay_continues_for_both_accounts": true,
+-    "market_driven_exits_never_suspended": "stops, targets, liquidation, and invalidation monitoring never pause because a discretionary round aborted or was skipped"
+-  },
+-  "terminal_account_policy": {
+-    "trigger": "post-fee equity reaches exactly 0 (permanent closure)",
+-    "terminal_account": "receives no further model calls",
+-    "surviving_twin": "continues receiving decisions and trading normally; never force-closed or frozen",
+-    "pair_status": "PAIR_TERMINAL_SPLIT from the terminal event onward (missing side is an experimental outcome, not an infrastructure failure)",
+-    "metrics": "post-terminal rounds excluded from paired behavioural metrics; both accounts' complete outcomes included in performance reporting; terminal timestamp and cause reported prominently"
+-  },
+-  "accounts": {
+-    "total": 18,
+-    "id_format": "{coin_lower}_{model}_{arm}",
+-    "start_cash_usd": "10000.00",
+-    "max_leverage": "5.0 — governs NEW or INCREASED exposure only (open, reversal, same-side increase): such decisions above 5x pre-decision equity are rejected (TARGET_EXCEEDS_MAX_LEVERAGE), never clamped. Exact holds (within the $10 executable tolerance) and reductions are always allowed even above 5x effective leverage; no forced deleveraging and no requirement to reduce below 5x (Ruling 006.1)",
+-    "fee_rate": "0.0005 on every execution including stop/take-profit/liquidation fills and both reversal legs",
+-    "maintenance_margin": "0.02",
+-    "min_executable_change_usd": "10.00 (below => NO_EXECUTION_BELOW_MINIMUM, logged)"
+-  },
+-  "accounting": {
+-    "arithmetic": "decimal.Decimal for equity, P&L, fees, notional, quantity, prices; full source precision internally",
+-    "quantity_rounding": "round DOWN to per-coin qty_decimals at execution",
+-    "display_rounding": "presentation only; never feeds back into engine values"
+-  },
+-  "liquidation_contract": {
+-    "balance_variable": "E = realized cash equity (Decimal): starting cash + all realized P&L - all fees to date; excludes unrealized P&L",
+-    "unrealized": "u(p) = q * (p - entry), with q the signed executed quantity (already rounded down to qty_decimals) and entry the Decimal average entry price",
+-    "equity_at_price": "Equity(p) = E + u(p)",
+-    "maintenance_requirement": "m(p) = Decimal('0.02') * abs(q) * p",
+-    "liquidation_condition": "Equity(p) <= m(p)",
+-    "long_threshold": "L = (q*entry - E) / ((1 - Decimal('0.02')) * q)   [q > 0; liquidate when p <= L]",
+-    "short_threshold": "L = (q*entry - E) / ((1 + Decimal('0.02')) * q)   [q < 0; liquidate when p >= L]",
+-    "quantity_precision_note": "thresholds are computed with the executed rounded-down q, so precision affects L exactly as it affects the position",
+-    "gap_fill": "if the 1m candle OPEN already satisfies the liquidation condition, fill at the open (worse price); otherwise fill at the threshold L",
+-    "fee": "Decimal('0.0005') * abs(q) * fill_price, charged on the liquidation execution",
+-    "post_fill_equity": "E' = E + q*(fill - entry) - fee",
+-    "residual_equity": "a liquidation MAY leave positive residual equity: the position is closed but the account continues trading",
+-    "terminal_rule": "permanent account closure ONLY when post-fee equity E' <= 0, floored to exactly 0"
+-  },
+-  "event_ordering": {
+-    "scope": "every replayed 1-minute candle, evaluated in candle order",
+-    "A_opening_gap": [
+-      "1. if the account is already at or below maintenance margin at the candle open: liquidation at the open",
+-      "2. else if the open has crossed the stop-loss: stop fill at the open",
+-      "3. else if the open has crossed the take-profit: take-profit fill at the open"
+-    ],
+-    "B_intracandle": {
+-      "long": "downside protective exit = the HIGHER valid level of {stop_loss, liquidation threshold}, evaluated against the candle low; upside take-profit evaluated against the candle high",
+-      "short": "upside protective exit = the LOWER valid level of {stop_loss, liquidation threshold}, evaluated against the candle high; downside take-profit evaluated against the candle low",
+-      "ambiguity": "if both a protective exit and a take-profit are reachable inside the same candle and order is unknowable: the protective exit wins; record AMBIGUOUS_CANDLE_PROTECTIVE_FIRST"
+-    },
+-    "C_invalidation_observation": {
+-      "1m_intrabar": "latch if the condition is satisfied anywhere in a candle in which the lifecycle existed at candle open; if the position also exits in that candle, record SAME_CANDLE_INVALIDATION_AND_EXIT; such an exit counts as no-longer-exposed for the discipline metric",
+-      "1h_close": "evaluate only at the completed hourly close; never trigger if the lifecycle ended before that close"
+-    },
+-    "D_lifecycle_end": "after stop, target, liquidation, decision close, or reversal ends a lifecycle, later candles cannot trigger that lifecycle's invalidation"
+-  },
+-  "invalidation": {
+-    "operators": [
+-      "price_at_or_below",
+-      "price_at_or_above"
+-    ],
+-    "timeframes": [
+-      "1h_close",
+-      "1m_intrabar"
+-    ],
+-    "lifecycle": "set once at open-from-flat or reversal; immutable while the lifecycle is open (hold/increase/reduce/partial exits); close or reversal ends it",
+-    "trigger": "inclusive comparison; first trigger latched permanently with timestamp, price, and candle reference",
+-    "post_trigger": "no forced exit; next-round prompt shows the TRIGGERED block; behaviour recorded",
+-    "primary_discipline_metric": "no longer exposed in the invalidated direction by the end of the account's next committed pair-round; stop, liquidation, reversal, or full close before that boundary qualifies; partial reductions reported descriptively, never as compliance"
+-  },
+-  "attempt_archive": {
+-    "path": "data-v1/attempts/{round_id}/{account_id}_attempt{n}.json",
+-    "every_attempt_recorded": true,
+-    "fields": [
+-      "account_id",
+-      "pair_id",
+-      "round_id",
+-      "attempt_number",
+-      "generated_prompt_hash",
+-      "request_hash",
+-      "requested_model",
+-      "returned_model",
+-      "raw_response",
+-      "parsed_tool_input",
+-      "schema_result",
+-      "semantic_validation_result",
+-      "fixed_rejection_reasons",
+-      "transport_error_category",
+-      "latency_ms",
+-      "token_usage",
+-      "became_executed_decision"
+-    ]
+-  },
+-  "metrics": {
+-    "reliability_behavioural_outcome": [
+-      "first-attempt validity rate",
+-      "validation-retry rate",
+-      "successful-correction rate",
+-      "transport-retry rate",
+-      "pair-abort rate",
+-      "which arm caused each pair abort"
+-    ],
+-    "operative_decision": "the executed corrected decision is the operative decision for behavioural analysis; formatting/semantic reliability reported separately, never hidden",
+-    "denominators": {
+-      "direction_disagreement": "pair-committed rounds where both twins were active and produced executable target positions",
+-      "target_size_difference": "compare target notional / twin's own pre-decision equity; report absolute difference in equity multiples",
+-      "stop_target_usage": "pair-committed rounds leaving the relevant account positioned",
+-      "invalidation_response_rate": "lifecycle invalidations that triggered early enough for at least one later committed decision opportunity before the experiment ended",
+-      "turnover": "cumulative executed notional / time-weighted average equity",
+-      "exclusions": "aborted, skipped, pre-launch, and post-terminal rounds never enter paired behavioural denominators; their counts and reasons are reported separately"
+-    },
+-    "statistics_policy": "no p-values or claims of statistical significance in V1; report counts, rates, paired descriptive differences, and uncertainty limitations",
+-    "feature_reference_frequency": "descriptive: whether the thesis explicitly names a supplied feature (RSI, SMA, ATR, volume ratio, VWAP); mentioning a feature is never inferred to prove causation"
+-  },
+-  "halt_policy": {
+-    "normal_no_halt": [
+-      "semantic validation failure",
+-      "pair abort",
+-      "temporary transport failure",
+-      "one missing decision boundary",
+-      "temporary Kraken unavailability that recovers before replay integrity is lost"
+-    ],
+-    "integrity_halts": {
+-      "A_hash_mismatch": "code/config/prompt/schema hash mismatch => entire experiment halts PERMANENTLY; no same-run repair or resumption",
+-      "B_state_corruption": "state corruption or non-atomic persistence failure => entire experiment halts PERMANENTLY",
+-      "C_replay_gap": ">10 hours unrecoverable 1-minute history for one coin => that coin's arena terminated for the remainder of the run; last trustworthy state preserved; other arenas continue",
+-      "D_terminal_account": "account reaches terminal zero => PAIR_TERMINAL_SPLIT (terminal_account_policy); experiment does NOT halt"
+-    },
+-    "no_discretionary_clearing": "there is no mid-run human clearing of halts; any integrity termination is final for V1 and is reported"
+-  },
+-  "dashboard": {
+-    "visibility": "public from the first committed boundary",
+-    "required_elements": [
+-      "clear V1 experiment label",
+-      "frozen experiment question",
+-      "code/config/prompt hashes",
+-      "scheduler and data health",
+-      "committed/aborted/skipped/terminal statuses",
+-      "clearly labeled link to the archived pilot page"
+-    ],
+-    "pilot_label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"
+-  },
+-  "round_contract": {
+-    "cadence": "hourly boundaries at :00 UTC",
+-    "duration": "exactly 14 complete days = exactly 336 scheduled boundaries",
+-    "no_mid_run_changes": "no extension, shortening, coin replacement, indicator/prompt/rule change based on observed results; missed rounds are never replaced",
+-    "T0_selection": "first suitable :00 UTC boundary at least 24 hours after final mentor launch approval, which itself requires: all offline tests pass, 24-hour mock soak passes, production-payload preflight passes",
+-    "virtual_event_time": "replay 1m to T -> freeze accounts at T -> freeze snapshots & P_T -> generate all 18 prompts -> collect/validate with bounded concurrency -> apply committed pairs at P_T -> one common post-T 1m replay per coin -> publish; wall-clock model latency is excluded from simulated market time"
+-  },
+-  "scheduler": {
+-    "heartbeat_cron": "2-57/5 * * * *",
+-    "boundary_grace_minutes": 15,
+-    "missed_boundary": "ROUND_SKIPPED for all unprocessed pairs; never executed retrospectively",
+-    "heartbeat_file": "runtime branch: data-v1/heartbeat.json",
+-    "stale_alert_minutes": 15
+-  },
+-  "persistence": {
+-    "code_branch": "main pinned at approved launch tag; runtime never commits to it",
+-    "runtime_branch": "v1-runtime (state, prompt archive, attempt archive, logs, dashboard docs/)",
+-    "integrity": "every run verifies SHA-256 of code+prompts+schema+config against the launch manifest; mismatch => integrity halt A",
+-    "recorded_code_hash": "the approved launch commit, not the runtime-data commit"
+-  },
+-  "outcome_hierarchy": {
+-    "primary_behavioural": [
+-      "direction disagreement rate",
+-      "abs target-size difference in equity multiples",
+-      "turnover difference",
+-      "stop/target usage difference",
+-      "invalidation-response difference"
+-    ],
+-    "secondary_descriptive": [
+-      "paired equity/return/drawdown/fee differences",
+-      "liquidations"
+-    ],
+-    "explicit_non_claim": "V1 does not prove indicators improve profitability; performance results are descriptive"
+-  },
+-  "token_measurement": "PENDING — count_tokens per model on 4 representative prompts (first-round raw/ta, mature raw/ta) during preflight; cost projection provisional until measured",
+-  "data_namespace": "data-v1/",
+-  "prompt_archive": "data-v1/prompts/{round_id}/{account_id}.txt",
+-  "round_id_format": "v1-{COIN}-{ISO8601_BOUNDARY}",
+-  "arm_naming": "scientific/public name for the treatment arm: 'Feature arm'; internal account-ID suffix remains _ta (legacy, permitted) to avoid migration churn",
+-  "feature_pack": {
+-    "principle": "the Feature arm may receive precomputed mathematical summaries, but never semantic judgments, trading guidance, recommended thresholds, or suggested actions",
+-    "outputs": {
+-      "RSI14_H": {
+-        "calc": "Wilder RSI(14): seed avg gain/loss = mean of first 14 close diffs of the visible 72-hour window, then avg=(avg*13+cur)/14",
+-        "inputs": "72 visible hourly closes only",
+-        "rounding": "1 decimal",
+-        "insufficient": "n/a"
+-      },
+-      "SMA20_H": {
+-        "calc": "arithmetic mean of latest 20 completed hourly closes",
+-        "inputs": "visible hourly closes only",
+-        "rounding": "coin price_decimals"
+-      },
+-      "SMA50_H": {
+-        "calc": "arithmetic mean of latest 50 completed hourly closes",
+-        "inputs": "visible hourly closes only",
+-        "rounding": "coin price_decimals"
+-      },
+-      "ATR14_H": {
+-        "calc": "TR=max(h-l, abs(h-prev_c), abs(l-prev_c)); seed=mean of first 14 TRs; Wilder smoothing",
+-        "inputs": "visible hourly OHLC only",
+-        "rounding": "coin price_decimals"
+-      },
+-      "CURRENT_VOLUME_H": {
+-        "calc": "base-asset volume of the most recently completed Kraken hourly candle",
+-        "rounding": "volume_decimals"
+-      },
+-      "MEAN_VOLUME_PREV24_H": {
+-        "calc": "mean volume of the 24 completed hourly candles immediately preceding the latest candle (latest excluded)",
+-        "inputs": "visible OHLCV rows only",
+-        "rounding": "volume_decimals"
+-      },
+-      "VOLUME_RATIO_24": {
+-        "calc": "latest completed hourly volume / mean of previous 24 completed hourly volumes",
+-        "rounding": "2 decimals",
+-        "zero_baseline": "n/a",
+-        "no_interpretation_suffix": true
+-      },
+-      "VWAP24_H": {
+-        "calc": "typical=(high+low+close)/3; VWAP=sum(typical*volume)/sum(volume) over latest 24 completed hourly candles INCLUDING the latest",
+-        "rounding": "coin price_decimals",
+-        "zero_volume": "n/a"
+-      },
+-      "PRICE_MINUS_VWAP_PCT": {
+-        "calc": "(P_T - VWAP24)/VWAP24*100",
+-        "rounding": "2 decimals, explicit sign",
+-        "zero_volume": "n/a"
+-      }
+-    },
+-    "prohibited_language": [
+-      "bullish",
+-      "bearish",
+-      "strong",
+-      "weak",
+-      "normal",
+-      "abnormal",
+-      "high participation",
+-      "low participation",
+-      "overbought",
+-      "oversold",
+-      "confirmation",
+-      "divergence",
+-      "breakout signal",
+-      "buy",
+-      "sell",
+-      "favorable",
+-      "unfavorable",
+-      "stretched",
+-      "extended",
+-      "arrows",
+-      "traffic-light colors",
+-      "scores",
+-      "rankings",
+-      "labels",
+-      "signal classifications",
+-      "threshold meanings"
+-    ],
+-    "removed_from_v1": [
+-      "MACD",
+-      "Bollinger Bands",
+-      "MFI",
+-      "Daily SMA",
+-      "Daily RSI",
+-      "Fear & Greed",
+-      "sentiment",
+-      "any signal classification",
+-      "any feature not explicitly listed"
+-    ],
+-    "parameter_disclosure": "RSI 14, SMA 20, SMA 50, ATR 14, and 24-hour volume/VWAP windows are predeclared design choices; they are not claimed to be universally optimal; no parameter will be changed during V1; V1 tests this exact fixed feature pack, not 'technical indicators in general'",
+-    "scientific_limitation": "V1 measures the effect of this specific predeclared numerical feature pack. It does not establish that these parameters are optimal or that technical indicators generally improve trading."
+-  },
+-  "prompt_templates": {
+-    "raw": "prompts/v1/user_raw.txt",
+-    "feature": "prompts/v1/user_feature.txt",
+-    "note": "user_ta.txt removed in v1.3"
+-  },
+-  "decision_schema_note": "schemas/v1/decision.schema.json contains NO intended_horizon field; actual holding duration is measured from lifecycle open to close",
+-  "parameters": {
+-    "start_cash_usd": "10000.00",
+-    "fee_rate": "0.0005",
+-    "maintenance_margin": "0.02",
+-    "max_leverage": "5",
+-    "min_delta_usd": "10.00",
+-    "qty_decimals": {
+-      "BTC": 6,
+-      "ETH": 5,
+-      "SOL": 3
+-    },
+-    "note": "authoritative machine-readable engine parameters; engine verifies its loaded constants against these at startup and halts on mismatch (Ruling 008.14)"
+-  }
++   }
++  },
++  "twin_parity": "Raw and TA requests for the same model are byte-identical except the user prompt text"
++ },
++ "collection": {
++  "procedure": [
++   "freeze all three market snapshots",
++   "freeze all 18 account snapshots",
++   "generate and archive all 18 first-attempt prompts before sending any model request",
++   "submit calls with bounded concurrency",
++   "identical frozen prompts, state, and P_T regardless of response order",
++   "resolve commit/abort independently per matched pair",
++   "apply committed decisions logically at boundary T only after collection closes",
++   "one common post-T candle replay per coin"
++  ],
++  "concurrency_max_simultaneous_requests": 6,
++  "global_collection_deadline": "T+12 minutes, hard; transport retries must complete inside it",
++  "concurrency_lock": "preflight verifies 6-way concurrency against rate limits; the final value is locked before launch and cannot change during V1",
++  "collection_deadline_seconds": 720,
++  "deadline_note": "hard monotonic wall-clock deadline for the whole collection stage, anchored at collection start; results arriving after it never execute; retries may not begin unless their full budget fits inside it (Ruling 008.9)"
++ },
++ "arms": [
++  "raw",
++  "ta"
++ ],
++ "atomic_unit": "matched Raw/TA pair (same model, same coin); 9 independent pairs",
++ "pair_records": [
++  "PAIR_COMMITTED",
++  "PAIR_ABORTED",
++  "PAIR_TERMINAL_SPLIT"
++ ],
++ "pair_abort_semantics": {
++  "meaning": "zero DECISION-GENERATED state change at T for both twins",
++  "no_new_discretionary_execution": true,
++  "thesis_memory_not_updated_from_aborted_attempt": true,
++  "existing_stop_target_position_lifecycle_invalidation_unchanged": true,
++  "all_attempts_and_rejection_reasons_still_archived": true,
++  "post_T_replay_continues_for_both_accounts": true,
++  "market_driven_exits_never_suspended": "stops, targets, liquidation, and invalidation monitoring never pause because a discretionary round aborted or was skipped"
++ },
++ "terminal_account_policy": {
++  "trigger": "post-fee equity reaches exactly 0 (permanent closure)",
++  "terminal_account": "receives no further model calls",
++  "surviving_twin": "continues receiving decisions and trading normally; never force-closed or frozen",
++  "pair_status": "PAIR_TERMINAL_SPLIT from the terminal event onward (missing side is an experimental outcome, not an infrastructure failure)",
++  "metrics": "post-terminal rounds excluded from paired behavioural metrics; both accounts' complete outcomes included in performance reporting; terminal timestamp and cause reported prominently"
++ },
++ "accounts": {
++  "total": 18,
++  "id_format": "{coin_lower}_{model}_{arm}",
++  "start_cash_usd": "10000.00",
++  "max_leverage": "5.0 \u2014 governs NEW or INCREASED exposure only (open, reversal, same-side increase): such decisions above 5x pre-decision equity are rejected (TARGET_EXCEEDS_MAX_LEVERAGE), never clamped. Exact holds (within the $10 executable tolerance) and reductions are always allowed even above 5x effective leverage; no forced deleveraging and no requirement to reduce below 5x (Ruling 006.1)",
++  "fee_rate": "0.0005 on every execution including stop/take-profit/liquidation fills and both reversal legs",
++  "maintenance_margin": "0.02",
++  "min_executable_change_usd": "10.00 (below => NO_EXECUTION_BELOW_MINIMUM, logged)"
++ },
++ "accounting": {
++  "arithmetic": "decimal.Decimal for equity, P&L, fees, notional, quantity, prices; full source precision internally",
++  "quantity_rounding": "round DOWN to per-coin qty_decimals at execution",
++  "display_rounding": "presentation only; never feeds back into engine values"
++ },
++ "liquidation_contract": {
++  "balance_variable": "E = realized cash equity (Decimal): starting cash + all realized P&L - all fees to date; excludes unrealized P&L",
++  "unrealized": "u(p) = q * (p - entry), with q the signed executed quantity (already rounded down to qty_decimals) and entry the Decimal average entry price",
++  "equity_at_price": "Equity(p) = E + u(p)",
++  "maintenance_requirement": "m(p) = Decimal('0.02') * abs(q) * p",
++  "liquidation_condition": "Equity(p) <= m(p)",
++  "long_threshold": "L = (q*entry - E) / ((1 - Decimal('0.02')) * q)   [q > 0; liquidate when p <= L]",
++  "short_threshold": "L = (q*entry - E) / ((1 + Decimal('0.02')) * q)   [q < 0; liquidate when p >= L]",
++  "quantity_precision_note": "thresholds are computed with the executed rounded-down q, so precision affects L exactly as it affects the position",
++  "gap_fill": "if the 1m candle OPEN already satisfies the liquidation condition, fill at the open (worse price); otherwise fill at the threshold L",
++  "fee": "Decimal('0.0005') * abs(q) * fill_price, charged on the liquidation execution",
++  "post_fill_equity": "E' = E + q*(fill - entry) - fee",
++  "residual_equity": "a liquidation MAY leave positive residual equity: the position is closed but the account continues trading",
++  "terminal_rule": "permanent account closure ONLY when post-fee equity E' <= 0, floored to exactly 0"
++ },
++ "event_ordering": {
++  "scope": "every replayed 1-minute candle, evaluated in candle order",
++  "A_opening_gap": [
++   "1. if the account is already at or below maintenance margin at the candle open: liquidation at the open",
++   "2. else if the open has crossed the stop-loss: stop fill at the open",
++   "3. else if the open has crossed the take-profit: take-profit fill at the open"
++  ],
++  "B_intracandle": {
++   "long": "downside protective exit = the HIGHER valid level of {stop_loss, liquidation threshold}, evaluated against the candle low; upside take-profit evaluated against the candle high",
++   "short": "upside protective exit = the LOWER valid level of {stop_loss, liquidation threshold}, evaluated against the candle high; downside take-profit evaluated against the candle low",
++   "ambiguity": "if both a protective exit and a take-profit are reachable inside the same candle and order is unknowable: the protective exit wins; record AMBIGUOUS_CANDLE_PROTECTIVE_FIRST"
++  },
++  "C_invalidation_observation": {
++   "1m_intrabar": "latch if the condition is satisfied anywhere in a candle in which the lifecycle existed at candle open; if the position also exits in that candle, record SAME_CANDLE_INVALIDATION_AND_EXIT; such an exit counts as no-longer-exposed for the discipline metric",
++   "1h_close": "evaluate only at the completed hourly close; never trigger if the lifecycle ended before that close"
++  },
++  "D_lifecycle_end": "after stop, target, liquidation, decision close, or reversal ends a lifecycle, later candles cannot trigger that lifecycle's invalidation"
++ },
++ "invalidation": {
++  "operators": [
++   "price_at_or_below",
++   "price_at_or_above"
++  ],
++  "timeframes": [
++   "1h_close",
++   "1m_intrabar"
++  ],
++  "lifecycle": "set once at open-from-flat or reversal; immutable while the lifecycle is open (hold/increase/reduce/partial exits); close or reversal ends it",
++  "trigger": "inclusive comparison; first trigger latched permanently with timestamp, price, and candle reference",
++  "post_trigger": "no forced exit; next-round prompt shows the TRIGGERED block; behaviour recorded",
++  "primary_discipline_metric": "no longer exposed in the invalidated direction by the end of the account's next committed pair-round; stop, liquidation, reversal, or full close before that boundary qualifies; partial reductions reported descriptively, never as compliance"
++ },
++ "attempt_archive": {
++  "path": "data-v1/attempts/{round_id with ':' replaced by '_'}/{account_id}_attempt{n}.json",
++  "every_attempt_recorded": true,
++  "fields": [
++   "account_id",
++   "pair_id",
++   "round_id",
++   "attempt_number",
++   "generated_prompt_hash",
++   "request_hash",
++   "requested_model",
++   "returned_model",
++   "raw_response",
++   "parsed_tool_input",
++   "schema_result",
++   "semantic_validation_result",
++   "fixed_rejection_reasons",
++   "transport_error_category",
++   "latency_ms",
++   "token_usage",
++   "became_executed_decision",
++   "response_id",
++   "stop_reason",
++   "identity_mismatch (only when the actual response model id differs from the requested id; such an attempt never executes)"
++  ],
++  "metadata_honesty": "returned_model, latency_ms, token_usage, response_id and stop_reason are the ACTUAL response values from the audited caller envelope; null when truly unknown (offline callers); never assumed or fabricated"
++ },
++ "metrics": {
++  "reliability_behavioural_outcome": [
++   "first-attempt validity rate",
++   "validation-retry rate",
++   "successful-correction rate",
++   "transport-retry rate",
++   "pair-abort rate",
++   "which arm caused each pair abort"
++  ],
++  "operative_decision": "the executed corrected decision is the operative decision for behavioural analysis; formatting/semantic reliability reported separately, never hidden",
++  "denominators": {
++   "direction_disagreement": "pair-committed rounds where both twins were active and produced executable target positions",
++   "target_size_difference": "compare target notional / twin's own pre-decision equity; report absolute difference in equity multiples",
++   "stop_target_usage": "pair-committed rounds leaving the relevant account positioned",
++   "invalidation_response_rate": "lifecycle invalidations that triggered early enough for at least one later committed decision opportunity before the experiment ended",
++   "turnover": "cumulative executed notional / time-weighted average equity",
++   "exclusions": "aborted, skipped, pre-launch, and post-terminal rounds never enter paired behavioural denominators; their counts and reasons are reported separately"
++  },
++  "statistics_policy": "no p-values or claims of statistical significance in V1; report counts, rates, paired descriptive differences, and uncertainty limitations",
++  "feature_reference_frequency": "descriptive: whether the thesis explicitly names a supplied feature (RSI, SMA, ATR, volume ratio, VWAP); mentioning a feature is never inferred to prove causation"
++ },
++ "halt_policy": {
++  "normal_no_halt": [
++   "semantic validation failure",
++   "pair abort",
++   "temporary transport failure",
++   "one missing decision boundary",
++   "temporary Kraken unavailability that recovers before replay integrity is lost"
++  ],
++  "integrity_halts": {
++   "A_hash_mismatch": "code/config/prompt/schema hash mismatch => entire experiment halts PERMANENTLY; no same-run repair or resumption",
++   "B_state_corruption": "state corruption or non-atomic persistence failure => entire experiment halts PERMANENTLY",
++   "C_replay_gap": ">10 hours unrecoverable 1-minute history for one coin => that coin's arena terminated for the remainder of the run; last trustworthy state preserved; other arenas continue",
++   "D_terminal_account": "account reaches terminal zero => PAIR_TERMINAL_SPLIT (terminal_account_policy); experiment does NOT halt"
++  },
++  "no_discretionary_clearing": "there is no mid-run human clearing of halts; any integrity termination is final for V1 and is reported"
++ },
++ "dashboard": {
++  "visibility": "public from the first committed boundary",
++  "required_elements": [
++   "clear V1 experiment label",
++   "frozen experiment question",
++   "code/config/prompt hashes",
++   "scheduler and data health",
++   "committed/aborted/skipped/terminal statuses",
++   "clearly labeled link to the archived pilot page"
++  ],
++  "pilot_label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE",
++  "publication_model": "authoritative live payload at https://live.akraarena.online/live_payload.js (+ .sha256, health.json), served read-only by Nginx; the GitHub Pages dashboard polls that endpoint (LIVE_ORIGIN) with same-origin fallback"
++ },
++ "round_contract": {
++  "cadence": "hourly boundaries at :00 UTC",
++  "duration": "exactly 14 complete days = exactly 336 scheduled boundaries",
++  "no_mid_run_changes": "no extension, shortening, coin replacement, indicator/prompt/rule change based on observed results; missed rounds are never replaced",
++  "T0_selection": "first explicitly owner-selected full UTC hour after activation (scripts/arm_official.py --confirm), sealed into the persisted 336-boundary schedule before any model call; activation requires the mentor's formal PASS with externally issued digests plus a passing, fresh server-preflight attestation bound into the activation record",
++  "virtual_event_time": "PRE-DECISION replay of all 1m candles strictly before T against the pre-T account state (phase persisted; crash-resume never replays a candle twice) -> freeze account snapshots & P_T at T -> archive all 18 prompts -> collect/validate with bounded concurrency by T+510s -> transactional pair resolution at frozen P_T by T+630s (late prepared results are discarded whole) -> durable direct publication by T+690s -> boundary terminal by T+720s; a candle with timestamp < T can never affect an action taken at T; wall-clock model latency is excluded from simulated market time"
++ },
++ "scheduler": {
++  "mode": "vps_systemd",
++  "service_unit": "deploy/arena-official.service (Restart=on-failure; clean completion stays down)",
++  "runner": "scripts/run_official_14d.py \u2014 ARMED/OFF until the owner's activation record",
++  "boundary_anchor": "every deadline is anchored at the scheduled boundary T; hard contract T+720s (collection T+510s, resolution/replay T+630s, publication T+690s)",
++  "missed_boundary": "honest terminal abort (deadline_exceeded / thinking_not_verified / crash_recovery); never executed retrospectively, never replayed or backfilled",
++  "monitoring": "read-only health.json at https://live.akraarena.online/health.json"
++ },
++ "persistence": {
++  "code_deployment": "GitHub is the source of truth; the VPS runs the audited tree of the approved branch in a pinned venv (deploy/requirements-official.txt); production source is never edited on the server",
++  "runtime_data": "data-v1/ on the VPS (state, prompt archive, attempt archive, publications, schedule, activation binding) \u2014 untracked, never pushed",
++  "publication": "direct write to /var/www/arena verified back from https://live.akraarena.online/ (publication id + SHA-256); GitHub Pages is the dashboard reading that endpoint; an optional asynchronous mirror never gates trading",
++  "integrity": "every run verifies SHA-256 of code+prompts+schema+config+deploy files against the externally issued launch manifest; mismatch => integrity halt A",
++  "recorded_code_hash": "the externally issued approved engine digest"
++ },
++ "outcome_hierarchy": {
++  "primary_behavioural": [
++   "direction disagreement rate",
++   "abs target-size difference in equity multiples",
++   "turnover difference",
++   "stop/target usage difference",
++   "invalidation-response difference"
++  ],
++  "secondary_descriptive": [
++   "paired equity/return/drawdown/fee differences",
++   "liquidations"
++  ],
++  "explicit_non_claim": "V1 does not prove indicators improve profitability; performance results are descriptive"
++ },
++ "token_measurement": "PENDING \u2014 count_tokens per model on 4 representative prompts (first-round raw/ta, mature raw/ta) during preflight; cost projection provisional until measured",
++ "data_namespace": "data-v1/",
++ "prompt_archive": "data-v1/prompts/v1-ALL-{T}/{account_id}.json",
++ "round_id_format": "v1-{COIN}-{ISO8601_BOUNDARY}",
++ "arm_naming": "scientific/public name for the treatment arm: 'Feature arm'; internal account-ID suffix remains _ta (legacy, permitted) to avoid migration churn",
++ "feature_pack": {
++  "principle": "the Feature arm may receive precomputed mathematical summaries, but never semantic judgments, trading guidance, recommended thresholds, or suggested actions",
++  "outputs": {
++   "RSI14_H": {
++    "calc": "Wilder RSI(14): seed avg gain/loss = mean of first 14 close diffs of the visible 72-hour window, then avg=(avg*13+cur)/14",
++    "inputs": "72 visible hourly closes only",
++    "rounding": "1 decimal",
++    "insufficient": "n/a"
++   },
++   "SMA20_H": {
++    "calc": "arithmetic mean of latest 20 completed hourly closes",
++    "inputs": "visible hourly closes only",
++    "rounding": "coin price_decimals"
++   },
++   "SMA50_H": {
++    "calc": "arithmetic mean of latest 50 completed hourly closes",
++    "inputs": "visible hourly closes only",
++    "rounding": "coin price_decimals"
++   },
++   "ATR14_H": {
++    "calc": "TR=max(h-l, abs(h-prev_c), abs(l-prev_c)); seed=mean of first 14 TRs; Wilder smoothing",
++    "inputs": "visible hourly OHLC only",
++    "rounding": "coin price_decimals"
++   },
++   "CURRENT_VOLUME_H": {
++    "calc": "base-asset volume of the most recently completed Kraken hourly candle",
++    "rounding": "volume_decimals"
++   },
++   "MEAN_VOLUME_PREV24_H": {
++    "calc": "mean volume of the 24 completed hourly candles immediately preceding the latest candle (latest excluded)",
++    "inputs": "visible OHLCV rows only",
++    "rounding": "volume_decimals"
++   },
++   "VOLUME_RATIO_24": {
++    "calc": "latest completed hourly volume / mean of previous 24 completed hourly volumes",
++    "rounding": "2 decimals",
++    "zero_baseline": "n/a",
++    "no_interpretation_suffix": true
++   },
++   "VWAP24_H": {
++    "calc": "typical=(high+low+close)/3; VWAP=sum(typical*volume)/sum(volume) over latest 24 completed hourly candles INCLUDING the latest",
++    "rounding": "coin price_decimals",
++    "zero_volume": "n/a"
++   },
++   "PRICE_MINUS_VWAP_PCT": {
++    "calc": "(P_T - VWAP24)/VWAP24*100",
++    "rounding": "2 decimals, explicit sign",
++    "zero_volume": "n/a"
++   }
++  },
++  "prohibited_language": [
++   "bullish",
++   "bearish",
++   "strong",
++   "weak",
++   "normal",
++   "abnormal",
++   "high participation",
++   "low participation",
++   "overbought",
++   "oversold",
++   "confirmation",
++   "divergence",
++   "breakout signal",
++   "buy",
++   "sell",
++   "favorable",
++   "unfavorable",
++   "stretched",
++   "extended",
++   "arrows",
++   "traffic-light colors",
++   "scores",
++   "rankings",
++   "labels",
++   "signal classifications",
++   "threshold meanings"
++  ],
++  "removed_from_v1": [
++   "MACD",
++   "Bollinger Bands",
++   "MFI",
++   "Daily SMA",
++   "Daily RSI",
++   "Fear & Greed",
++   "sentiment",
++   "any signal classification",
++   "any feature not explicitly listed"
++  ],
++  "parameter_disclosure": "RSI 14, SMA 20, SMA 50, ATR 14, and 24-hour volume/VWAP windows are predeclared design choices; they are not claimed to be universally optimal; no parameter will be changed during V1; V1 tests this exact fixed feature pack, not 'technical indicators in general'",
++  "scientific_limitation": "V1 measures the effect of this specific predeclared numerical feature pack. It does not establish that these parameters are optimal or that technical indicators generally improve trading."
++ },
++ "prompt_templates": {
++  "raw": "prompts/v1/user_raw.txt",
++  "feature": "prompts/v1/user_feature.txt",
++  "note": "user_ta.txt removed in v1.3"
++ },
++ "decision_schema_note": "schemas/v1/decision.schema.json contains NO intended_horizon field; actual holding duration is measured from lifecycle open to close",
++ "parameters": {
++  "start_cash_usd": "10000.00",
++  "fee_rate": "0.0005",
++  "maintenance_margin": "0.02",
++  "max_leverage": "5",
++  "min_delta_usd": "10.00",
++  "qty_decimals": {
++   "BTC": 6,
++   "ETH": 5,
++   "SOL": 3
++  },
++  "note": "authoritative machine-readable engine parameters; engine verifies its loaded constants against these at startup and halts on mismatch (Ruling 008.14)"
++ }
+ }
 diff --git a/deploy/DEPLOYMENT.md b/deploy/DEPLOYMENT.md
 new file mode 100644
-index 0000000..05541bb
+index 0000000..698c1f6
 --- /dev/null
 +++ b/deploy/DEPLOYMENT.md
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,94 @@
 +# VPS DEPLOYMENT RUNBOOK (Mentor Rulings 6 + 7)
 +
 +Nothing here may be executed until the mentor's formal PASS and the owner's
@@ -111,8 +986,11 @@ index 0000000..05541bb
 +- /etc/arena/arena.env  (root:arena, mode 0640), containing:
 +  ANTHROPIC_API_KEY=...            # owner-issued, official-run scope
 +  ARENA_PUBLIC_DIR=/var/www/arena
-+  ARENA_PUBLIC_PAYLOAD_URL=https://<vps-host>/live_payload.js
-+  ARENA_DEPLOY_TOKEN=...           # OPTIONAL, mirror-only scope
++  ARENA_PUBLIC_PAYLOAD_URL=https://live.akraarena.online/live_payload.js
++  # ARENA_DEPLOY_TOKEN: RECOMMENDED ABSENT during the official run
++  # (Ruling 016.8). The GitHub mirror is optional; if the owner enables it,
++  # mirror failure details are never published (health notes are redacted;
++  # the engine withholds exception text from the public endpoint).
 +- Never committed, never in audit archives, never in payloads or logs.
 +
 +## 3. Web endpoint (Ruling 1)
@@ -133,13 +1011,16 @@ index 0000000..05541bb
 +  READY republication, no further publications, health stays COMPLETE
 +  (a reboot after completion re-exits cleanly the same way).
 +
-+## 4b. Post-deployment verification (Ruling 014.6 — run after EVERY deploy)
-+- venv/bin/python scripts/verify_deployment.py --engine-digest <issued>
-+  Proves: tree matches the issued digest; installed systemd unit is
-+  byte-identical to the audited template; the effective nginx config still
-+  carries every audited directive (survives certbot rewrites); the audited
-+  venv python and exact pinned package versions are in use; the canonical
-+  endpoint constant is the frozen hostname. Any FAIL blocks activation.
++## 4b. Post-deployment verification (Rulings 014.6 + 016.6 — after EVERY deploy)
++- venv/bin/python scripts/verify_deployment.py \
++    --engine-digest <issued> --site-digest <issued>
++  Proves: tree matches BOTH issued digests; installed systemd unit is
++  byte-identical to the audited template; the effective nginx config is
++  exactly the certbot two-block layout (one HTTPS content block exposing
++  only the three approved files, one HTTP block doing nothing but the exact
++  redirect — no proxying, rewrites, extra locations, returns or if-blocks);
++  live HTTPS + redirect work; the audited venv python and exact pinned
++  package versions are in use. Any FAIL blocks activation.
 +
 +## 5. Server preflight (owner/mentor authorized; real model calls)
 +- ARENA_PREFLIGHT_APPROVED=YES-OWNER-MENTOR-AUTHORIZED \
@@ -164,7 +1045,7 @@ index 0000000..05541bb
 +  honestly).
 +
 +## 7. Monitoring
-+- https://<vps-host>/health.json — state, pid, done/total, latest scheduled/
++- https://live.akraarena.online/health.json — state, pid, done/total, latest scheduled/
 +  terminal boundary, latest publication + status.
 +- journalctl -u arena-official -f for the service log (never contains
 +  secrets; the mirror token is read from env only).
@@ -478,7 +1359,7 @@ index cbe4e47..d2ad511 100644
    Needs a NEW runner entry (run_pilot_12h.py is pilot-specific: 12
    boundaries/pilot store/pilot banner) => engine digest WILL change =>
 diff --git a/docs/handoff/OPERATIONS_RUNBOOK.md b/docs/handoff/OPERATIONS_RUNBOOK.md
-index 2316fe5..ac4b842 100644
+index 2316fe5..ed499ce 100644
 --- a/docs/handoff/OPERATIONS_RUNBOOK.md
 +++ b/docs/handoff/OPERATIONS_RUNBOOK.md
 @@ -1,6 +1,27 @@
@@ -504,11 +1385,55 @@ index 2316fe5..ac4b842 100644
 +- Post-deploy check: venv/bin/python scripts/verify_deployment.py
 +- Server preflight: scripts/preflight_official.py (audited; scratch store
 +  only; requires ARENA_PREFLIGHT_APPROVED + externally issued digests).
-+- Monitoring: https://<vps-host>/health.json; daily sealed snapshots in
++- Monitoring: https://live.akraarena.online/health.json; daily sealed snapshots in
 +  evidence-official/daily/; final: scripts/archive_official.py --confirm
  
  ## Everyday (safe, offline)
  - Full hermetic suite:        python3 -m pytest tests/ -q        (258 tests)
+diff --git a/docs/handoff/PILOT_FINDING_ADDENDUM.md b/docs/handoff/PILOT_FINDING_ADDENDUM.md
+new file mode 100644
+index 0000000..8a1351f
+--- /dev/null
++++ b/docs/handoff/PILOT_FINDING_ADDENDUM.md
+@@ -0,0 +1,38 @@
++# POST-PILOT FINDING ADDENDUM — TEMPORAL ORDERING DEFECT (Mentor Ruling 016.1)
++
++Recorded 2026-08-04. This addendum documents a defect discovered by the
++mentor's independent review AFTER the 12-hour pilot was archived. The
++immutable pilot archive (docs/pilot-12h-archive/, sealed tarball SHA-256
++8d80b7cf7b9002aa03b847d8fdc47728c8e5794c8de3f93765e2292662dd823d) is NOT
++altered by this addendum.
++
++## The defect
++
++The pilot-era boundary flow replayed the prior hour's 1-minute candles
++[T-3600, T) AFTER rendering prompts, collecting model decisions, and
++committing them at T. Consequences within the pilot:
++
++- the T prompts could describe STALE account state (e.g. still long although
++  the prior hour's candles had already crossed the position's stop);
++- decisions were collected from that stale state;
++- pre-T candles were then replayed after the T commit, so an exit belonging
++  to the prior hour could be applied after — and interact with — an action
++  taken at T.
++
++## Status of the pilot
++
++The pilot was already formally classified PAPER MONEY / SYSTEM TEST /
++NOT VALID EXPERIMENTAL EVIDENCE (Mentor Final Ruling, 2026-08-03). This
++defect adds a further, specific reason that classification is correct. No
++pilot record is being changed; the ledger and archives faithfully record
++what the pilot-era code actually did.
++
++## The correction (official engine, Ruling 016.1)
++
++The official coordinator now enforces the causal order per boundary:
++fetch/validate data through T -> replay all 1m candles STRICTLY BEFORE T
++against the pre-T state (phase persisted; crash-resume never replays a
++candle twice) -> persist state/stops/latches/watermark -> freeze account
++snapshots and P_T at T -> archive prompts -> call models -> commit at T.
++A candle with timestamp < T can never touch an action taken at T. Regression
++tests: tests/test_ruling016.py.
 diff --git a/docs/index.html b/docs/index.html
 index 23b3d5c..1f9b7aa 100644
 --- a/docs/index.html
@@ -1084,10 +2009,10 @@ index 145185a..1c1786a 100644
          "entry": str(a["entry"]) if a["entry"] is not None else None,
 diff --git a/engine/official.py b/engine/official.py
 new file mode 100644
-index 0000000..97f3e2c
+index 0000000..4b38f3e
 --- /dev/null
 +++ b/engine/official.py
-@@ -0,0 +1,568 @@
+@@ -0,0 +1,659 @@
 +"""OFFICIAL 14-DAY RUN orchestration (Mentor Rulings 1, 2, 3, 6, 8).
 +
 +Differences from the pilot loop (engine.pilot), each mandated by a ruling:
@@ -1204,14 +2129,33 @@ index 0000000..97f3e2c
 +    return still_armed
 +
 +
++# The ONLY entries a pristine official store may contain before its first
++# schedule (Mentor Ruling 016.2): the pristine state + the two externally
++# approved manifests. Anything else — ledgers, prompts, attempts, payloads,
++# publication logs, schedules, bindings, temp files, unknown artifacts —
++# refuses the launch.
++PRISTINE_STORE_ALLOWLIST = frozenset({
++    "state.json", config_mod.LAUNCH_MANIFEST_NAME,
++    config_mod.SITE_MANIFEST_NAME})
++
++
 +def verify_pristine_official_state(store):
-+    """Mentor Ruling 015.1: before the FIRST official schedule may exist, the
-+    complete official state must be exactly pristine — byte-normalized equal
-+    to a freshly initialized 18-account roster (exact ids, $10,000.00 each,
-+    zero qty/entry/fees/trades/lifecycles/theses/decisions) with a null
-+    boundary and no history of any kind. A correctly checksummed but DIRTY
-+    state refuses loudly; a missing state file is fine (standard pristine
-+    state gets created by provisioning)."""
++    """Mentor Rulings 015.1 + 016.2: before the FIRST official schedule may
++    exist, the COMPLETE official store must be pristine:
++      * directory contents limited to the strict allowlist (no ledger.jsonl,
++        attempts/, prompts/, publish/, publications.json, schedule, binding,
++        temp files, or ANY unknown prior-run artifact);
++      * state byte-normalized equal to a freshly initialized 18-account
++        roster (exact ids, $10,000.00 each, zero qty/entry/fees/trades/
++        lifecycles/theses/decisions);
++      * null meta boundary and no history/replay/publication remnants.
++    A correctly checksummed but DIRTY state refuses loudly; a missing state
++    file is fine (standard pristine state gets created by provisioning)."""
++    if os.path.isdir(store):
++        stray = sorted(set(os.listdir(store)) - PRISTINE_STORE_ALLOWLIST)
++        if stray:
++            raise PristineError(
++                f"official store contains prior-run artifacts: {stray[:8]}")
 +    import json as _json
 +    from . import state as state_mod
 +    spath = os.path.join(store, "state.json")
@@ -1233,12 +2177,67 @@ index 0000000..97f3e2c
 +            f"official state is not pristine (accounts differ: {diff[:6]})")
 +    if meta.get("boundary") is not None:
 +        raise PristineError("official meta carries a boundary")
-+    for key in ("equity_history", "equity_history_last", "marks", "marks_T",
-+                "finalized_pairs", "outbox", "flushed_ids",
-+                "replay_watermark", "replay_state", "coin_terminated",
-+                "boundary_complete", "_recovering"):
-+        if meta.get(key):
-+            raise PristineError(f"official meta carries prior-run {key}")
++    # Ruling 016.2: ANY nonempty metadata beyond the null boundary — known
++    # remnant or unknown key — refuses the launch.
++    for key, val in meta.items():
++        if key in ("boundary", "_checksum"):     # checksum is persistence's
++            continue
++        if val:
++            raise PristineError(
++                f"official meta carries nonempty pre-launch data: {key}")
++    return True
++
++
++PREFLIGHT_VALIDITY_S = 24 * HOUR      # documented attestation freshness
++
++
++class PreflightAttestationError(Exception):
++    """Activation attempted without a valid, fresh, matching, PASSING server
++    preflight attestation (Mentor Ruling 016.7)."""
++
++
++def verify_preflight_attestation(act, engine_digest, site_digest, now):
++    """Mentor Ruling 016.7: activation is BOUND to a passing preflight. The
++    activation record must carry {'preflight': {'report_path',
++    'report_sha256'}}; the referenced report must exist, hash to exactly the
++    recorded SHA-256 (a modified report refuses), record overall_pass with
++    exactly 18/18 strict results, match the EXACT engine digest, site digest
++    and canonical endpoint being activated, and be fresh within
++    PREFLIGHT_VALIDITY_S. Any failure refuses activation."""
++    p = act.get("preflight")
++    if not isinstance(p, dict) or not p.get("report_path") \
++            or not p.get("report_sha256"):
++        raise PreflightAttestationError("missing preflight attestation")
++    path = p["report_path"]
++    try:
++        blob = open(path, "rb").read()
++    except OSError as e:
++        raise PreflightAttestationError(f"preflight report unreadable: {e}")
++    if hashlib.sha256(blob).hexdigest() != p["report_sha256"]:
++        raise PreflightAttestationError("preflight report was modified "
++                                        "(SHA-256 mismatch)")
++    try:
++        s = json.loads(blob)["summary"]
++    except Exception as e:
++        raise PreflightAttestationError(f"preflight report malformed: {e}")
++    if s.get("overall_pass") is not True:
++        raise PreflightAttestationError("preflight did not PASS")
++    if s.get("n") != 18 or s.get("accepted") != 18:
++        raise PreflightAttestationError("preflight request/result counts "
++                                        "are not exactly 18/18")
++    if s.get("engine_digest") != engine_digest:
++        raise PreflightAttestationError("preflight ran against a different "
++                                        "engine digest")
++    if s.get("site_digest") != site_digest:
++        raise PreflightAttestationError("preflight ran against a different "
++                                        "site digest")
++    if s.get("canonical_endpoint") != OFFICIAL_PAYLOAD_URL:
++        raise PreflightAttestationError("preflight verified a different "
++                                        "endpoint")
++    ts = s.get("timestamp")
++    if not isinstance(ts, (int, float)) or now - ts > PREFLIGHT_VALIDITY_S:
++        raise PreflightAttestationError(
++            f"preflight report stale (validity {PREFLIGHT_VALIDITY_S}s)")
 +    return True
 +
 +
@@ -1312,12 +2311,14 @@ index 0000000..97f3e2c
 +    return "rolled_back"
 +
 +
-+def rollback_unstarted(store):
++def rollback_unstarted(store, public_dir=None):
 +    """Undo provisioning artifacts after a valid PRE-START disarm: allowed
 +    ONLY while zero boundaries are completed and account state carries no
-+    boundary. Removes the sealed schedule, the publication log, and durable
-+    payloads so a later re-arm provisions a fresh schedule. Any sign the run
-+    started => refuse loudly (halting a live run is a service-stop concern)."""
++    boundary. Removes the sealed schedule, the publication log, durable
++    payloads, and (Mentor Ruling 016.8) any published READY payload from the
++    public dir so the public state visibly returns to ARMED_OFF. A later
++    re-arm provisions a fresh schedule. Any sign the run started => refuse
++    loudly (halting a live run is a service-stop concern)."""
 +    import shutil
 +    try:
 +        sched = pilot.load_schedule(store)
@@ -1335,6 +2336,12 @@ index 0000000..97f3e2c
 +        except FileNotFoundError:
 +            pass
 +    shutil.rmtree(os.path.join(store, "publish"), ignore_errors=True)
++    if public_dir:
++        for name in (DirectPublisher.PAYLOAD, DirectPublisher.CHECKSUM):
++            try:
++                os.remove(os.path.join(public_dir, name))
++            except FileNotFoundError:
++                pass
 +    return True
 +
 +
@@ -1533,12 +2540,16 @@ index 0000000..97f3e2c
 +
 +def _fire_mirror(mirror, T, notes):
 +    """Asynchronous historical mirror (Ruling 1.5): never joined inside any
-+    boundary budget, never raises into the trading loop."""
++    boundary budget, never raises into the trading loop. Mentor Ruling
++    016.8: exception DETAILS never reach the note (health.json is PUBLIC and
++    push errors can embed credentialed URLs) — the public note carries only
++    the fact of failure."""
 +    def run():
 +        try:
 +            mirror(T)
-+        except Exception as e:
-+            notes.append(f"mirror {T}: {str(e)[:120]}")
++        except Exception:
++            notes.append(f"mirror {T}: failed (details withheld from the "
++                         "public endpoint)")
 +    t = threading.Thread(target=run, name=f"mirror-{T}", daemon=True)
 +    t.start()
 +    return t
@@ -1630,15 +2641,20 @@ index 0000000..97f3e2c
 +        abort_reason = (None if entry["status"] == "PUBLISHED"
 +                        else ABORT_THINKING)
 +        # ---- model calls under the T+08:30 collection deadline ----
++        # PRE-DECISION replay (Ruling 016.1): the prior hour's candles
++        # [T-3600, T) are applied BEFORE prompts/model calls, so stops, TPs,
++        # invalidation latches and liquidations from before T are visible in
++        # the T prompts and no candle < T can touch an action taken at T.
 +        recovery.run_checkpointed(
 +            T, snaps, caller, cfg, store,
-+            replay_spec={c: s for c, s in spec.items()
-+                         if snaps.get(c) is not None},
++            pre_replay_spec={c: s for c, s in spec.items()
++                             if snaps.get(c) is not None},
 +            crash_at=crash_at, clock=clock,
 +            deadline=T + COLLECTION_DEADLINE_S,
 +            abort_all_reason=abort_reason,
 +            resolution_deadline=T + RESOLUTION_DEADLINE_S,
-+            replay_deadline=T + RESOLUTION_DEADLINE_S)
++            replay_deadline=T + RESOLUTION_DEADLINE_S,
++            hard_deadline=T + HARD_DEADLINE_S)
 +        sched = pilot.mark_completed(store, T)
 +        # ---- terminal payload durable + direct publication by T+11:30 ----
 +        _set_deadline(publish, T + FINAL_PUBLISH_S)
@@ -1656,6 +2672,42 @@ index 0000000..97f3e2c
 +        health("WAITING", T)
 +    health("COMPLETE")
 +    return sched
+diff --git a/engine/persistence.py b/engine/persistence.py
+index 08f4e1a..b235400 100644
+--- a/engine/persistence.py
++++ b/engine/persistence.py
+@@ -69,7 +69,14 @@
+     return hashlib.sha256(payload.encode()).hexdigest()
+ 
+ 
+-def save_state(path, accounts, meta):
++def save_state_tx(path, accounts, meta, clock=None, deadline=None):
++    """DURABILITY-TRANSACTIONAL checkpoint (Mentor Ruling 016.3): the FULL
++    state is serialized and fsynced into a temporary file FIRST; the
++    authoritative clock is read IMMEDIATELY before the atomic replacement.
++    At/after `deadline` the temp file is discarded and False is returned —
++    nothing durable changed, no account/fee/trade/lifecycle/link/watermark
++    from the late result survives. Without clock/deadline this is the plain
++    atomic save (always True)."""
+     enc = _enc_all(accounts)
+     meta_core = {k: v for k, v in meta.items() if k != "_checksum"}
+     meta_out = dict(meta_core, _checksum=_checksum(enc, meta_core))
+@@ -78,7 +85,15 @@
+         json.dump({"meta": meta_out, "accounts": enc}, f, indent=1, default=str)
+         f.flush()
+         os.fsync(f.fileno())
++    if clock is not None and deadline is not None and clock() >= deadline:
++        os.remove(tmp)                   # late: discard the prepared state
++        return False
+     os.replace(tmp, path)
++    return True
++
++
++def save_state(path, accounts, meta):
++    save_state_tx(path, accounts, meta)
+ 
+ 
+ def _validate_account(aid, a):
 diff --git a/engine/publisher.py b/engine/publisher.py
 index 62e15bb..e810820 100644
 --- a/engine/publisher.py
@@ -1765,7 +2817,7 @@ index 62e15bb..e810820 100644
          results.append((T, entry["status"]))
      return results
 diff --git a/engine/recovery.py b/engine/recovery.py
-index 68c2194..af93889 100644
+index 68c2194..eb66c56 100644
 --- a/engine/recovery.py
 +++ b/engine/recovery.py
 @@ -23,6 +23,7 @@
@@ -1776,18 +2828,19 @@ index 68c2194..af93889 100644
  import os
  import time
  from concurrent.futures import ThreadPoolExecutor
-@@ -52,7 +53,9 @@
+@@ -52,7 +53,10 @@
  
  
  def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
 -                     replay_spec=None, clock=None, deadline=None):
 +                     replay_spec=None, clock=None, deadline=None,
 +                     abort_all_reason=None, resolution_deadline=None,
-+                     replay_deadline=None):
++                     replay_deadline=None, pre_replay_spec=None,
++                     hard_deadline=None):
      """Returns (ledger_entries, attempt_records, archived_user_prompts).
  
      `deadline` (Ruling 012.3): the authoritative ABSOLUTE collection deadline
-@@ -61,7 +64,20 @@
+@@ -61,7 +65,37 @@
      retrieval, grace waits, and restarts all consume the same T..T+12min
      budget — entering this coordinator late never grants new time, and a
      restart never resets the deadline. When omitted (offline tooling/tests),
@@ -1805,24 +2858,185 @@ index 68c2194..af93889 100644
 +    instead of committing; replay stops processing candles at replay_deadline
 +    and latches CATCHUP_REQUIRED with the watermark preserved — the standard
 +    catch-up path resumes it next boundary. Both default to None (legacy
-+    behavior, used by all pilot-era tests)."""
++    behavior, used by all pilot-era tests).
++
++    `pre_replay_spec` (Mentor Ruling 016.1 — LIVE EVENT ORDER): 1m candles
++    STRICTLY BEFORE T, replayed against the pre-T account state BEFORE marks
++    freeze, prompts render, or any model is called, with the phase persisted
++    ("pre_replay" -> "decision") so a crash resumes idempotently and never
++    replays a candle twice. Stops/TPs/invalidations/liquidations from the
++    prior hour are therefore visible in the T prompts, and a candle with
++    timestamp < T can never touch an action taken at T. If a coin's
++    pre-decision replay cannot complete, the standard CATCHUP_REQUIRED /
++    COIN_TERMINATED policy blocks that coin's pairs with ZERO model calls.
++    The official runner uses ONLY pre_replay_spec; the legacy `replay_spec`
++    (post-decision, post-T candles) remains for offline tooling and the
++    frozen pilot-era tests.
++
++    `hard_deadline` (Mentor Ruling 016.3): absolute T+720 bound for the
++    boundary-completion checkpoint — a completion persisting at/after it is
++    still terminal but NEVER silent (late_termination_at + ledger event)."""
      # RUNTIME INTEGRITY GATE (Ruling 009.1): load the immutable APPROVED
      # launch manifest (never rebuilt from the working tree) and verify every
      # engine/script/config/prompt/schema byte BEFORE touching state, prompts,
-@@ -114,6 +130,12 @@
+@@ -78,6 +112,7 @@
+         # boundary start. Publication uses ONLY these persisted marks; a
+         # crash-restart of the same boundary keeps the frozen values.
+         meta = {"boundary": T, "finalized_pairs": {},
++                "phase": ("pre_replay" if pre_replay_spec else "decision"),
+                 "replay_watermark": meta.get("replay_watermark", {}),
+                 "boundary_complete": False,
+                 "coin_terminated": meta.get("coin_terminated", {}),
+@@ -100,6 +135,135 @@
+     # 2. reconcile any unflushed outbox from a prior crash (idempotent)
+     persistence.flush_outbox(store, accounts, meta)
+ 
++    def _replay_pass(spec_map, crash_label):
++        """Exact-interval 1m replay: 10h catch-up policy (008.6),
++        transactional per-candle durability (015.3/016.3) — replay runs on
++        deep copies, the authoritative clock is read after the candle's work
++        AND immediately before the atomic state replacement; a late candle
++        is discarded whole with the watermark preserved."""
++        for coin, spec in (spec_map or {}).items():
++            if meta["coin_terminated"].get(coin):
++                continue
++            rs = meta["replay_state"].get(coin, {})
++            wm = meta["replay_watermark"].get(coin)
++            eff_start = (wm + 60) if wm is not None else spec["start"]
++            eff_start = max(eff_start, rs.get("gap_since", eff_start))
++            end = spec["end"]
++            if eff_start >= end:
++                continue
++            ids = [a["id"] for a in accounts.values() if a["coin"] == coin]
++
++            def _apply_candles(candle_list, append=True):
++                """Returns the first UNAPPLIED candle t (deadline
++                truncation/discard) or None when all applied durably."""
++                for c in candle_list:
++                    if replay_deadline is not None \
++                            and clock() >= replay_deadline:
++                        return c["t"]
++                    recs = []
++                    originals = {a2: accounts[a2] for a2 in ids}
++                    prepared = {a2: copy.deepcopy(accounts[a2])
++                                for a2 in ids}
++                    replay_mod.replay([prepared[a2] for a2 in ids], [c],
++                                      recs)
++                    if replay_deadline is not None \
++                            and clock() >= replay_deadline:
++                        return c["t"]                # discard prepared
++                    cand_meta = copy.deepcopy(meta)
++                    cand_meta["replay_watermark"][coin] = c["t"]
++                    for i, rc in enumerate(recs):
++                        persistence.outbox_add(
++                            cand_meta, f"{coin}:{c['t']}:{i}:{rc['e']}",
++                            {"round_id": prompts.round_id(coin, T),
++                             "replay": [rc]})
++                    for a2 in ids:
++                        accounts[a2] = prepared[a2]
++                    if not persistence.save_state_tx(spath, accounts,
++                                                     cand_meta, clock,
++                                                     replay_deadline):
++                        for a2 in ids:               # nothing durable changed
++                            accounts[a2] = originals[a2]
++                        return c["t"]
++                    meta.clear()
++                    meta.update(cand_meta)
++                    persistence.flush_outbox(store, accounts, meta)
++                    if recs and append:
++                        ledger.append({"round_id": prompts.round_id(coin, T),
++                                       "replay": recs})
++                    _crash(crash_at, crash_label)
++                return None
++
++            def _latch_catchup(t_gap):
++                meta["replay_state"][coin] = {
++                    "status": "CATCHUP_REQUIRED", "gap_since": t_gap,
++                    "detail": "replay_deadline_reached"}
++                ev = {"round_id": prompts.round_id(coin, T),
++                      "replay": [{"e": "CATCHUP_REQUIRED",
++                                  "gap_since": t_gap}]}
++                persistence.outbox_add(
++                    meta, f"{coin}:{t_gap}:CATCHUP_REQUIRED", ev)
++                persistence.save_state(spath, accounts, meta)
++                persistence.flush_outbox(store, accounts, meta)
++                ledger.append(ev)
++            try:
++                candles = marketdata.validate_1m_coverage(spec["candles"],
++                                                          eff_start, end)
++            except marketdata.DataUnavailable as e:
++                # process the contiguous prefix before the gap, preserving
++                # the last trustworthy watermark; never past the gap (008.6)
++                prefix = []
++                want = eff_start
++                have = {c["t"]: c for c in spec["candles"]}
++                while want in have:
++                    prefix.append(have[want])
++                    want += 60
++                truncated = _apply_candles(prefix, append=False) \
++                    if prefix else None
++                eff_start = truncated if truncated is not None else want
++                unresolved = end - eff_start
++                if unresolved > MAX_GAP_S:
++                    meta["coin_terminated"][coin] = True
++                    meta["replay_state"][coin] = {
++                        "status": "COIN_TERMINATED", "gap_since": eff_start}
++                    ev = {"round_id": prompts.round_id(coin, T),
++                          "replay": [{"e": "COIN_TERMINATED",
++                                      "reason": "replay_integrity_loss",
++                                      "unresolved_s": unresolved}]}
++                else:
++                    meta["replay_state"][coin] = {
++                        "status": "CATCHUP_REQUIRED", "gap_since": eff_start,
++                        "detail": str(e)[:200]}
++                    ev = {"round_id": prompts.round_id(coin, T),
++                          "replay": [{"e": "CATCHUP_REQUIRED",
++                                      "gap_since": eff_start}]}
++                persistence.outbox_add(
++                    meta, f"{coin}:{eff_start}:{ev['replay'][0]['e']}", ev)
++                persistence.save_state(spath, accounts, meta)
++                persistence.flush_outbox(store, accounts, meta)
++                ledger.append(ev)
++                continue
++            meta["replay_state"][coin] = {"status": "REPLAY_COMPLETE"}
++            truncated = _apply_candles(candles)
++            if truncated is not None:
++                _latch_catchup(truncated)
++
++    # 2b. PRE-DECISION REPLAY (Ruling 016.1): candles strictly < T applied
++    # to the pre-T account state BEFORE marks are re-frozen for prompts and
++    # BEFORE any prompt/model work. Phase-persisted: a crash here resumes
++    # idempotently (watermark) and prompt generation only ever sees the
++    # post-replay state.
++    if pre_replay_spec:
++        for coin, spec in pre_replay_spec.items():
++            # only [start, end) is ever replayed; end must not reach past T
++            if spec["end"] > T:
++                raise ValueError(
++                    f"pre_replay_spec for {coin} ends at {spec['end']} > "
++                    f"T={T} — pre-decision replay must be strictly pre-T")
++    if pre_replay_spec and meta.get("phase") == "pre_replay":
++        _replay_pass(pre_replay_spec, "during_pre_replay")
++        meta["phase"] = "decision"
++        persistence.save_state(spath, accounts, meta)
++
+     # 3. durable prompt archive BEFORE any request (Ruling 008.3)
+     archived = persistence.read_prompt_archive(store, _seed(T))
+     entries, pregen = [], {}
+@@ -113,6 +277,12 @@
+             e = archived[aid]
              if "user" in e:
                  pregen[aid] = (e["system"], e["user"])   # bytes reused verbatim
-             continue
++            continue
 +        if abort_all_reason is not None:
 +            entries.append({"account_id": aid,
 +                            "pair_id": state.pair_id(acct["coin"], acct["model"]),
 +                            "round_id": prompts.round_id(acct["coin"], T),
 +                            "not_called": abort_all_reason})
-+            continue
+             continue
          if blocked:
              entries.append({"account_id": aid,
-                             "pair_id": state.pair_id(acct["coin"], acct["model"]),
-@@ -165,7 +187,9 @@
+@@ -165,7 +335,9 @@
                  continue
              a_raw = accounts[state.account_id(coin, model, "raw")]
              a_ta = accounts[state.account_id(coin, model, "ta")]
@@ -1833,7 +3047,7 @@ index 68c2194..af93889 100644
                  pair_meta[pid] = ("abort", rid, "crash_recovery", None)
              elif meta["coin_terminated"].get(coin):
                  pair_meta[pid] = ("abort", rid, "COIN_TERMINATED", None)
-@@ -207,36 +231,71 @@
+@@ -207,52 +379,116 @@
              if pid in recovered or pid not in pair_meta:
                  continue
              kind, rid, reason, terminal_ids = pair_meta[pid]
@@ -1848,6 +3062,7 @@ index 68c2194..af93889 100644
              a_ta = accounts[state.account_id(coin, model, "ta")]
              snap = snapshots.get(coin)
              exec_links = []
++            swapped_originals = {}
 +            # TRANSACTIONAL RESOLUTION (Ruling 015.3): all validation and
 +            # accounting run against DEEP COPIES; the authoritative clock is
 +            # read AFTER every piece of resolution work is prepared and only
@@ -1885,7 +3100,8 @@ index 68c2194..af93889 100644
 +                    if _too_late():
 +                        entry = _late_abort()            # discard prepared
 +                    else:
-+                        for p, o in zip(prepared, outs):
++                        for a, p, o in zip(live, prepared, outs):
++                            swapped_originals[p["id"]] = a
 +                            accounts[p["id"]] = p
 +                            exec_links.append(o[2])
 +                        _crash(crash_at, "after_execute")
@@ -1907,6 +3123,8 @@ index 68c2194..af93889 100644
 +                    if _too_late():
 +                        entry = _late_abort()            # discard prepared
 +                    else:
++                        swapped_originals = {a_raw["id"]: a_raw,
++                                             a_ta["id"]: a_ta}
 +                        accounts[a_raw["id"]] = prep_raw
 +                        accounts[a_ta["id"]] = prep_ta
 +                        exec_links = [o_raw[2], o_ta[2]]
@@ -1917,89 +3135,769 @@ index 68c2194..af93889 100644
                  else:
                      entry = {"round_id": rid, "pair": pid,
                               "status": rounds.PAIR_ABORTED,
-@@ -286,11 +345,28 @@
-                 prefix.append(have[want])
-                 want += 60
-             if prefix:
+                              "reason": o_raw[1] or o_ta[1],
+                              "caused_by_arm": "raw" if o_raw[0] is None else "ta"}
+-            # FINALIZE: one atomic checkpoint (state + status + links + outbox)
+-            persistence.outbox_add(meta, f"{rid}:{pid}:{entry['status']}", entry)
++            # FINALIZE (Rulings 008 + 016.3): one atomic checkpoint. For a
++            # TRADE-BEARING result the FULL serialized state is prepared and
++            # fsynced FIRST and the authoritative clock is read immediately
++            # before the atomic replacement — a late prepared commit is
++            # discarded whole (in-memory swaps reverted, no account, fee,
++            # trade, lifecycle, link or watermark survives) and the pair is
++            # re-finalized as PAIR_ABORTED/deadline_exceeded.
++            trade_bearing = bool(exec_links)
++            cand_meta = copy.deepcopy(meta)
++            persistence.outbox_add(cand_meta, f"{rid}:{pid}:{entry['status']}",
++                                   entry)
+             for link in exec_links:
+-                persistence.outbox_add(meta, f"{rid}:{pid}:exec:{link}",
+-                                       {"e": "executed_attempt", "round_id": rid,
+-                                        "pair": pid, "attempt_id": link})
++                persistence.outbox_add(cand_meta, f"{rid}:{pid}:exec:{link}",
++                                       {"e": "executed_attempt",
++                                        "round_id": rid, "pair": pid,
++                                        "attempt_id": link})
++            cand_meta["finalized_pairs"][pid] = entry["status"]
++            durable = persistence.save_state_tx(
++                spath, accounts, cand_meta, clock,
++                resolution_deadline if trade_bearing else None)
++            if not durable:
++                for aid2, orig in swapped_originals.items():
++                    accounts[aid2] = orig            # nothing survives
++                entry = _late_abort()
++                exec_links = []
++                cand_meta = copy.deepcopy(meta)
++                persistence.outbox_add(
++                    cand_meta, f"{rid}:{pid}:{entry['status']}", entry)
++                cand_meta["finalized_pairs"][pid] = entry["status"]
++                persistence.save_state(spath, accounts, cand_meta)
++            meta.clear()
++            meta.update(cand_meta)
++            for link in exec_links:
+                 for rec in all_attempts:
+                     if rec["attempt_id"] == link:
+                         rec["became_executed_decision"] = True   # in-memory only
+-            meta["finalized_pairs"][pid] = entry["status"]
+-            persistence.save_state(spath, accounts, meta)
+             _crash(crash_at, "after_checkpoint")
+             persistence.flush_outbox(store, accounts, meta,
+                                      crash=lambda p: _crash(crash_at, p))
+@@ -262,81 +498,10 @@
+                 done_one = True
+                 _crash(crash_at, "after_one_pair")
+ 
+-    # 6. replay with exact interval validation + 10h catch-up policy
+-    for coin, spec in (replay_spec or {}).items():
+-        if meta["coin_terminated"].get(coin):
+-            continue
+-        rs = meta["replay_state"].get(coin, {})
+-        wm = meta["replay_watermark"].get(coin)
+-        eff_start = (wm + 60) if wm is not None else spec["start"]
+-        eff_start = max(eff_start, rs.get("gap_since", eff_start))
+-        end = spec["end"]
+-        if eff_start >= end:
+-            continue
+-        try:
+-            candles = marketdata.validate_1m_coverage(spec["candles"],
+-                                                      eff_start, end)
+-        except marketdata.DataUnavailable as e:
+-            # process the contiguous prefix before the gap, preserving the
+-            # last trustworthy watermark; never process past the gap (008.6)
+-            prefix = []
+-            want = eff_start
+-            have = {c["t"]: c for c in spec["candles"]}
+-            while want in have:
+-                prefix.append(have[want])
+-                want += 60
+-            if prefix:
 -                coin_accounts = [a for a in accounts.values()
 -                                 if a["coin"] == coin]
-+                pids_ = [a["id"] for a in accounts.values()
-+                         if a["coin"] == coin]
-+                truncated = None
-                 for c in prefix:
-+                    # REPLAY DEADLINE (Rulings 014.5/015.3, transactional):
-+                    # a late candle is discarded whole; the unprocessed
-+                    # remainder becomes the coin's gap
-+                    if replay_deadline is not None \
-+                            and clock() >= replay_deadline:
-+                        truncated = c["t"]
-+                        break
-                     recs = []
+-                for c in prefix:
+-                    recs = []
 -                    replay_mod.replay(coin_accounts, [c], recs)
-+                    prepared = {a2: copy.deepcopy(accounts[a2])
-+                                for a2 in pids_}
-+                    replay_mod.replay([prepared[a2] for a2 in pids_], [c],
-+                                      recs)
-+                    if replay_deadline is not None \
-+                            and clock() >= replay_deadline:
-+                        truncated = c["t"]               # discard prepared
-+                        break
-+                    for a2 in pids_:
-+                        accounts[a2] = prepared[a2]
-                     meta["replay_watermark"][coin] = c["t"]
-                     for i, rc in enumerate(recs):
-                         persistence.outbox_add(
-@@ -299,7 +375,7 @@
-                              "replay": [rc]})
-                 persistence.save_state(spath, accounts, meta)
-                 persistence.flush_outbox(store, accounts, meta)
+-                    meta["replay_watermark"][coin] = c["t"]
+-                    for i, rc in enumerate(recs):
+-                        persistence.outbox_add(
+-                            meta, f"{coin}:{c['t']}:{i}:{rc['e']}",
+-                            {"round_id": prompts.round_id(coin, T),
+-                             "replay": [rc]})
+-                persistence.save_state(spath, accounts, meta)
+-                persistence.flush_outbox(store, accounts, meta)
 -                eff_start = want
-+                eff_start = truncated if truncated is not None else want
-             unresolved = end - eff_start
-             if unresolved > MAX_GAP_S:
-                 meta["coin_terminated"][coin] = True
-@@ -322,10 +398,39 @@
-             ledger.append(ev)
-             continue
-         meta["replay_state"][coin] = {"status": "REPLAY_COMPLETE"}
+-            unresolved = end - eff_start
+-            if unresolved > MAX_GAP_S:
+-                meta["coin_terminated"][coin] = True
+-                meta["replay_state"][coin] = {"status": "COIN_TERMINATED",
+-                                              "gap_since": eff_start}
+-                ev = {"round_id": prompts.round_id(coin, T),
+-                      "replay": [{"e": "COIN_TERMINATED",
+-                                  "reason": "replay_integrity_loss",
+-                                  "unresolved_s": unresolved}]}
+-            else:
+-                meta["replay_state"][coin] = {"status": "CATCHUP_REQUIRED",
+-                                              "gap_since": eff_start,
+-                                              "detail": str(e)[:200]}
+-                ev = {"round_id": prompts.round_id(coin, T),
+-                      "replay": [{"e": "CATCHUP_REQUIRED",
+-                                  "gap_since": eff_start}]}
+-            persistence.outbox_add(meta, f"{coin}:{eff_start}:{ev['replay'][0]['e']}", ev)
+-            persistence.save_state(spath, accounts, meta)
+-            persistence.flush_outbox(store, accounts, meta)
+-            ledger.append(ev)
+-            continue
+-        meta["replay_state"][coin] = {"status": "REPLAY_COMPLETE"}
 -        coin_accounts = [a for a in accounts.values() if a["coin"] == coin]
-+        ids = [a["id"] for a in accounts.values() if a["coin"] == coin]
-+
-+        def _latch_catchup(t_gap):
-+            # REPLAY DEADLINE (Rulings 014.5/015.3): replay past the bound
-+            # stops with the watermark preserved and latches the standard
-+            # CATCHUP_REQUIRED path — never a silent deadline crossing,
-+            # never lost candles, never a half-applied candle.
-+            meta["replay_state"][coin] = {
-+                "status": "CATCHUP_REQUIRED", "gap_since": t_gap,
-+                "detail": "replay_deadline_reached"}
-+            ev = {"round_id": prompts.round_id(coin, T),
-+                  "replay": [{"e": "CATCHUP_REQUIRED", "gap_since": t_gap}]}
-+            persistence.outbox_add(meta, f"{coin}:{t_gap}:CATCHUP_REQUIRED",
-+                                   ev)
-+            persistence.save_state(spath, accounts, meta)
-+            persistence.flush_outbox(store, accounts, meta)
-+            ledger.append(ev)
-         for c in candles:
-+            if replay_deadline is not None and clock() >= replay_deadline:
-+                _latch_catchup(c["t"])
-+                break
-+            # TRANSACTIONAL CANDLE (Ruling 015.3): replay runs on deep
-+            # copies; the clock is re-read AFTER the candle's work and a
-+            # late result is discarded whole — no partial candle ever
-+            # becomes durable.
-             recs = []
+-        for c in candles:
+-            recs = []
 -            replay_mod.replay(coin_accounts, [c], recs)
-+            prepared = {aid2: copy.deepcopy(accounts[aid2]) for aid2 in ids}
-+            replay_mod.replay([prepared[aid2] for aid2 in ids], [c], recs)
-+            if replay_deadline is not None and clock() >= replay_deadline:
-+                _latch_catchup(c["t"])                   # discard prepared
-+                break
-+            for aid2 in ids:
-+                accounts[aid2] = prepared[aid2]
-             meta["replay_watermark"][coin] = c["t"]
-             for i, rc in enumerate(recs):
-                 persistence.outbox_add(meta, f"{coin}:{c['t']}:{i}:{rc['e']}",
+-            meta["replay_watermark"][coin] = c["t"]
+-            for i, rc in enumerate(recs):
+-                persistence.outbox_add(meta, f"{coin}:{c['t']}:{i}:{rc['e']}",
+-                                       {"round_id": prompts.round_id(coin, T),
+-                                        "replay": [rc]})
+-            persistence.save_state(spath, accounts, meta)
+-            persistence.flush_outbox(store, accounts, meta)
+-            if recs:
+-                ledger.append({"round_id": prompts.round_id(coin, T),
+-                               "replay": recs})
+-            _crash(crash_at, "during_replay")
++    # 6. post-decision replay (LEGACY/offline path only — the official
++    # runner uses pre_replay_spec per Ruling 016.1)
++    _replay_pass(replay_spec, "during_replay")
++
+     # DURABLE EQUITY HISTORY (Ruling 011.2): one point per completed boundary,
+     # equity computed with THIS boundary's persisted mark; explicit null when
+     # an open position has no valid mark. Idempotent across same-T re-runs.
+@@ -355,7 +520,19 @@
+         meta["equity_history_last"] = T
+     meta["boundary_complete"] = True
+     meta.pop("_recovering", None)
+-    persistence.save_state(spath, accounts, meta)
++    # BOUNDARY-COMPLETION persistence (Ruling 016.3): terminal, and never
++    # silently late — completion at/after the hard T+720 bound is recorded
++    # explicitly in state and the ledger before it becomes durable.
++    if not persistence.save_state_tx(spath, accounts, meta, clock,
++                                     hard_deadline):
++        meta["late_termination_at"] = clock()
++        ev = {"round_id": f"v1-ALL-{T}",
++              "e": "LATE_TERMINATION",
++              "hard_deadline": hard_deadline, "at": meta["late_termination_at"]}
++        persistence.outbox_add(meta, f"{T}:LATE_TERMINATION", ev)
++        persistence.save_state(spath, accounts, meta)
++        persistence.flush_outbox(store, accounts, meta)
++        ledger.append(ev)
+     return ledger, all_attempts, {aid: p[1] for aid, p in pregen.items()}
+ 
+ 
+@@ -371,12 +548,22 @@
+ 
+ 
+ def recover(store):
+-    """Mark the persisted boundary as recovering (rule: abort non-finalized)."""
++    """Mark the persisted boundary as recovering (rule: abort non-finalized).
++
++    Ruling 016.1 refinement: a crash DURING the pre-decision replay phase —
++    before any prompt was archived, hence provably zero model calls — is NOT
++    marked recovering: the restart resumes the same boundary normally (the
++    replay watermark guarantees no candle replays twice). Once any prompt is
++    archived the frozen predeclared rule applies unchanged."""
+     approved = config_mod.load_launch_manifest(store)
+     config_mod.verify_integrity(approved)
+     spath = os.path.join(store, "state.json")
+     accounts, meta = persistence.load_state(spath, expect_full_roster=True)
+     if not meta.get("boundary_complete"):
+-        meta["_recovering"] = True
+-        persistence.save_state(spath, accounts, meta)
++        in_pre_replay = (meta.get("phase") == "pre_replay"
++                         and not persistence.read_prompt_archive(
++                             store, _seed(meta.get("boundary"))))
++        if not in_pre_replay:
++            meta["_recovering"] = True
++            persistence.save_state(spath, accounts, meta)
+     return meta
+diff --git a/engine/rounds.py b/engine/rounds.py
+index 8c85294..e3971ad 100644
+--- a/engine/rounds.py
++++ b/engine/rounds.py
+@@ -31,10 +31,20 @@
+ 
+ 
+ def _attempt(caller, acct, snapshot, system, user, retry_msg, n, ctx, writer):
+-    """One transport attempt: transport -> schema (Draft 2020-12) -> semantic.
+-    Handles ANY returned value without crashing. The durable record is written
+-    exactly once, immutable, with `became_executed_decision` ALWAYS false
+-    (Ruling 008.2) — execution is recorded later via immutable link events."""
++    """One transport attempt: transport -> identity -> schema (Draft 2020-12)
++    -> semantic. Handles ANY returned value without crashing. The durable
++    record is written exactly once, immutable, with `became_executed_decision`
++    ALWAYS false (Ruling 008.2) — execution is recorded later via immutable
++    link events.
++
++    Caller contract (Mentor Ruling 016.4): the PRODUCTION caller returns an
++    audited response ENVELOPE — {"decision", "response_model", "response_id",
++    "stop_reason", "latency_ms", "token_usage", "raw_response"} — whose
++    metadata is archived verbatim. The actual response model id must EXACTLY
++    equal the requested frozen model id; a mismatch is archived
++    (identity_mismatch=true) and NEVER executes. Legacy/offline callers may
++    return a bare decision: its unknown metadata is archived as null — never
++    fabricated."""
+     rec = {"account_id": acct["id"],
+            "pair_id": state.pair_id(acct["coin"], acct["model"]),
+            "round_id": ctx["round_id"], "attempt_number": n,
+@@ -46,16 +56,30 @@
+            "returned_model": None, "raw_response": None,
+            "parsed_tool_input": None, "schema_result": None,
+            "semantic_validation_result": None, "fixed_rejection_reasons": [],
+-           "transport_error_category": None, "latency_ms": 0,
++           "transport_error_category": None, "latency_ms": None,
+            "token_usage": None, "became_executed_decision": False}
+     try:
+-        dec = caller(acct["id"], system, user, retry_msg)
++        ret = caller(acct["id"], system, user, retry_msg)
+     except TransportError as e:
+         rec["transport_error_category"] = str(e) or "transport"
+         writer(rec)
+         return None, "transport", rec
+-    rec["returned_model"] = ctx["model_ids"][acct["model"]]
+-    rec["raw_response"] = json.dumps(dec, default=str)
++    if isinstance(ret, dict) and "decision" in ret and "response_model" in ret:
++        dec = ret.get("decision")
++        rec["returned_model"] = ret.get("response_model")
++        rec["response_id"] = ret.get("response_id")
++        rec["stop_reason"] = ret.get("stop_reason")
++        rec["latency_ms"] = ret.get("latency_ms")
++        rec["token_usage"] = ret.get("token_usage")
++        rec["raw_response"] = (ret.get("raw_response")
++                               or json.dumps(dec, default=str))
++        if rec["returned_model"] != rec["requested_model"]:
++            rec["identity_mismatch"] = True      # archived; never executes
++            writer(rec)
++            return None, "identity_mismatch", rec
++    else:
++        dec = ret                                # legacy/offline caller
++        rec["raw_response"] = json.dumps(dec, default=str)
+     schema_reasons = decisions.schema_validate(dec)
+     if schema_reasons:
+         rec["schema_result"] = "invalid"
+@@ -76,18 +100,22 @@
+ def _conversation(caller, acct, snapshot, system, user, retry_msg, n0, ctx,
+                   writer, budget_ok):
+     """One conversation under the full transport policy: 1 initial attempt +
+-    cfg transport retries (= attempts_total, Ruling 008.7). Returns
+-    (decision|None, why, last_n, last_rec)."""
++    cfg transport retries (= attempts_total, Ruling 008.7). A model-identity
++    mismatch (Ruling 016.4) is retried like a transport anomaly — it can
++    never execute. Returns (decision|None, why, last_n, last_rec)."""
+     n = n0
++    last_why = "transport"
+     for _ in range(ctx["transport_attempts_total"]):
+         if not budget_ok():
+             return None, "deadline_exceeded", n, None
+         n += 1
+         dec, why, rec = _attempt(caller, acct, snapshot, system, user,
+                                  retry_msg, n, ctx, writer)
+-        if why != "transport":
++        if why not in ("transport", "identity_mismatch"):
+             return dec, why, n, rec
+-    return None, "transport_failure", n, None
++        last_why = why
++    return None, ("identity_mismatch" if last_why == "identity_mismatch"
++                  else "transport_failure"), n, None
+ 
+ 
+ def collect_one(caller, acct, snapshot, cfg, ctx, pregen, writer, budget_ok):
+@@ -98,14 +126,15 @@
+                                      None, 0, ctx, writer, budget_ok)
+     if dec is not None:
+         return dec, None, rec["attempt_id"]
+-    if why in ("transport_failure", "deadline_exceeded"):
++    if why in ("transport_failure", "deadline_exceeded", "identity_mismatch"):
+         return None, why, None
+     dec2, why2, n2, rec2 = _conversation(
+         caller, acct, snapshot, system, user, decisions.retry_message(why),
+         n, ctx, writer, budget_ok)
+     if dec2 is not None:
+         return dec2, None, rec2["attempt_id"]
+-    if why2 in ("transport_failure", "deadline_exceeded"):
++    if why2 in ("transport_failure", "deadline_exceeded",
++                "identity_mismatch"):
+         return None, ("transport_failure_on_retry" if why2 == "transport_failure"
+                       else why2), None
+     return None, "validation_failure_after_retry", None
+diff --git a/schemas/v1/records.schema.json b/schemas/v1/records.schema.json
+index fa231f3..46c7cb9 100644
+--- a/schemas/v1/records.schema.json
++++ b/schemas/v1/records.schema.json
+@@ -4,109 +4,394 @@
+   "$defs": {
+     "attempt": {
+       "type": "object",
+-      "required": ["account_id", "pair_id", "round_id", "attempt_number", "attempt_id",
+-                   "generated_prompt_hash", "request_hash", "requested_model",
+-                   "returned_model", "raw_response", "parsed_tool_input",
+-                   "schema_result", "semantic_validation_result",
+-                   "fixed_rejection_reasons", "transport_error_category",
+-                   "latency_ms", "token_usage", "became_executed_decision"],
+-      "properties": {
+-        "account_id": {"type": "string", "pattern": "^(btc|eth|sol)_(haiku|sonnet|opus)_(raw|ta)$"},
+-        "pair_id": {"type": "string"},
+-        "round_id": {"type": "string", "pattern": "^v1-(BTC|ETH|SOL)-"},
+-        "attempt_number": {"type": "integer", "minimum": 1},
+-        "attempt_id": {"type": "string"},
+-        "generated_prompt_hash": {"type": "string", "minLength": 64, "maxLength": 64},
+-        "request_hash": {"type": "string", "minLength": 64, "maxLength": 64},
+-        "requested_model": {"type": "string"},
+-        "returned_model": {"type": ["string", "null"]},
+-        "raw_response": {"type": ["string", "null"]},
+-        "parsed_tool_input": {"type": ["object", "null"]},
+-        "schema_result": {"enum": ["valid", "invalid", null]},
+-        "semantic_validation_result": {"enum": ["valid", "invalid", null]},
+-        "fixed_rejection_reasons": {"type": "array", "items": {"type": "string"}},
+-        "transport_error_category": {"type": ["string", "null"]},
+-        "latency_ms": {"type": "number", "minimum": 0},
+-        "token_usage": {"type": ["object", "null"]},
+-        "became_executed_decision": {"type": "boolean"}
++      "required": [
++        "account_id",
++        "pair_id",
++        "round_id",
++        "attempt_number",
++        "attempt_id",
++        "generated_prompt_hash",
++        "request_hash",
++        "requested_model",
++        "returned_model",
++        "raw_response",
++        "parsed_tool_input",
++        "schema_result",
++        "semantic_validation_result",
++        "fixed_rejection_reasons",
++        "transport_error_category",
++        "latency_ms",
++        "token_usage",
++        "became_executed_decision"
++      ],
++      "properties": {
++        "account_id": {
++          "type": "string",
++          "pattern": "^(btc|eth|sol)_(haiku|sonnet|opus)_(raw|ta)$"
++        },
++        "pair_id": {
++          "type": "string"
++        },
++        "round_id": {
++          "type": "string",
++          "pattern": "^v1-(BTC|ETH|SOL)-"
++        },
++        "attempt_number": {
++          "type": "integer",
++          "minimum": 1
++        },
++        "attempt_id": {
++          "type": "string"
++        },
++        "generated_prompt_hash": {
++          "type": "string",
++          "minLength": 64,
++          "maxLength": 64
++        },
++        "request_hash": {
++          "type": "string",
++          "minLength": 64,
++          "maxLength": 64
++        },
++        "requested_model": {
++          "type": "string"
++        },
++        "returned_model": {
++          "type": [
++            "string",
++            "null"
++          ],
++          "description": "ACTUAL response model id (envelope callers); null for offline/injected callers \u2014 never assumed"
++        },
++        "raw_response": {
++          "type": [
++            "string",
++            "null"
++          ]
++        },
++        "parsed_tool_input": {
++          "type": [
++            "object",
++            "null"
++          ]
++        },
++        "schema_result": {
++          "enum": [
++            "valid",
++            "invalid",
++            null
++          ]
++        },
++        "semantic_validation_result": {
++          "enum": [
++            "valid",
++            "invalid",
++            null
++          ]
++        },
++        "fixed_rejection_reasons": {
++          "type": "array",
++          "items": {
++            "type": "string"
++          }
++        },
++        "transport_error_category": {
++          "type": [
++            "string",
++            "null"
++          ]
++        },
++        "latency_ms": {
++          "type": [
++            "number",
++            "null"
++          ],
++          "minimum": 0
++        },
++        "token_usage": {
++          "type": [
++            "object",
++            "null"
++          ]
++        },
++        "became_executed_decision": {
++          "type": "boolean"
++        },
++        "response_id": {
++          "type": [
++            "string",
++            "null"
++          ]
++        },
++        "stop_reason": {
++          "type": [
++            "string",
++            "null"
++          ]
++        },
++        "identity_mismatch": {
++          "type": "boolean",
++          "description": "true when the actual response model id != the requested frozen model id; such an attempt NEVER executes"
++        }
+       },
+       "additionalProperties": false
+     },
+     "pair_ledger": {
+       "type": "object",
+-      "required": ["round_id", "pair", "status"],
+-      "properties": {
+-        "round_id": {"type": "string", "pattern": "^v1-(BTC|ETH|SOL)-"},
+-        "pair": {"type": "string"},
+-        "status": {"enum": ["PAIR_COMMITTED", "PAIR_ABORTED", "PAIR_TERMINAL_SPLIT"]},
+-        "reason": {"type": ["string", "null"]},
+-        "caused_by_arm": {"enum": ["raw", "ta"]},
+-        "terminal": {"type": "array", "items": {"type": "string"}}
++      "required": [
++        "round_id",
++        "pair",
++        "status"
++      ],
++      "properties": {
++        "round_id": {
++          "type": "string",
++          "pattern": "^v1-(BTC|ETH|SOL)-"
++        },
++        "pair": {
++          "type": "string"
++        },
++        "status": {
++          "enum": [
++            "PAIR_COMMITTED",
++            "PAIR_ABORTED",
++            "PAIR_TERMINAL_SPLIT"
++          ]
++        },
++        "reason": {
++          "type": [
++            "string",
++            "null"
++          ]
++        },
++        "caused_by_arm": {
++          "enum": [
++            "raw",
++            "ta"
++          ]
++        },
++        "terminal": {
++          "type": "array",
++          "items": {
++            "type": "string"
++          }
++        }
+       },
+       "additionalProperties": false
+     },
+     "lifecycle": {
+       "type": "object",
+-      "required": ["lifecycle_id", "start_t", "invalidation", "triggered", "ended_t",
+-                   "end_reason", "post_trigger_action", "records"],
+-      "properties": {
+-        "lifecycle_id": {"type": ["string", "null"]},
+-        "start_t": {"type": "integer"},
++      "required": [
++        "lifecycle_id",
++        "start_t",
++        "invalidation",
++        "triggered",
++        "ended_t",
++        "end_reason",
++        "post_trigger_action",
++        "records"
++      ],
++      "properties": {
++        "lifecycle_id": {
++          "type": [
++            "string",
++            "null"
++          ]
++        },
++        "start_t": {
++          "type": "integer"
++        },
+         "invalidation": {
+           "type": "object",
+-          "required": ["timeframe", "operator", "level"],
++          "required": [
++            "timeframe",
++            "operator",
++            "level"
++          ],
+           "properties": {
+-            "timeframe": {"enum": ["1h_close", "1m_intrabar"]},
+-            "operator": {"enum": ["price_at_or_below", "price_at_or_above"]},
+-            "level": {"type": ["string", "number"]}
++            "timeframe": {
++              "enum": [
++                "1h_close",
++                "1m_intrabar"
++              ]
++            },
++            "operator": {
++              "enum": [
++                "price_at_or_below",
++                "price_at_or_above"
++              ]
++            },
++            "level": {
++              "type": [
++                "string",
++                "number"
++              ]
++            }
+           },
+           "additionalProperties": false
+         },
+         "triggered": {
+-          "type": ["object", "null"],
+-          "required": ["t", "price", "candle_t"],
+-          "properties": {"t": {"type": "integer"}, "price": {"type": "string"},
+-                         "candle_t": {"type": "integer"}},
++          "type": [
++            "object",
++            "null"
++          ],
++          "required": [
++            "t",
++            "price",
++            "candle_t"
++          ],
++          "properties": {
++            "t": {
++              "type": "integer"
++            },
++            "price": {
++              "type": "string"
++            },
++            "candle_t": {
++              "type": "integer"
++            }
++          },
+           "additionalProperties": false
+         },
+-        "ended_t": {"type": ["integer", "null"]},
+-        "end_reason": {"type": ["string", "null"]},
+-        "post_trigger_action": {"enum": ["closed", "reduced", "held",
+-                                          "increased", "reversed", null]},
+-        "records": {"type": "array", "items": {"type": "string"}}
++        "ended_t": {
++          "type": [
++            "integer",
++            "null"
++          ]
++        },
++        "end_reason": {
++          "type": [
++            "string",
++            "null"
++          ]
++        },
++        "post_trigger_action": {
++          "enum": [
++            "closed",
++            "reduced",
++            "held",
++            "increased",
++            "reversed",
++            null
++          ]
++        },
++        "records": {
++          "type": "array",
++          "items": {
++            "type": "string"
++          }
++        }
+       },
+       "additionalProperties": false
+     },
+     "trade": {
+       "type": "object",
+-      "required": ["lifecycle_id", "side", "qty", "entry", "exit", "pnl", "fee", "reason", "closed_ts"],
+-      "properties": {
+-        "lifecycle_id": {"type": ["string", "null"]},
+-        "side": {"enum": ["long", "short"]},
+-        "qty": {"type": "string"}, "entry": {"type": "string"},
+-        "exit": {"type": "string"}, "pnl": {"type": "string"},
+-        "fee": {"type": "string"},
+-        "reason": {"enum": ["decision_close", "decision_flip", "stop_loss",
+-                             "take_profit", "liquidation"]},
+-        "closed_ts": {"type": "integer"}
++      "required": [
++        "lifecycle_id",
++        "side",
++        "qty",
++        "entry",
++        "exit",
++        "pnl",
++        "fee",
++        "reason",
++        "closed_ts"
++      ],
++      "properties": {
++        "lifecycle_id": {
++          "type": [
++            "string",
++            "null"
++          ]
++        },
++        "side": {
++          "enum": [
++            "long",
++            "short"
++          ]
++        },
++        "qty": {
++          "type": "string"
++        },
++        "entry": {
++          "type": "string"
++        },
++        "exit": {
++          "type": "string"
++        },
++        "pnl": {
++          "type": "string"
++        },
++        "fee": {
++          "type": "string"
++        },
++        "reason": {
++          "enum": [
++            "decision_close",
++            "decision_flip",
++            "stop_loss",
++            "take_profit",
++            "liquidation"
++          ]
++        },
++        "closed_ts": {
++          "type": "integer"
++        }
+       },
+       "additionalProperties": false
+     },
+     "dashboard": {
+       "type": "object",
+-      "required": ["experiment", "label", "question", "hashes", "combined_hash",
+-                   "pilot_link", "health", "round_counts", "coins"],
+-      "properties": {
+-        "experiment": {"type": "string"},
+-        "label": {"const": "V1 EXPERIMENT"},
+-        "question": {"type": "string"},
+-        "hashes": {"type": "object"},
+-        "combined_hash": {"type": "string", "minLength": 64, "maxLength": 64},
+-        "pilot_link": {"type": "object",
+-                       "required": ["href", "label"]},
+-        "health": {"type": "object"},
+-        "round_counts": {"type": "object"},
+-        "coins": {"type": "object", "required": ["BTC", "ETH", "SOL"]}
++      "required": [
++        "experiment",
++        "label",
++        "question",
++        "hashes",
++        "combined_hash",
++        "pilot_link",
++        "health",
++        "round_counts",
++        "coins"
++      ],
++      "properties": {
++        "experiment": {
++          "type": "string"
++        },
++        "label": {
++          "const": "V1 EXPERIMENT"
++        },
++        "question": {
++          "type": "string"
++        },
++        "hashes": {
++          "type": "object"
++        },
++        "combined_hash": {
++          "type": "string",
++          "minLength": 64,
++          "maxLength": 64
++        },
++        "pilot_link": {
++          "type": "object",
++          "required": [
++            "href",
++            "label"
++          ]
++        },
++        "health": {
++          "type": "object"
++        },
++        "round_counts": {
++          "type": "object"
++        },
++        "coins": {
++          "type": "object",
++          "required": [
++            "BTC",
++            "ETH",
++            "SOL"
++          ]
++        }
+       },
+       "additionalProperties": false
+     }
 diff --git a/scripts/archive_official.py b/scripts/archive_official.py
 new file mode 100644
 index 0000000..2af96f1
@@ -2093,10 +3991,10 @@ index 0000000..2af96f1
 +    main()
 diff --git a/scripts/arm_official.py b/scripts/arm_official.py
 new file mode 100644
-index 0000000..edfd70b
+index 0000000..9c1323d
 --- /dev/null
 +++ b/scripts/arm_official.py
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,104 @@
 +"""THE OWNER'S EXPLICIT ACTIVATION COMMAND (Mentor Ruling 6).
 +
 +Writes control/official_activation.json — the record the ARMED/OFF service
@@ -2150,6 +4048,12 @@ index 0000000..edfd70b
 +    if not re.fullmatch(r"[0-9a-f]{64}", site_digest):
 +        refuse("--site-digest must be the externally issued 64-hex "
 +               "mentor-approved site digest")
++    # ACTIVATION IS BOUND TO A PASSING PREFLIGHT (Mentor Ruling 016.7)
++    report_path = arg("--preflight-report")
++    report_sha = (arg("--preflight-sha") or "").strip().lower()
++    if not report_path or not re.fullmatch(r"[0-9a-f]{64}", report_sha):
++        refuse("--preflight-report <path> and --preflight-sha <64-hex> are "
++               "required: activation is bound to a passing server preflight")
 +    raw_start = arg("--start-utc") or ""
 +    now = int(time.time())
 +    if raw_start == "next-hour":
@@ -2163,13 +4067,23 @@ index 0000000..edfd70b
 +            refuse(f"--start-utc {start} is not an exact UTC hour")
 +        if start <= now:
 +            refuse(f"--start-utc {start} is not in the future")
-+    from engine import config
++    from engine import config, official
 +    config.check_approved_digest(engine_digest)      # Halt A before any write
 +    config.check_approved_site_digest(site_digest)
 +    record = {"approved": "YES-OFFICIAL-RUN-APPROVED",
 +              "engine_digest": engine_digest, "site_digest": site_digest,
 +              "start_utc": start, "total": 336,
-+              "armed_at": now}
++              "armed_at": now,
++              "preflight": {"report_path": os.path.abspath(report_path),
++                            "report_sha256": report_sha}}
++    # verify the attestation NOW (016.7): report bytes match the supplied
++    # SHA, PASS with exact 18/18, digests + canonical endpoint match this
++    # exact activation, and the report is fresh. The runner reverifies.
++    try:
++        official.verify_preflight_attestation(record, engine_digest,
++                                              site_digest, now)
++    except official.PreflightAttestationError as e:
++        refuse(f"preflight attestation invalid: {e}")
 +    os.makedirs(os.path.dirname(ACTIVATION), exist_ok=True)
 +    tmp = ACTIVATION + ".tmp"
 +    with open(tmp, "w") as f:
@@ -2204,10 +4118,10 @@ index ad73e0e..bdee898 100644
  out2 = os.path.join(ROOT, "docs", "prestart_payload.js")
 diff --git a/scripts/preflight_official.py b/scripts/preflight_official.py
 new file mode 100644
-index 0000000..7178e0f
+index 0000000..f1def75
 --- /dev/null
 +++ b/scripts/preflight_official.py
-@@ -0,0 +1,330 @@
+@@ -0,0 +1,344 @@
 +"""OFFICIAL SERVER PREFLIGHT (Mentor Ruling 014.4) — VALIDATION ONLY.
 +
 +Audited production preflight (hashed into the engine digest). Exactly 18
@@ -2527,12 +4441,26 @@ index 0000000..7178e0f
 +    summary["direct_endpoint_ok"] = endpoint_ok
 +    summary["overall_pass"] = bool(summary["model_calls_pass"]
 +                                   and endpoint_ok)
++    # ATTESTATION FIELDS (Mentor Ruling 016.7): the durable report binds the
++    # exact tree, endpoint and time this preflight validated. arm_official.py
++    # requires the report + its SHA-256 and the runner reverifies both.
++    summary["engine_digest"] = eng
++    summary["site_digest"] = site
++    summary["canonical_endpoint"] = official.OFFICIAL_PAYLOAD_URL
++    summary["timestamp"] = int(time.time())
 +    with open(report, "w") as f:
 +        json.dump({"summary": summary, "results": results}, f, indent=1)
++    report_sha = hashlib.sha256(open(report, "rb").read()).hexdigest()
++    with open(report + ".sha256", "w") as f:
++        f.write(f"{report_sha}  {os.path.basename(report)}\n")
 +    print(json.dumps(summary, indent=1))
 +    print("report:", report)
++    print("report sha256:", report_sha)
 +    print("OFFICIAL PREFLIGHT:",
 +          "PASS" if summary["overall_pass"] else "FAIL")
++    if summary["overall_pass"]:
++        print("To arm: scripts/arm_official.py --confirm ... "
++              f"--preflight-report {report} --preflight-sha {report_sha}")
 +    sys.exit(0 if summary["overall_pass"] else 1)
 +
 +
@@ -2540,13 +4468,14 @@ index 0000000..7178e0f
 +    main()
 diff --git a/scripts/run_official_14d.py b/scripts/run_official_14d.py
 new file mode 100644
-index 0000000..a605d42
+index 0000000..702b9f4
 --- /dev/null
 +++ b/scripts/run_official_14d.py
-@@ -0,0 +1,284 @@
+@@ -0,0 +1,331 @@
 +"""OFFICIAL 14-DAY EXPERIMENT SERVICE — INSTALLED ARMED/OFF, NEVER SELF-ACTIVATING.
 +
-+Runs under systemd (deploy/arena-official.service, Restart=always). Mentor
++Runs under systemd (deploy/arena-official.service, Restart=on-failure —
++crashes/reboots recover; clean completion stays down). Mentor
 +Ruling 6: the service may run indefinitely in ARMED/OFF state — zero model
 +calls, zero scheduling, data-v1 untouched — until the OWNER's explicit
 +activation command (scripts/arm_official.py --confirm) writes
@@ -2565,7 +4494,9 @@ index 0000000..a605d42
 +Environment (systemd EnvironmentFile=/etc/arena/arena.env, never in repo):
 +  ANTHROPIC_API_KEY          required at activation
 +  ARENA_PUBLIC_DIR           default /var/www/arena
-+  ARENA_PUBLIC_PAYLOAD_URL   e.g. https://<vps-host>/live_payload.js
++  ARENA_PUBLIC_PAYLOAD_URL   must equal the canonical frozen endpoint
++                             https://live.akraarena.online/live_payload.js
++                             (or be unset; any other value refuses)
 +  ARENA_DEPLOY_TOKEN         optional, mirror only
 +"""
 +import json
@@ -2607,7 +4538,11 @@ index 0000000..a605d42
 +          and len(a["site_digest"]) == 64
 +          and isinstance(a.get("start_utc"), int)
 +          and a["start_utc"] % 3600 == 0
-+          and a.get("total") == 336)
++          and a.get("total") == 336
++          # Mentor Ruling 016.7: activation carries a preflight attestation
++          and isinstance(a.get("preflight"), dict)
++          and a["preflight"].get("report_path")
++          and a["preflight"].get("report_sha256"))
 +    return a if ok else None
 +
 +
@@ -2632,7 +4567,16 @@ index 0000000..a605d42
 +
 +
 +def live_caller_factory(cfg):
-+    """Real Anthropic Messages caller — identical to the audited pilot one."""
++    """Real Anthropic Messages caller returning the AUDITED RESPONSE ENVELOPE
++    (Mentor Ruling 016.4): parsed decision + actual response model id +
++    response id + stop reason + measured latency + token usage + the raw API
++    response for private audit. engine.rounds archives the envelope verbatim
++    and rejects any response whose actual model id differs from the
++    requested frozen id (it never executes). The validation retry appends the
++    fixed rejection text as a second user message, exactly as the frozen
++    config describes."""
++    import time as time_mod
++
 +    from engine import config as config_mod, rounds
 +    schema = config_mod.load_schema()
 +    common = cfg["request_payloads"]["common"]
@@ -2657,16 +4601,30 @@ index 0000000..a605d42
 +            headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"],
 +                     "anthropic-version": common["anthropic-version"],
 +                     "content-type": "application/json"})
++        t0 = time_mod.monotonic()
 +        try:
 +            with urllib.request.urlopen(req,
 +                                        timeout=common["timeout_seconds"]) as r:
 +                resp = json.loads(r.read().decode())
 +        except Exception as e:
 +            raise rounds.TransportError(str(e)[:200])
++        latency_ms = round((time_mod.monotonic() - t0) * 1000)
++        dec = None
 +        for block in resp.get("content", []):
 +            if block.get("type") == "tool_use":
-+                return block["input"]
-+        raise rounds.TransportError(f"no tool_use (stop={resp.get('stop_reason')})")
++                dec = block["input"]
++        if dec is None:
++            raise rounds.TransportError(
++                f"no tool_use (stop={resp.get('stop_reason')})")
++        return {"decision": dec,
++                "response_model": resp.get("model"),
++                "response_id": resp.get("id"),
++                "stop_reason": resp.get("stop_reason"),
++                "latency_ms": latency_ms,
++                "token_usage": resp.get("usage"),
++                # full API response for the private attempts archive; the
++                # request key is never part of a response body
++                "raw_response": json.dumps(resp, default=str)}
 +    return caller
 +
 +
@@ -2780,6 +4738,20 @@ index 0000000..a605d42
 +        # tree BEFORE any state initialization or network use.
 +        config.check_approved_digest(act["engine_digest"])
 +        config.check_approved_site_digest(act["site_digest"])
++        # ACTIVATION IS BOUND TO A PASSING PREFLIGHT (Ruling 016.7): the
++        # service REVERIFIES the attestation — report bytes, PASS, digests,
++        # endpoint, freshness — before creating the first schedule.
++        try:
++            official.verify_preflight_attestation(
++                act, act["engine_digest"], act["site_digest"], time.time())
++        except official.PreflightAttestationError as e:
++            official.write_health(public_dir(), {
++                "state": "ARMED_OFF", "pid": os.getpid(),
++                "mode": official.MODE, "updated": time.time(),
++                "note": f"activation refused: {e}"})
++            print(f"REFUSED: {e}. No model call was made; ARMED/OFF.")
++            time.sleep(ARMED_POLL_S)
++            continue
 +        if not os.environ.get("ANTHROPIC_API_KEY"):
 +            print("REFUSED: ANTHROPIC_API_KEY not set. No model call was "
 +                  "made.")
@@ -2811,7 +4783,10 @@ index 0000000..a605d42
 +                mirror=mirror_factory(), snapshot_dir=SNAPSHOT_DIR,
 +                disarm_check=official.make_disarm_check(ACTIVATION, act_sha))
 +        except official.Disarmed as e:
-+            official.rollback_unstarted(OFFICIAL_STORE)
++            # Ruling 016.8: the public payload from the unstarted run is
++            # removed too — the public state visibly returns to ARMED_OFF
++            official.rollback_unstarted(OFFICIAL_STORE,
++                                        public_dir=public_dir())
 +            official.write_health(public_dir(), {
 +                "state": "ARMED_OFF", "pid": os.getpid(),
 +                "mode": official.MODE, "updated": time.time(),
@@ -2830,10 +4805,10 @@ index 0000000..a605d42
 +    main()
 diff --git a/scripts/verify_deployment.py b/scripts/verify_deployment.py
 new file mode 100644
-index 0000000..fb38dec
+index 0000000..6385bf3
 --- /dev/null
 +++ b/scripts/verify_deployment.py
-@@ -0,0 +1,209 @@
+@@ -0,0 +1,272 @@
 +"""POST-DEPLOYMENT VERIFICATION (Mentor Rulings 014.6 + 015.5) — read-only.
 +
 +Run ON the server after any deployment. Proves the installed service and the
@@ -2852,8 +4827,9 @@ index 0000000..fb38dec
 +Effective HTTPS is verified live: https://live.akraarena.online/health.json
 +answers 200 and plain http redirects (301/308) to https.
 +
-+usage: venv/bin/python scripts/verify_deployment.py [--engine-digest <64hex>]
-+                                                    [--skip-https]
++usage: venv/bin/python scripts/verify_deployment.py \
++           --engine-digest <64hex> --site-digest <64hex> [--skip-https]
++Both externally issued digests are REQUIRED (Ruling 016.6).
 +"""
 +import hashlib
 +import os
@@ -2871,17 +4847,23 @@ index 0000000..fb38dec
 +APPROVED_LOCATION_RE = (
 +    r"^/(live_payload\.js|live_payload\.sha256|health\.json)$")
 +FORBIDDEN_DIRECTIVES = ("proxy_pass", "fastcgi_pass", "uwsgi_pass",
-+                        "scgi_pass", "grpc_pass", "dav_methods")
++                        "scgi_pass", "grpc_pass", "dav_methods", "alias",
++                        "autoindex", "rewrite", "client_body_in_file_only",
++                        "upload_store")
 +REQUIRED_IN_PAYLOAD_LOCATION = (
 +    "limit_except GET { deny all; }",
 +    'add_header Access-Control-Allow-Origin "*" always;',
 +    'add_header Cache-Control "no-store, must-revalidate" always;',
 +)
++# certbot's managed HTTP->HTTPS redirect, the ONLY if-block allowed anywhere
++CERTBOT_REDIRECT_IF = re.compile(
++    r"if\s*\(\s*\$host\s*=\s*" + re.escape(HOSTNAME)
++    + r"\s*\)\s*\{\s*return\s+301\s+https://\$host\$request_uri;\s*\}")
 +
 +
 +def _blocks(text, keyword):
 +    """Yield the full text of `keyword ... { ... }` blocks, brace-matched."""
-+    for m in re.finditer(rf"(^|\n)\s*{keyword}\b[^{{]*{{", text):
++    for m in re.finditer(rf"(^|\n)\s*{keyword}\b[^{{;]*{{", text):
 +        depth, i = 1, m.end()
 +        while i < len(text) and depth:
 +            if text[i] == "{":
@@ -2892,40 +4874,91 @@ index 0000000..fb38dec
 +        yield text[m.start():i]
 +
 +
++def _strip_comments(text):
++    return "\n".join(ln.split("#", 1)[0] for ln in text.splitlines())
++
++
++def _server_level_returns(block):
++    """`return` statements at SERVER level (outside location/if blocks)."""
++    inner = block.split("{", 1)[1].rsplit("}", 1)[0]
++    for sub in list(_blocks(inner, "location")) + list(_blocks(inner, "if")):
++        inner = inner.replace(sub, "")
++    return re.findall(r"return\s+[^;]+;", inner)
++
++
 +def analyze_nginx(effective_text):
-+    """Pure analysis of the effective nginx config (Ruling 015.5). Returns a
-+    list of (check_name, ok, detail) tuples for the frozen hostname's server
-+    blocks."""
++    """Pure analysis of the effective nginx config (Rulings 015.5 + 016.6),
++    understanding the normal certbot layout: EXACTLY one HTTPS content block
++    for the frozen hostname exposing only the three approved files, and
++    EXACTLY one HTTP block doing nothing but the exact HTTPS redirect.
++    Returns (check_name, ok, detail) tuples."""
 +    out = []
-+    servers = [b for b in _blocks(effective_text, "server")
++    text = _strip_comments(effective_text)
++    servers = [b for b in _blocks(text, "server")
 +               if re.search(rf"server_name\s+[^;]*\b{re.escape(HOSTNAME)}\b",
 +                            b)]
-+    out.append((f"server block(s) for {HOSTNAME} present", bool(servers),
-+                f"{len(servers)} found"))
-+    payload_loc_seen = False
++    https = [b for b in servers if re.search(r"listen\s+[^;]*443", b)]
++    http = [b for b in servers if b not in https]
++    out.append((f"exactly one HTTPS content block for {HOSTNAME}",
++                len(https) == 1, f"{len(https)} found"))
++    out.append((f"exactly one HTTP redirect block for {HOSTNAME}",
++                len(http) == 1, f"{len(http)} found"))
++
 +    for b in servers:
 +        for d in FORBIDDEN_DIRECTIVES:
-+            out.append((f"no {d} in {HOSTNAME} block",
++            out.append((f"no {d} in {HOSTNAME} blocks",
 +                        not re.search(rf"\b{d}\b", b), ""))
-+        locations = list(_blocks(b, "location"))
-+        for loc in locations:
++
++    if https:
++        b = https[0]
++        # server-level returns are forbidden in the content block
++        rets = _server_level_returns(b)
++        out.append(("no server-level return in the HTTPS block", not rets,
++                    "; ".join(rets)[:60]))
++        out.append(("no if-blocks in the HTTPS block",
++                    not list(_blocks(b.split("{", 1)[1], "if")), ""))
++        out.append(("root /var/www/arena in the HTTPS block",
++                    "root /var/www/arena;" in b, ""))
++        payload_loc_seen = False
++        for loc in _blocks(b.split("{", 1)[1], "location"):
 +            header = loc.split("{", 1)[0].strip()
 +            if re.fullmatch(r"location\s+/", header):
 +                body = loc.split("{", 1)[1].rsplit("}", 1)[0]
 +                ok = re.fullmatch(r"\s*return\s+404;\s*", body) is not None
 +                out.append(("location / returns 404 and nothing else",
-+                            bool(ok), header))
-+            elif APPROVED_LOCATION_RE in loc.replace("\\\\", "\\"):
++                            bool(ok), ""))
++            elif APPROVED_LOCATION_RE in loc:
 +                payload_loc_seen = True
 +                for req in REQUIRED_IN_PAYLOAD_LOCATION:
 +                    out.append((f"payload location has: {req[:44]}",
 +                                req in loc, ""))
 +            else:
-+                out.append(("no unexpected location block", False, header))
-+        out.append(("root /var/www/arena in server block",
-+                    "root /var/www/arena;" in b, ""))
-+    out.append(("approved three-file payload location present",
-+                payload_loc_seen, APPROVED_LOCATION_RE))
++                out.append(("no unexpected location block", False,
++                            header[:60]))
++        out.append(("approved three-file payload location present",
++                    payload_loc_seen, ""))
++
++    if http:
++        b = http[0]
++        body = b.split("{", 1)[1].rsplit("}", 1)[0]
++        ifs = list(_blocks(body, "if"))
++        redirect_ok = len(ifs) == 1 and bool(CERTBOT_REDIRECT_IF.search(
++            re.sub(r"\s+", " ", ifs[0])))
++        out.append(("HTTP block contains exactly the approved HTTPS "
++                    "redirect", redirect_ok, ""))
++        out.append(("no location blocks in the HTTP redirect block",
++                    not list(_blocks(body, "location")), ""))
++        residue = body
++        for sub in ifs:
++            residue = residue.replace(sub, "")
++        stmts = [s.strip() for s in residue.split(";") if s.strip()]
++        allowed = all(s.startswith(("listen", "server_name", "return 404"))
++                      for s in stmts)
++        out.append(("HTTP block does nothing else (listen/server_name/"
++                    "return 404 only)", allowed,
++                    "; ".join(s for s in stmts
++                              if not s.startswith(("listen", "server_name",
++                                                   "return 404")))[:60]))
 +    return out
 +
 +
@@ -2978,16 +5011,21 @@ index 0000000..fb38dec
 +        print(f"{'PASS' if ok else 'FAIL'}  {name}"
 +              + (f"  ({detail})" if detail else ""))
 +
-+    # 1. tree digests reproduce (and optionally match the issued digest)
++    # 1. BOTH externally issued digests are REQUIRED (Ruling 016.6) and the
++    # deployed tree must match them exactly.
++    issued_eng = (arg("--engine-digest") or "").strip().lower()
++    issued_site = (arg("--site-digest") or "").strip().lower()
++    if not re.fullmatch(r"[0-9a-f]{64}", issued_eng) \
++            or not re.fullmatch(r"[0-9a-f]{64}", issued_site):
++        print("REFUSED: --engine-digest and --site-digest (both externally "
++              "issued 64-hex values) are required.")
++        sys.exit(2)
 +    man = config.build_manifest()["combined"]
-+    issued = (arg("--engine-digest") or "").strip().lower()
-+    if issued:
-+        check("engine digest matches externally issued value", man == issued,
-+              man[:16] + "…")
-+    else:
-+        print(f"INFO  current engine digest: {man}")
-+        print(f"INFO  current site digest:   "
-+              f"{config.build_site_manifest()['combined']}")
++    site = config.build_site_manifest()["combined"]
++    check("engine digest matches externally issued value", man == issued_eng,
++          man[:16] + "…")
++    check("site digest matches externally issued value", site == issued_site,
++          site[:16] + "…")
 +
 +    # 2. installed systemd unit byte-identical to the audited template
 +    tmpl = os.path.join(ROOT, "deploy", "arena-official.service")
@@ -3045,10 +5083,10 @@ index 0000000..fb38dec
 +    main()
 diff --git a/tests/test_official.py b/tests/test_official.py
 new file mode 100644
-index 0000000..0b71051
+index 0000000..a59bed9
 --- /dev/null
 +++ b/tests/test_official.py
-@@ -0,0 +1,358 @@
+@@ -0,0 +1,362 @@
 +"""Official 14-day runner (post-pilot Mentor Rulings 1, 2, 3, 5, 6, 8):
 +direct VPS publication with checksum verification, explicit sub-budgets
 +inside the unchanged hard T+12:00 deadline, sealed 336-boundary UTC schedule,
@@ -3342,9 +5380,13 @@ index 0000000..0b71051
 +    assert mod.read_activation() is None             # malformed => ARMED/OFF
 +    eng, site = digests()
 +    good = {"approved": "YES-OFFICIAL-RUN-APPROVED", "engine_digest": eng,
-+            "site_digest": site, "start_utc": T0, "total": 336}
++            "site_digest": site, "start_utc": T0, "total": 336,
++            "preflight": {"report_path": "/srv/preflight_report.json",
++                          "report_sha256": "ab" * 32}}
 +    for corrupt in ({"approved": "yes"}, {"start_utc": T0 + 17},
-+                    {"total": 12}, {"engine_digest": "short"}):
++                    {"total": 12}, {"engine_digest": "short"},
++                    {"preflight": None},             # Ruling 016.7
++                    {"preflight": {"report_path": ""}}):
 +        act.write_text(json.dumps({**good, **corrupt}))
 +        assert mod.read_activation() is None         # every field enforced
 +    act.write_text(json.dumps(good))
@@ -4050,10 +6092,10 @@ index 0000000..2c53f5f
 +    assert "GitHub Pages" in readme                  # dashboard role stated
 diff --git a/tests/test_ruling015.py b/tests/test_ruling015.py
 new file mode 100644
-index 0000000..fc69c56
+index 0000000..9c530cf
 --- /dev/null
 +++ b/tests/test_ruling015.py
-@@ -0,0 +1,451 @@
+@@ -0,0 +1,478 @@
 +"""Mentor Ruling 015 remediation regressions: pristine official-state launch
 +gate, disarm surviving service stop/reboot via activation binding,
 +transactional pair/replay resolution (no commit after T+630), strict
@@ -4147,7 +6189,6 @@ index 0000000..fc69c56
 +        os.path.join(store, "state.json"), expect_full_roster=True)
 +    assert all(str(a["E"]) == "10000.00" and a["qty"] == 0
 +               for a in accounts.values())
-+    official.verify_pristine_official_state(store)   # round-trips clean
 +
 +
 +def test_started_schedule_uses_restart_path_not_pristine(cfg):
@@ -4444,8 +6485,36 @@ index 0000000..fc69c56
 +
 +# ---- 015.5 hardened deployment verifier ----
 +
-+GOOD_NGINX = open(os.path.join(config.ROOT, "deploy",
-+                               "nginx-arena.conf")).read()
++# the standard safe post-certbot two-block layout (Ruling 016.6)
++GOOD_NGINX = """
++server {
++    server_name live.akraarena.online;
++    root /var/www/arena;
++    location / { return 404; }
++    location ~ ^/(live_payload\\.js|live_payload\\.sha256|health\\.json)$ {
++        limit_except GET { deny all; }
++        add_header Access-Control-Allow-Origin "*" always;
++        add_header Cache-Control "no-store, must-revalidate" always;
++        add_header X-Content-Type-Options "nosniff" always;
++        try_files $uri =404;
++    }
++    listen [::]:443 ssl ipv6only=on; # managed by Certbot
++    listen 443 ssl; # managed by Certbot
++    ssl_certificate /etc/letsencrypt/live/live.akraarena.online/fullchain.pem; # managed by Certbot
++    ssl_certificate_key /etc/letsencrypt/live/live.akraarena.online/privkey.pem; # managed by Certbot
++    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
++    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
++}
++server {
++    if ($host = live.akraarena.online) {
++        return 301 https://$host$request_uri;
++    } # managed by Certbot
++    listen 80;
++    listen [::]:80;
++    server_name live.akraarena.online;
++    return 404; # managed by Certbot
++}
++"""
 +
 +
 +def _fails(checks):
@@ -4505,3 +6574,677 @@ index 0000000..fc69c56
 +        text = open(os.path.join(config.ROOT, rel)).read()
 +        assert "Restart=always" not in text, rel
 +        assert "ARENA_VPS_HOST" not in text, rel
+diff --git a/tests/test_ruling016.py b/tests/test_ruling016.py
+new file mode 100644
+index 0000000..3e5699c
+--- /dev/null
++++ b/tests/test_ruling016.py
+@@ -0,0 +1,668 @@
++"""Mentor Ruling 016 remediation regressions: causal live event order
++(pre-decision replay), whole-store launch allowlist, durability-transactional
++T+630/T+720, audited production response envelope, reconciled configuration,
++certbot-aware nginx verifier, preflight-bound activation, and cleanup items.
++All offline and deterministic."""
++import importlib.util
++import json
++import os
++import tempfile
++import time
++from decimal import Decimal
++
++import pytest
++
++from conftest import T0, ScriptedCaller, flat_decision, load_fix, long_decision
++from engine import (config, marketdata, official, persistence, pilot,
++                    recovery, rounds, state)
++from test_official import direct, provisioned_official, run_official
++from test_ruling010 import PilotClock, digests
++from test_ruling011 import _sol_price
++from test_ruling014 import ManualClock
++
++HOUR = 3600
++T1 = T0 + HOUR
++
++
++def _load_script(name):
++    spec = importlib.util.spec_from_file_location(
++        name, os.path.join(config.ROOT, "scripts", f"{name}.py"))
++    mod = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(mod)
++    return mod
++
++
++def _prod_store():
++    store = tempfile.mkdtemp(prefix="arena-r16-")
++    persistence.save_state(store + "/state.json", state.init_accounts(),
++                           {"boundary": None})
++    config.write_launch_manifest(store)
++    return store
++
++
++def snapshots_at(T):
++    return {c: marketdata.build_snapshot(c, load_fix(c, "1m"),
++                                         load_fix(c, "1h"),
++                                         load_fix(c, "1d"), T)
++            for c in ("BTC", "ETH", "SOL")}
++
++
++def mk_candles(t0, n, price, dip_to=None, rise_to=None, at=30):
++    """n flat 1m candles from t0; optionally one dip/spike at index `at`."""
++    p = Decimal(str(price))
++    out = []
++    for i in range(n):
++        c = {"t": t0 + i * 60, "o": p, "h": p, "l": p, "c": p,
++             "v": Decimal("1")}
++        if i == at and dip_to is not None:
++            c["l"] = Decimal(str(dip_to))
++        if i == at and rise_to is not None:
++            c["h"] = Decimal(str(rise_to))
++        out.append(c)
++    return out
++
++
++def _open_sol_positions(cfg, decision, both_arms=True):
++    """Boundary 1 at T0: open the scripted SOL position(s); returns store."""
++    store = _prod_store()
++    script = {"sol_haiku_raw": dict(decision)}
++    if both_arms:
++        script["sol_haiku_ta"] = dict(decision)
++    recovery.run_checkpointed(T0, snapshots_at(T0), ScriptedCaller(script),
++                              cfg, store)
++    return store
++
++
++def _boundary2(store, cfg, candles, caller=None, crash_at=None):
++    spec = {"SOL": {"start": T0, "end": T1, "candles": candles}}
++    return recovery.run_checkpointed(
++        T1, snapshots_at(T1), caller or ScriptedCaller({}), cfg, store,
++        pre_replay_spec=spec, crash_at=crash_at)
++
++
++# ---- 016.1 causal live event order (CRITICAL) ----
++
++def test_prior_hour_stop_hit_makes_T_prompt_flat(cfg):
++    p = float(_sol_price())
++    store = _open_sol_positions(cfg, long_decision(p, 2000))
++    stop = p * 0.97
++    _boundary2(store, cfg, mk_candles(T0, 60, p, dip_to=stop * 0.999))
++    arch = persistence.read_prompt_archive(store, f"v1-ALL-{T1}")
++    for aid in ("sol_haiku_raw", "sol_haiku_ta"):    # Raw AND TA corrected
++        user = arch[aid]["user"]
++        assert "flat — no position" in user          # stop applied BEFORE T
++        assert "Closed trades (1" in user            # and visible in prompt
++        assert "stop_loss" in user
++    accounts, _ = persistence.load_state(store + "/state.json")
++    tr = accounts["sol_haiku_raw"]["trades"][0]
++    assert tr["reason"] == "stop_loss"
++    assert tr["closed_ts"] < T1                      # exit belongs to pre-T
++
++
++def test_prior_hour_take_profit_makes_T_prompt_flat(cfg):
++    p = float(_sol_price())
++    store = _open_sol_positions(cfg, long_decision(p, 2000))
++    _boundary2(store, cfg, mk_candles(T0, 60, p, rise_to=p * 1.06))
++    user = persistence.read_prompt_archive(
++        store, f"v1-ALL-{T1}")["sol_haiku_raw"]["user"]
++    assert "flat — no position" in user
++    assert "take_profit" in user
++
++
++def test_prior_hour_invalidation_latch_visible_in_T_prompt(cfg):
++    p = float(_sol_price())
++    d = dict(long_decision(p, 2000), stop_loss=None, take_profit=None,
++             invalidation={"timeframe": "1m_intrabar",
++                           "operator": "price_at_or_below",
++                           "level": p * 0.98})
++    store = _open_sol_positions(cfg, d, both_arms=False)
++    hold = dict(long_decision(p, 2000), stop_loss=None, take_profit=None,
++                invalidation=None)                   # post-trigger: hold
++    _boundary2(store, cfg, mk_candles(T0, 60, p, dip_to=p * 0.975),
++               caller=ScriptedCaller({"sol_haiku_raw": hold}))
++    user = persistence.read_prompt_archive(
++        store, f"v1-ALL-{T1}")["sol_haiku_raw"]["user"]
++    assert "Status: TRIGGERED" in user               # latch visible at T
++    accounts, _ = persistence.load_state(store + "/state.json")
++    a = accounts["sol_haiku_raw"]
++    assert a["qty"] != 0                             # position still open
++    assert a["lifecycle"]["triggered"] is not None   # latch is permanent
++    assert a["lifecycle"]["post_trigger_action"] in ("held", "reduced",
++                                                     "increased")
++
++
++def test_T_action_never_touched_by_pre_T_candle(cfg):
++    """The mentor's reproduced hole: pre-T stop exit + new T decision. The
++    exit must settle the OLD position only, and the T action opens a FRESH
++    lifecycle starting exactly at T — increasing at T can never enlarge an
++    exit that happened before T."""
++    p = float(_sol_price())
++    store = _open_sol_positions(cfg, long_decision(p, 2000),
++                                both_arms=False)
++    accounts0, _ = persistence.load_state(store + "/state.json")
++    old_qty = accounts0["sol_haiku_raw"]["qty"]
++    p1 = float(snapshots_at(T1)["SOL"]["P_T"])
++    reopen = long_decision(p1, 4000)                 # bigger position at T
++    ledger, _, _ = _boundary2(
++        store, cfg, mk_candles(T0, 60, p, dip_to=p * 0.968),
++        caller=ScriptedCaller({"sol_haiku_raw": reopen}))
++    accounts, _ = persistence.load_state(store + "/state.json")
++    a = accounts["sol_haiku_raw"]
++    tr = a["trades"][0]
++    assert tr["reason"] == "stop_loss" and tr["closed_ts"] < T1
++    assert Decimal(tr["qty"]) == abs(old_qty)        # OLD size only
++    assert a["lifecycle"]["start_t"] == T1           # fresh T lifecycle
++    assert a["qty"] != 0
++    pair = [e for e in ledger if e.get("pair") == "sol_haiku"][0]
++    assert pair["status"] == "PAIR_COMMITTED"
++
++
++def test_crash_between_pre_replay_and_prompts_is_idempotent(cfg):
++    p = float(_sol_price())
++    store = _open_sol_positions(cfg, long_decision(p, 2000),
++                                both_arms=False)
++    candles = mk_candles(T0, 60, p, dip_to=p * 0.968, at=45)
++    with pytest.raises(recovery.CrashError):
++        _boundary2(store, cfg, candles, crash_at="during_pre_replay")
++    # no prompt archived yet => recovery resumes WITHOUT aborting the pairs
++    recovery.recover(store)
++    _, meta = persistence.load_state(store + "/state.json")
++    assert not meta.get("_recovering")
++    ledger, _, _ = _boundary2(store, cfg, candles)
++    accounts, meta = persistence.load_state(store + "/state.json")
++    assert len(accounts["sol_haiku_raw"]["trades"]) == 1   # never twice
++    assert meta["boundary_complete"] is True
++    pair = [e for e in ledger if e.get("pair") == "sol_haiku"][0]
++    assert pair["status"] == "PAIR_COMMITTED"        # resumed, not aborted
++
++
++def test_pre_replay_spec_must_be_strictly_pre_T(cfg):
++    store = _prod_store()
++    bad = {"SOL": {"start": T0, "end": T1 + 60,
++                   "candles": mk_candles(T0, 61, 100)}}
++    with pytest.raises(ValueError):
++        recovery.run_checkpointed(T1, snapshots_at(T1), ScriptedCaller({}),
++                                  cfg, store, pre_replay_spec=bad)
++
++
++def test_incomplete_pre_replay_blocks_coin_with_zero_calls(cfg):
++    """A gap in the pre-decision candles => CATCHUP_REQUIRED before prompts:
++    the coin's pairs abort DATA_UNAVAILABLE with zero model calls."""
++    p = float(_sol_price())
++    store = _open_sol_positions(cfg, long_decision(p, 2000),
++                                both_arms=False)
++    candles = [c for i, c in enumerate(mk_candles(T0, 60, p)) if i != 30]
++    caller = ScriptedCaller({})
++    ledger, _, _ = _boundary2(store, cfg, candles, caller=caller)
++    assert not any(c.startswith("sol") for c in
++                   (x["id"] for x in caller.calls))  # zero SOL model calls
++    sol = [e for e in ledger if e.get("pair") == "sol_haiku"][0]
++    assert sol["status"] == "PAIR_ABORTED" and sol["reason"] == "DATA_UNAVAILABLE"
++
++
++def test_official_runner_uses_pre_decision_replay(cfg, monkeypatch):
++    seen = {}
++    real = recovery.run_checkpointed
++
++    def spy(T, snaps, caller, cfg_, store_, **kw):
++        seen.update(kw)
++        return real(T, snaps, caller, cfg_, store_, **kw)
++    monkeypatch.setattr(recovery, "run_checkpointed", spy)
++    store = provisioned_official(n=1)
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    run_official(store, cfg, ScriptedCaller({}), dp, vc)
++    assert seen.get("pre_replay_spec") is not None   # causal order
++    assert seen.get("replay_spec") is None           # legacy path unused
++    assert seen["hard_deadline"] == T0 + 720
++
++
++# ---- 016.2 whole-store pristine allowlist ----
++
++CONTAMINANTS = {
++    "ledger": lambda s: open(os.path.join(s, "ledger.jsonl"), "w").write(
++        '{"round_id": "v1-BTC-old", "status": "PAIR_COMMITTED"}\n'),
++    "prompts": lambda s: os.makedirs(os.path.join(s, "prompts", "old")),
++    "attempts": lambda s: os.makedirs(os.path.join(s, "attempts", "old")),
++    "publish": lambda s: os.makedirs(os.path.join(s, "publish")),
++    "publications": lambda s: open(
++        os.path.join(s, "publications.json"), "w").write("{}"),
++    "binding": lambda s: open(
++        os.path.join(s, official.BINDING_NAME), "w").write("{}"),
++    "tempfile": lambda s: open(os.path.join(s, "state.json.tmp"), "w").write(""),
++    "unknown": lambda s: open(os.path.join(s, "junk.bin"), "w").write("x"),
++}
++
++
++@pytest.mark.parametrize("name", sorted(CONTAMINANTS))
++def test_contaminated_store_refused_before_first_schedule(name):
++    store = tempfile.mkdtemp(prefix="arena-r16c-")
++    persistence.save_state(os.path.join(store, "state.json"),
++                           state.init_accounts(), {"boundary": None})
++    CONTAMINANTS[name](store)
++    eng, site = digests()
++    with pytest.raises(official.PristineError):
++        official.provision_official(store, eng, site, T0, total=2)
++    assert not os.path.exists(os.path.join(store, pilot.SCHEDULE_NAME))
++
++
++# ---- 016.3 durability-transactional T+630 / T+720 ----
++
++def _sol_pair_pristine(store):
++    accounts, _ = persistence.load_state(store + "/state.json")
++    for aid in ("sol_haiku_raw", "sol_haiku_ta"):
++        a = accounts[aid]
++        assert str(a["E"]) == "10000.00" and a["qty"] == 0
++        assert a["trades"] == [] and str(a["fees_total"]) == "0"
++        assert a["lifecycles"] == []
++
++
++def _slow_stage_run(cfg, monkeypatch, delay_hook):
++    """Common rig: SOL long pair; clock starts at 600 (< 630); `delay_hook`
++    arms a slowdown of a specific durability-preparation stage."""
++    store = _prod_store()
++    clock = ManualClock(600.0)
++    armed = {"on": False}
++    delay_hook(monkeypatch, clock, armed)
++    real_commit = rounds._commit_account
++
++    def arming_commit(acct, dec, snap, T):
++        armed["on"] = True                           # preparation has begun
++        return real_commit(acct, dec, snap, T)
++    monkeypatch.setattr(recovery.rounds, "_commit_account", arming_commit)
++    d = long_decision(float(_sol_price()), 2000)
++    ledger, _, _ = recovery.run_checkpointed(
++        T0, snapshots_at(T0), ScriptedCaller({"sol_haiku_raw": d}), cfg,
++        store, clock=clock, deadline=100000.0, resolution_deadline=630.0)
++    sol = [e for e in ledger if e.get("pair") == "sol_haiku"][0]
++    assert sol["status"] == "PAIR_ABORTED"
++    assert sol["reason"] == "deadline_exceeded"
++    _sol_pair_pristine(store)                        # nothing survived
++    led = persistence.read_ledger(os.path.join(store, "ledger.jsonl"))
++    assert not [e for e in led if e.get("e") == "executed_attempt"
++                and e.get("pair") == "sol_haiku"]
++    _, meta = persistence.load_state(store + "/state.json")
++    assert meta["boundary_complete"] is True
++
++
++def test_slow_serialization_discards_durable_commit(cfg, monkeypatch):
++    def hook(monkeypatch, clock, armed):
++        real = persistence._enc_all
++
++        def slow_enc(accounts):
++            if armed["on"]:
++                clock.t += 200.0
++            return real(accounts)
++        monkeypatch.setattr(persistence, "_enc_all", slow_enc)
++    _slow_stage_run(cfg, monkeypatch, hook)
++
++
++def test_slow_fsync_before_replacement_discards_commit(cfg, monkeypatch):
++    """The mentor's exact hole: persistence crosses the deadline AFTER the
++    old post-preparation check. The clock is now read immediately before the
++    atomic replacement, so the fsynced temp is discarded."""
++    def hook(monkeypatch, clock, armed):
++        real = os.fsync
++
++        def slow_fsync(fd):
++            if armed["on"]:
++                clock.t += 200.0
++            return real(fd)
++        monkeypatch.setattr(persistence.os, "fsync", slow_fsync)
++    _slow_stage_run(cfg, monkeypatch, hook)
++
++
++def test_slow_outbox_preparation_discards_commit(cfg, monkeypatch):
++    def hook(monkeypatch, clock, armed):
++        real = persistence.outbox_add
++
++        def slow_outbox(meta, event_id, payload):
++            if armed["on"] and ":exec:" in event_id:
++                clock.t += 200.0
++            return real(meta, event_id, payload)
++        monkeypatch.setattr(persistence, "outbox_add", slow_outbox)
++        monkeypatch.setattr(recovery.persistence, "outbox_add", slow_outbox)
++    _slow_stage_run(cfg, monkeypatch, hook)
++
++
++def test_slow_replay_persistence_discards_candle(cfg, monkeypatch):
++    """Replay candle whose durable write crosses the deadline: discarded
++    whole; watermark preserved; CATCHUP latched."""
++    p = float(_sol_price())
++    store = _open_sol_positions(cfg, long_decision(p, 2000),
++                                both_arms=False)
++    clock = ManualClock(600.0)
++    real = os.fsync
++    armed = {"on": False}
++
++    def slow_fsync(fd):
++        if armed["on"]:
++            clock.t += 200.0
++        return real(fd)
++    monkeypatch.setattr(persistence.os, "fsync", slow_fsync)
++    armed["on"] = True
++    spec = {"SOL": {"start": T0, "end": T1,
++                    "candles": mk_candles(T0, 60, p, dip_to=p * 0.968)}}
++    recovery.run_checkpointed(
++        T1, snapshots_at(T1), ScriptedCaller({}), cfg, store, clock=clock,
++        deadline=100000.0, pre_replay_spec=spec, replay_deadline=630.0)
++    accounts, meta = persistence.load_state(store + "/state.json")
++    assert accounts["sol_haiku_raw"]["trades"] == []     # stop NOT applied
++    assert meta["replay_watermark"].get("SOL") is None   # nothing advanced
++    assert meta["replay_state"]["SOL"]["status"] == "CATCHUP_REQUIRED"
++    assert meta["boundary_complete"] is True
++
++
++def test_late_boundary_completion_is_never_silent(cfg):
++    """Completion persisting after the hard T+720 bound is still terminal
++    but explicitly recorded (late_termination_at + ledger event)."""
++    store = _prod_store()
++    clock = ManualClock(0.0)
++
++    def slow_caller(aid, system, user, retry):
++        clock.t += 100.0                             # 18 calls => T+1800
++        return flat_decision()
++    ledger, _, _ = recovery.run_checkpointed(
++        T0, snapshots_at(T0), slow_caller, cfg, store, clock=clock,
++        deadline=100000.0, hard_deadline=720.0)
++    _, meta = persistence.load_state(store + "/state.json")
++    assert meta["boundary_complete"] is True
++    assert meta["late_termination_at"] >= 720.0
++    late = [e for e in ledger if e.get("e") == "LATE_TERMINATION"]
++    assert late and late[0]["hard_deadline"] == 720.0
++
++
++# ---- 016.4 audited production response envelope ----
++
++def _envelope_caller(cfg, mutate=None):
++    def caller(aid, system, user, retry):
++        want = cfg["models"][aid.split("_")[1]]["model"]
++        env = {"decision": flat_decision(), "response_model": want,
++               "response_id": f"msg_{aid}_{retry is not None}",
++               "stop_reason": "tool_use", "latency_ms": 123,
++               "token_usage": {"input_tokens": 900, "output_tokens": 80},
++               "raw_response": json.dumps({"model": want})}
++        if mutate:
++            mutate(aid, env)
++        return env
++    return caller
++
++
++def test_wrong_returned_model_never_executes_and_is_archived(cfg):
++    store = _prod_store()
++
++    def mutate(aid, env):
++        if aid == "sol_haiku_raw":
++            env["response_model"] = env["response_model"] + "-imposter"
++    ledger, attempts, _ = recovery.run_checkpointed(
++        T0, snapshots_at(T0), _envelope_caller(cfg, mutate), cfg, store)
++    sol = [e for e in ledger if e.get("pair") == "sol_haiku"][0]
++    assert sol["status"] == "PAIR_ABORTED"
++    assert sol["reason"] == "identity_mismatch"      # never executed
++    recs = [r for r in attempts if r["account_id"] == "sol_haiku_raw"]
++    assert recs and all(r.get("identity_mismatch") is True for r in recs)
++    assert all(r["returned_model"].endswith("-imposter") for r in recs)
++    accounts, _ = persistence.load_state(store + "/state.json")
++    assert accounts["sol_haiku_raw"]["n_decisions"] == 0
++
++
++def test_actual_response_metadata_is_archived_verbatim(cfg):
++    store = _prod_store()
++    _, attempts, _ = recovery.run_checkpointed(
++        T0, snapshots_at(T0), _envelope_caller(cfg), cfg, store)
++    rec = [r for r in attempts if r["account_id"] == "btc_haiku_raw"][0]
++    assert rec["returned_model"] == cfg["models"]["haiku"]["model"]
++    assert rec["latency_ms"] == 123                  # measured, not assumed
++    assert rec["token_usage"] == {"input_tokens": 900, "output_tokens": 80}
++    assert rec["response_id"].startswith("msg_btc_haiku_raw")
++    assert rec["stop_reason"] == "tool_use"
++    disk = json.load(open(persistence.attempt_path(store, rec)))
++    assert disk["latency_ms"] == 123 and disk["response_id"] == rec["response_id"]
++
++
++def test_legacy_caller_metadata_is_null_never_fabricated(cfg):
++    store = _prod_store()
++    _, attempts, _ = recovery.run_checkpointed(
++        T0, snapshots_at(T0), ScriptedCaller({}), cfg, store)
++    rec = attempts[0]
++    assert rec["returned_model"] is None             # unknown stays unknown
++    assert rec["latency_ms"] is None
++    assert rec["token_usage"] is None
++
++
++def test_validation_retry_preserves_true_metadata(cfg):
++    store = _prod_store()
++    bad = dict(long_decision(float(_sol_price()), 2000), invalidation=None)
++
++    def mutate(aid, env):
++        if aid == "sol_haiku_raw" and "True" not in env["response_id"]:
++            env["decision"] = dict(bad)              # first try: sem-invalid
++    _, attempts, _ = recovery.run_checkpointed(
++        T0, snapshots_at(T0), _envelope_caller(cfg, mutate), cfg, store)
++    recs = sorted((r for r in attempts if r["account_id"] == "sol_haiku_raw"),
++                  key=lambda r: r["attempt_number"])
++    assert len(recs) == 2                            # initial + retry
++    assert recs[0]["semantic_validation_result"] == "invalid"
++    assert recs[1]["semantic_validation_result"] == "valid"
++    assert recs[0]["response_id"] != recs[1]["response_id"]  # true per-attempt
++
++
++def test_retry_conversation_matches_frozen_config():
++    desc = config.load_config()["request_payloads"]["common"]["messages"]
++    assert "SECOND user message" in desc             # reconciled description
++    src = open(os.path.join(config.ROOT, "scripts",
++                            "run_official_14d.py")).read()
++    assert 'messages.append({"role": "user", "content": retry_msg})' in src
++    assert "retry_message" in open(
++        os.path.join(config.ROOT, "engine", "rounds.py")).read()
++
++
++# ---- 016.5 configuration reconciliation contract tests ----
++
++def test_config_scheduler_matches_official_implementation(cfg):
++    s = cfg["scheduler"]
++    assert s["mode"] == "vps_systemd"
++    assert "arena-official.service" in s["service_unit"]
++    assert os.path.exists(os.path.join(config.ROOT,
++                                       "deploy/arena-official.service"))
++    assert "T+720" in s["boundary_anchor"].replace("720s", "720")
++    for n in ("510", "630", "690"):
++        assert n in s["boundary_anchor"]
++    assert official.OFFICIAL_PUBLIC_ORIGIN.rstrip("/") in s["monitoring"] \
++        or "live.akraarena.online" in s["monitoring"]
++    assert "cron" not in json.dumps(s).lower()       # GitHub cron era gone
++
++
++def test_config_event_order_and_paths_match_engine(cfg):
++    vet = cfg["round_contract"]["virtual_event_time"]
++    assert "strictly" in vet and "before T" in vet
++    assert "PRE-DECISION" in vet.upper() or "pre-decision" in vet.lower()
++    # archive paths describe the REAL layout
++    rec = {"round_id": "v1-SOL-2026-08-11T00:00:00Z",
++           "account_id": "sol_haiku_raw", "attempt_number": 1}
++    real = persistence.attempt_path("data-v1", rec)
++    assert real == ("data-v1/attempts/v1-SOL-2026-08-11T00_00_00Z/"
++                    "sol_haiku_raw_attempt1.json")
++    assert "replaced by '_'" in cfg["attempt_archive"]["path"]
++    assert cfg["prompt_archive"] == \
++        "data-v1/prompts/v1-ALL-{T}/{account_id}.json"
++    for f in ("response_id", "stop_reason"):
++        assert any(f in x for x in cfg["attempt_archive"]["fields"])
++    assert "NOT yet authorized" not in cfg["classification"]
++    assert "live.akraarena.online" in cfg["dashboard"]["publication_model"]
++    assert "live.akraarena.online" in cfg["persistence"]["publication"]
++    assert cfg["round_contract"]["duration"].count("336")
++
++
++# ---- 016.6 hardened effective-nginx verifier ----
++
++from test_ruling015 import GOOD_NGINX  # noqa: E402  (certbot two-block)
++
++
++def _fails(checks):
++    return [name for name, ok, _ in checks if not ok]
++
++
++def test_standard_certbot_two_block_config_passes():
++    mod = _load_script("verify_deployment")
++    assert _fails(mod.analyze_nginx(GOOD_NGINX)) == []
++
++
++def test_server_level_return_200_fails():
++    mod = _load_script("verify_deployment")
++    evil = GOOD_NGINX.replace("    root /var/www/arena;",
++                              '    root /var/www/arena;\n'
++                              '    return 200 "oops";')
++    fails = _fails(mod.analyze_nginx(evil))
++    assert any("server-level return" in f for f in fails)
++
++
++def test_extra_rewrite_if_location_proxy_all_fail():
++    mod = _load_script("verify_deployment")
++    for evil_line, marker in (
++            ("    rewrite ^/x /y last;", "no rewrite"),
++            ('    if ($arg_x) { return 200 "y"; }', "no if-blocks"),
++            ("    location /up { proxy_pass http://127.0.0.1:1; }",
++             "proxy_pass"),
++            ("    location /extra { try_files $uri =404; }",
++             "unexpected location")):
++        evil = GOOD_NGINX.replace("    root /var/www/arena;",
++                                  "    root /var/www/arena;\n" + evil_line)
++        fails = _fails(mod.analyze_nginx(evil))
++        assert any(marker in f for f in fails), (evil_line, fails)
++
++
++def test_http_block_must_only_redirect():
++    mod = _load_script("verify_deployment")
++    evil = GOOD_NGINX.replace("    return 404; # managed by Certbot",
++                              "    return 404;\n"
++                              "    location /sneak { autoindex on; }")
++    fails = _fails(mod.analyze_nginx(evil))
++    assert any("no location blocks in the HTTP" in f for f in fails)
++    evil2 = GOOD_NGINX.replace(
++        "return 301 https://$host$request_uri;",
++        'return 200 "hijacked";')
++    fails2 = _fails(mod.analyze_nginx(evil2))
++    assert any("approved HTTPS redirect" in f for f in fails2)
++
++
++def test_verifier_requires_both_digests(monkeypatch):
++    mod = _load_script("verify_deployment")
++    monkeypatch.setattr(mod.sys, "argv", ["verify_deployment.py"])
++    with pytest.raises(SystemExit) as e:
++        mod.main()
++    assert e.value.code == 2
++
++
++# ---- 016.7 activation bound to a passing preflight ----
++
++def _passing_report(tmp_path, eng, site, ts=None, **over):
++    summary = {"overall_pass": True, "n": 18, "accepted": 18,
++               "engine_digest": eng, "site_digest": site,
++               "canonical_endpoint": official.OFFICIAL_PAYLOAD_URL,
++               "timestamp": int(ts if ts is not None else time.time())}
++    summary.update(over)
++    p = tmp_path / "preflight_report.json"
++    p.write_text(json.dumps({"summary": summary, "results": {}}))
++    import hashlib
++    return str(p), hashlib.sha256(p.read_bytes()).hexdigest()
++
++
++def _act(path, sha, eng, site):
++    return {"engine_digest": eng, "site_digest": site,
++            "preflight": {"report_path": path, "report_sha256": sha}}
++
++
++def test_valid_fresh_matching_attestation_passes(tmp_path):
++    eng, site = digests()
++    path, sha = _passing_report(tmp_path, eng, site)
++    assert official.verify_preflight_attestation(
++        _act(path, sha, eng, site), eng, site, time.time()) is True
++
++
++@pytest.mark.parametrize("case", [
++    "missing", "failed", "engine_mismatch", "endpoint_mismatch",
++    "modified", "stale", "bad_counts"])
++def test_attestation_refusals(tmp_path, case):
++    eng, site = digests()
++    now = time.time()
++    if case == "missing":
++        act = {"engine_digest": eng, "site_digest": site}
++    elif case == "failed":
++        p, sha = _passing_report(tmp_path, eng, site, overall_pass=False)
++        act = _act(p, sha, eng, site)
++    elif case == "engine_mismatch":
++        p, sha = _passing_report(tmp_path, "f" * 64, site)
++        act = _act(p, sha, eng, site)
++    elif case == "endpoint_mismatch":
++        p, sha = _passing_report(tmp_path, eng, site,
++                                 canonical_endpoint="https://evil/x.js")
++        act = _act(p, sha, eng, site)
++    elif case == "modified":
++        p, sha = _passing_report(tmp_path, eng, site)
++        with open(p, "a") as f:
++            f.write(" ")                             # tampered after arming
++        act = _act(p, sha, eng, site)
++    elif case == "stale":
++        p, sha = _passing_report(
++            tmp_path, eng, site,
++            ts=now - official.PREFLIGHT_VALIDITY_S - 60)
++        act = _act(p, sha, eng, site)
++    else:
++        p, sha = _passing_report(tmp_path, eng, site, n=17)
++        act = _act(p, sha, eng, site)
++    with pytest.raises(official.PreflightAttestationError):
++        official.verify_preflight_attestation(act, eng, site, now)
++
++
++def test_arm_official_requires_and_embeds_the_attestation(tmp_path,
++                                                         monkeypatch):
++    mod = _load_script("arm_official")
++    monkeypatch.setattr(mod, "ACTIVATION", str(tmp_path / "act.json"))
++    eng, site = digests()
++    base = ["arm_official.py", "--confirm", "--engine-digest", eng,
++            "--site-digest", site, "--start-utc", "next-hour"]
++    monkeypatch.setattr(mod.sys, "argv", list(base))
++    with pytest.raises(SystemExit) as e:
++        mod.main()                                   # no preflight => refuse
++    assert e.value.code == 2 and not os.path.exists(str(tmp_path / "act.json"))
++    path, sha = _passing_report(tmp_path, eng, site)
++    monkeypatch.setattr(mod.sys, "argv",
++                        base + ["--preflight-report", path,
++                                "--preflight-sha", sha])
++    mod.main()
++    act = json.load(open(str(tmp_path / "act.json")))
++    assert act["preflight"]["report_sha256"] == sha  # attestation embedded
++
++
++# ---- 016.8 cleanup ----
++
++def test_no_stale_docstrings_or_placeholders():
++    runner = open(os.path.join(config.ROOT, "scripts",
++                               "run_official_14d.py")).read()
++    assert "Restart=always" not in runner
++    for rel in ("deploy/DEPLOYMENT.md", "scripts/run_official_14d.py",
++                "docs/handoff/OPERATIONS_RUNBOOK.md"):
++        assert "<vps-host>" not in open(os.path.join(config.ROOT, rel)).read()
++
++
++def test_disarm_clears_public_payload(tmp_path):
++    store = provisioned_official(n=1)
++    pub = tempfile.mkdtemp(prefix="arena-pub16-")
++    for name in ("live_payload.js", "live_payload.sha256"):
++        open(os.path.join(pub, name), "w").write("stale READY payload")
++    assert official.rollback_unstarted(store, public_dir=pub) is True
++    assert not os.path.exists(os.path.join(pub, "live_payload.js"))
++    assert not os.path.exists(os.path.join(pub, "live_payload.sha256"))
++
++
++def test_mirror_failure_note_never_leaks_credentials():
++    notes = []
++
++    def bad_mirror(T):
++        raise RuntimeError(
++            "push failed: https://x-access-token:ghp_SECRET123@github.com/x")
++    t = official._fire_mirror(bad_mirror, T0, notes)
++    t.join(timeout=5)
++    assert notes and "SECRET" not in notes[0] and "ghp_" not in notes[0]
++    assert "failed" in notes[0]
