@@ -8,12 +8,12 @@
  "engine/lifecycle.py": 48,
  "engine/marketdata.py": 86,
  "engine/metrics.py": 167,
- "engine/official.py": 439,
+ "engine/official.py": 568,
  "engine/persistence.py": 304,
  "engine/pilot.py": 140,
  "engine/prompts.py": 127,
  "engine/publisher.py": 273,
- "engine/recovery.py": 436,
+ "engine/recovery.py": 487,
  "engine/replay.py": 113,
  "engine/rounds.py": 143,
  "engine/state.py": 99,
@@ -23,8 +23,8 @@
  "scripts/gen_demo_dashboard.py": 105,
  "scripts/mock_run.py": 110,
  "scripts/mock_season.py": 164,
- "scripts/preflight_official.py": 300,
- "scripts/run_official_14d.py": 272,
+ "scripts/preflight_official.py": 330,
+ "scripts/run_official_14d.py": 284,
  "scripts/run_pilot_12h.py": 243,
- "scripts/verify_deployment.py": 115
+ "scripts/verify_deployment.py": 209
 }

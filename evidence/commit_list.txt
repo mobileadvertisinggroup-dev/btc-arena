@@ -1,3 +1,5 @@
+a066598c5563 ruling 015 remediation: pristine gate, reboot-safe disarm, transac
+dd3c20b4781d audit round v3: regenerate evidence after ruling 014 remediation
 efa3eb826f96 ruling 014 remediation: disarm, hostname binding, completion, pref
 9c325023b34a audit round v2: freeze LIVE_ORIGIN + regenerate evidence + seal ar
 69e5a0eafbfb build batch: official 14d cloud runner + UI wishlist (Mentor Rulin

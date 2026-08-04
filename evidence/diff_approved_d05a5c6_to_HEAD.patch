@@ -1,14 +1,17 @@
 diff --git a/.gitignore b/.gitignore
-index 7707535..4c3c659 100644
+index 7707535..db02532 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -9,3 +9,6 @@
+@@ -9,3 +9,9 @@
  MANIFEST.sha256.json
  .DS_Store
  offline_audit_bundle_v1/
 +offline_audit_bundle_v2.tar.gz
 +offline_audit_bundle_v2.tar.gz.sha256
 +offline_audit_bundle_v2/
++offline_audit_bundle_v3.tar.gz
++offline_audit_bundle_v3.tar.gz.sha256
++offline_audit_bundle_v3/
 diff --git a/README.md b/README.md
 index 2484ab4..ddb112e 100644
 --- a/README.md
@@ -79,10 +82,10 @@ index e38268a..acee8fb 100644
  Page is slightly wider than the phone viewport — wiggles left/right when
 diff --git a/deploy/DEPLOYMENT.md b/deploy/DEPLOYMENT.md
 new file mode 100644
-index 0000000..31b4efc
+index 0000000..05541bb
 --- /dev/null
 +++ b/deploy/DEPLOYMENT.md
-@@ -0,0 +1,87 @@
+@@ -0,0 +1,88 @@
 +# VPS DEPLOYMENT RUNBOOK (Mentor Rulings 6 + 7)
 +
 +Nothing here may be executed until the mentor's formal PASS and the owner's
@@ -114,7 +117,8 @@ index 0000000..31b4efc
 +
 +## 3. Web endpoint (Ruling 1)
 +- mkdir -p /var/www/arena, owner arena:arena.
-+- Install deploy/nginx-arena.conf (replace ARENA_VPS_HOST), then TLS via
++- Install deploy/nginx-arena.conf verbatim (hostname is frozen and
++  integrity-locked — never edit it), then TLS via
 +  certbot. Endpoint serves ONLY live_payload.js, live_payload.sha256,
 +  health.json; GET/HEAD only; CORS open; no-store.
 +
@@ -266,10 +270,10 @@ index 0aafad4..9ef1aff 100644
 +window.ARENA_DEMO = {"experiment": "v1.3", "label": "V1 EXPERIMENT", "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?", "hashes": {"config/v1/experiment.json": "f7da51051a7031c26e5b5905979eeb33a4473739c901f766f25638472f39ef70", "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032", "engine/config.py": "8ed48d38192ada58f4facc9cc64855b091e94496fa30762e54e362a1f470342b", "engine/dashboard.py": "b4be1ecbfe23efa3d716b166b6f032ba18347ada3abb6a6a3e4606c9090b9598", "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5", "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc", "engine/features.py": "69ea768643b5b91c4abc7f202b72330204836ddf35020027ef66bdc687ff1da2", "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872", "engine/marketdata.py": "0b035211e44d0b3978dfbd56230c342dfb2bf77a9f3b310211748b8dede19a28", "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9", "engine/official.py": "89073cee447a7cd0957b09a7ac5ec2b6efa07892a3e4cacf478c1b3841719735", "engine/persistence.py": "0ea8013e46d855fdfca1446b27d44eebec94b0741fb606a3500840c7a9740005", "engine/pilot.py": "bb8af7eb4a4de5a1af17768234bed815363a69f9cc46d4f88dbd15da66823228", "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22", "engine/publisher.py": "739560008fd90b0ebb492b58338034ee75c63dd459bb674852f6bc2c2511e30e", "engine/recovery.py": "a06c066f3dd5ea0c3815bcf23d5fa73915c4dbed84d9004d5e0cdaec98f00a20", "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42", "engine/rounds.py": "e80db03a868260e9d1ee8361553452e0c5e8d434cbea0f27381338be2126e036", "engine/state.py": "ca395fb36b0f4a3798309e8f1d254c55d330ed2dabb9d219c3d18cfd2abf5b70", "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b", "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c", "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8", "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04", "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63", "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64", "schemas/v1/records.schema.json": "eaf34924cbbc1f9606f9e272c6df6acf337b5e39f0a467bea2751694c9c347e2", "scripts/archive_official.py": "e6da95fe4cd1c8ede79d257d8f924d1bcb6b170f97b18dafd61ec540d5c85035", "scripts/archive_pilot_reset.py": "9a6bbbed3da4634317013fa6c19851218ddfb80dc8afb48cc25a998dbd5b9694", "scripts/arm_official.py": "a90d12c66010ecd43bc5e92b159fe8cbcc512dbf7ff13e95bdf1b45f8e7d1b9f", "scripts/gen_demo_dashboard.py": "fb4fbf46ee4ac21a38c37bab6d3db3b37fe0954dfba1d00ead532c56227bb394", "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02", "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752", "scripts/run_official_14d.py": "7dbe089735c1a394524f21610236cc3ca248e73e2074487c06077109792c9037", "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d"}, "combined_hash": "da5a8063f4862d02f7763a95af3ffa7176b9212cd21eea0489f970f27da3181b", "pilot_link": {"href": "pilot/index.html", "label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"}, "health": {"heartbeat": {"ts": 1754877600, "code_hash": "da5a8063f4862d02f7763a95af3ffa7176b9212cd21eea0489f970f27da3181b"}, "stale": false}, "round_counts": {"PAIR_COMMITTED": 9, "PAIR_ABORTED": 0, "PAIR_TERMINAL_SPLIT": 0}, "coins": {"BTC": {"accounts": [{"id": "btc_haiku_raw", "coin": "BTC", "model": "haiku", "arm": "raw", "equity": "9996.750022394440", "realized_pnl": "-3.249977605560", "unrealized_pnl": "0E-8", "total_return_pct": "-0.032499776055600", "fees": "3.249977605560", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "0.096156", "notional": "6499.95521112", "entry": "67598.02", "stop": "65570.0794", "tp": "70977.921", "thesis": "[DEMO] Range low held twice on the hourly candles; risking 3% against the prior swing low.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "64894.0992", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9996.750022394440", "fees": "3.249977605560"}]}, {"id": "btc_haiku_ta", "coin": "BTC", "model": "haiku", "arm": "ta", "equity": "9997.900033709690", "realized_pnl": "-2.099966290310", "unrealized_pnl": "0E-8", "total_return_pct": "-0.020999662903100", "fees": "2.099966290310", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "0.062131", "notional": "4199.93258062", "entry": "67598.02", "stop": "65570.0794", "tp": "70977.921", "thesis": "[DEMO] RSI 41.2 with price 1.1% under VWAP; small long against the SMA(50).", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "64894.0992", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9997.900033709690", "fees": "2.099966290310"}]}, {"id": "btc_sonnet_raw", "coin": "BTC", "model": "sonnet", "arm": "raw", "equity": "9998.500033735210", "realized_pnl": "-1.499966264790", "unrealized_pnl": "-0E-8", "total_return_pct": "-0.014999662647900", "fees": "1.499966264790", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "short", "entry_t": 1754870400, "qty": "0.044379", "notional": "2999.93252958", "entry": "67598.02", "stop": "69625.9606", "tp": "63542.1388", "thesis": "[DEMO] Lower highs on the daily closes; fading strength.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_above", "level": "70301.9408", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9998.500033735210", "fees": "1.499966264790"}]}, {"id": "btc_sonnet_ta", "coin": "BTC", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] Volume ratio 0.86 \u2014 waiting.", "invalidation": null, "watch": {"level": "68949.9804", "timeframe": "1h_close", "operator": "price_at_or_above", "triggered": false}, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_raw", "coin": "BTC", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] No edge in this chop; preserving capital.", "invalidation": null, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_ta", "coin": "BTC", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] ATR compressed; flat until expansion.", "invalidation": null, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "btc_haiku_raw", "feature": "btc_haiku_ta"}, {"model": "sonnet", "raw": "btc_sonnet_raw", "feature": "btc_sonnet_ta"}, {"model": "opus", "raw": "btc_opus_raw", "feature": "btc_opus_ta"}], "rounds": [{"round_id": "v1-BTC-2025-08-11T00:00:00Z", "pair": "btc_opus", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-BTC-2025-08-11T00:00:00Z", "pair": "btc_haiku", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-BTC-2025-08-11T00:00:00Z", "pair": "btc_sonnet", "status": "PAIR_COMMITTED", "reason": null}]}, "ETH": {"accounts": [{"id": "eth_haiku_raw", "coin": "ETH", "model": "haiku", "arm": "raw", "equity": "9996.7500015025", "realized_pnl": "-3.2499984975", "unrealized_pnl": "0.000000", "total_return_pct": "-0.03249998497500", "fees": "3.2499984975", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "2.51655", "notional": "6499.996995", "entry": "2582.9", "stop": "2505.413", "tp": "2712.045", "thesis": "[DEMO] Range low held twice on the hourly candles; risking 3% against the prior swing low.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "2479.584", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9996.7500015025", "fees": "3.2499984975"}]}, {"id": "eth_haiku_ta", "coin": "ETH", "model": "haiku", "arm": "ta", "equity": "9997.9000118985", "realized_pnl": "-2.0999881015", "unrealized_pnl": "0.000000", "total_return_pct": "-0.02099988101500", "fees": "2.0999881015", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "1.62607", "notional": "4199.976203", "entry": "2582.9", "stop": "2505.413", "tp": "2712.045", "thesis": "[DEMO] RSI 41.2 with price 1.1% under VWAP; small long against the SMA(50).", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "2479.584", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9997.9000118985", "fees": "2.0999881015"}]}, {"id": "eth_sonnet_raw", "coin": "ETH", "model": "sonnet", "arm": "raw", "equity": "9998.5000066540", "realized_pnl": "-1.4999933460", "unrealized_pnl": "-0.000000", "total_return_pct": "-0.0149999334600", "fees": "1.4999933460", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "short", "entry_t": 1754870400, "qty": "1.16148", "notional": "2999.986692", "entry": "2582.9", "stop": "2660.387", "tp": "2427.926", "thesis": "[DEMO] Lower highs on the daily closes; fading strength.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_above", "level": "2686.216", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9998.5000066540", "fees": "1.4999933460"}]}, {"id": "eth_sonnet_ta", "coin": "ETH", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] Volume ratio 0.86 \u2014 waiting.", "invalidation": null, "watch": {"level": "2634.558", "timeframe": "1h_close", "operator": "price_at_or_above", "triggered": false}, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_raw", "coin": "ETH", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] No edge in this chop; preserving capital.", "invalidation": null, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_ta", "coin": "ETH", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] ATR compressed; flat until expansion.", "invalidation": null, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "eth_haiku_raw", "feature": "eth_haiku_ta"}, {"model": "sonnet", "raw": "eth_sonnet_raw", "feature": "eth_sonnet_ta"}, {"model": "opus", "raw": "eth_opus_raw", "feature": "eth_opus_ta"}], "rounds": [{"round_id": "v1-ETH-2025-08-11T00:00:00Z", "pair": "eth_haiku", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-ETH-2025-08-11T00:00:00Z", "pair": "eth_sonnet", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-ETH-2025-08-11T00:00:00Z", "pair": "eth_opus", "status": "PAIR_COMMITTED", "reason": null}]}, "SOL": {"accounts": [{"id": "sol_haiku_raw", "coin": "SOL", "model": "haiku", "arm": "raw", "equity": "9996.750049680", "realized_pnl": "-3.249950320", "unrealized_pnl": "0.00000", "total_return_pct": "-0.032499503200", "fees": "3.249950320", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "43.942", "notional": "6499.90064", "entry": "147.92", "stop": "143.4824", "tp": "155.316", "thesis": "[DEMO] Range low held twice on the hourly candles; risking 3% against the prior swing low.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "142.0032", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9996.750049680", "fees": "3.249950320"}]}, {"id": "sol_haiku_ta", "coin": "SOL", "model": "haiku", "arm": "ta", "equity": "9997.900053720", "realized_pnl": "-2.099946280", "unrealized_pnl": "0.00000", "total_return_pct": "-0.020999462800", "fees": "2.099946280", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "28.393", "notional": "4199.89256", "entry": "147.92", "stop": "143.4824", "tp": "155.316", "thesis": "[DEMO] RSI 41.2 with price 1.1% under VWAP; small long against the SMA(50).", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "142.0032", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9997.900053720", "fees": "2.099946280"}]}, {"id": "sol_sonnet_raw", "coin": "SOL", "model": "sonnet", "arm": "raw", "equity": "9998.500017240", "realized_pnl": "-1.499982760", "unrealized_pnl": "-0.00000", "total_return_pct": "-0.014999827600", "fees": "1.499982760", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "short", "entry_t": 1754870400, "qty": "20.281", "notional": "2999.96552", "entry": "147.92", "stop": "152.3576", "tp": "139.0448", "thesis": "[DEMO] Lower highs on the daily closes; fading strength.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_above", "level": "153.8368", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9998.500017240", "fees": "1.499982760"}]}, {"id": "sol_sonnet_ta", "coin": "SOL", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] Volume ratio 0.86 \u2014 waiting.", "invalidation": null, "watch": {"level": "150.8784", "timeframe": "1h_close", "operator": "price_at_or_above", "triggered": false}, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_raw", "coin": "SOL", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] No edge in this chop; preserving capital.", "invalidation": null, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_ta", "coin": "SOL", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] ATR compressed; flat until expansion.", "invalidation": null, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "sol_haiku_raw", "feature": "sol_haiku_ta"}, {"model": "sonnet", "raw": "sol_sonnet_raw", "feature": "sol_sonnet_ta"}, {"model": "opus", "raw": "sol_opus_raw", "feature": "sol_opus_ta"}], "rounds": [{"round_id": "v1-SOL-2025-08-11T00:00:00Z", "pair": "sol_haiku", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-SOL-2025-08-11T00:00:00Z", "pair": "sol_sonnet", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-SOL-2025-08-11T00:00:00Z", "pair": "sol_opus", "status": "PAIR_COMMITTED", "reason": null}]}}, "mode": "PREPARATION", "banner": "AKRA ARENA \u2014 PREPARATION MODE \u2014 EXPERIMENT NOT STARTED", "data_notice": "ALL DATA ON THIS PAGE IS MOCK/DEMO DATA generated offline from fixtures. No model has been called; no experiment has started."};
 diff --git a/docs/handoff/BUILD_BATCH_DESIGN.md b/docs/handoff/BUILD_BATCH_DESIGN.md
 new file mode 100644
-index 0000000..6617c97
+index 0000000..5e78479
 --- /dev/null
 +++ b/docs/handoff/BUILD_BATCH_DESIGN.md
-@@ -0,0 +1,167 @@
+@@ -0,0 +1,169 @@
 +# BUILD BATCH DESIGN — cloud runner + UI wishlist (one audit round)
 +
 +Branch: build-batch-cloud-ui (off v1-clean-experiment @ d05a5c6).
@@ -341,7 +345,9 @@ index 0000000..6617c97
 +invented when no invalidation exists.
 +
 +### R6 — process control
-+- systemd unit with Restart=always + WantedBy=multi-user.target (auto-start
++- systemd unit with Restart=on-failure (per Mentor Ruling 014.3: crash and
++  reboot recovery without restarting a completed experiment)
++  + WantedBy=multi-user.target (auto-start
 +  after reboot); state lives in the repo checkout + /var/www/arena (never
 +  tmpfs/container-ephemeral).
 +- One-runner-only: exclusive non-blocking fcntl flock on control/runner.lock;
@@ -457,6 +463,20 @@ index 2b5b4ac..80c2dd2 100644
  
  ## Formal standing
  - Offline audit: **PASSED** (Mentor Final Ruling, 2026-08-03) for engine +
+diff --git a/docs/handoff/NEXT_STEPS.md b/docs/handoff/NEXT_STEPS.md
+index cbe4e47..d2ad511 100644
+--- a/docs/handoff/NEXT_STEPS.md
++++ b/docs/handoff/NEXT_STEPS.md
+@@ -3,7 +3,8 @@
+ ## 1. Build batch: cloud runner + UI wishlist (ONE audit round)
+ Owner requirements already standing:
+ - OFFICIAL 14-DAY RUNNER on an always-on cloud VPS (~$5/mo class) under
+-  systemd Restart=always. The official experiment must not depend on the
++  systemd (Restart=on-failure per Ruling 014.3). The official experiment
++  must not depend on the
+   owner's Mac being open/powered/connected or on Claude Code running.
+   Needs a NEW runner entry (run_pilot_12h.py is pilot-specific: 12
+   boundaries/pilot store/pilot banner) => engine digest WILL change =>
 diff --git a/docs/handoff/OPERATIONS_RUNBOOK.md b/docs/handoff/OPERATIONS_RUNBOOK.md
 index 2316fe5..ac4b842 100644
 --- a/docs/handoff/OPERATIONS_RUNBOOK.md
@@ -1064,10 +1084,10 @@ index 145185a..1c1786a 100644
          "entry": str(a["entry"]) if a["entry"] is not None else None,
 diff --git a/engine/official.py b/engine/official.py
 new file mode 100644
-index 0000000..7e46920
+index 0000000..97f3e2c
 --- /dev/null
 +++ b/engine/official.py
-@@ -0,0 +1,439 @@
+@@ -0,0 +1,568 @@
 +"""OFFICIAL 14-DAY RUN orchestration (Mentor Rulings 1, 2, 3, 6, 8).
 +
 +Differences from the pilot loop (engine.pilot), each mandated by a ruling:
@@ -1152,6 +1172,12 @@ index 0000000..7e46920
 +    """A second runner instance tried to start (Ruling 6)."""
 +
 +
++class PristineError(Exception):
++    """The official store's state is not exactly pristine at first-schedule
++    creation (Mentor Ruling 015.1): refuse before any schedule, publication,
++    network access, or model call."""
++
++
 +class Disarmed(Exception):
 +    """The owner's activation record was deleted/replaced/modified BEFORE the
 +    first scheduled boundary (Mentor Ruling 014.1): the run must stop with
@@ -1178,6 +1204,114 @@ index 0000000..7e46920
 +    return still_armed
 +
 +
++def verify_pristine_official_state(store):
++    """Mentor Ruling 015.1: before the FIRST official schedule may exist, the
++    complete official state must be exactly pristine — byte-normalized equal
++    to a freshly initialized 18-account roster (exact ids, $10,000.00 each,
++    zero qty/entry/fees/trades/lifecycles/theses/decisions) with a null
++    boundary and no history of any kind. A correctly checksummed but DIRTY
++    state refuses loudly; a missing state file is fine (standard pristine
++    state gets created by provisioning)."""
++    import json as _json
++    from . import state as state_mod
++    spath = os.path.join(store, "state.json")
++    if not os.path.exists(spath):
++        return True
++    accounts, meta = persistence.load_state(spath, expect_full_roster=True)
++    expected = state_mod.init_accounts()
++    got = _json.dumps(persistence._enc_all(accounts), sort_keys=True,
++                      default=str)
++    want = _json.dumps(persistence._enc_all(expected), sort_keys=True,
++                       default=str)
++    if got != want:
++        diff = [aid for aid in expected
++                if _json.dumps(persistence._enc_all(
++                    {aid: accounts.get(aid)}), sort_keys=True, default=str)
++                != _json.dumps(persistence._enc_all(
++                    {aid: expected[aid]}), sort_keys=True, default=str)]
++        raise PristineError(
++            f"official state is not pristine (accounts differ: {diff[:6]})")
++    if meta.get("boundary") is not None:
++        raise PristineError("official meta carries a boundary")
++    for key in ("equity_history", "equity_history_last", "marks", "marks_T",
++                "finalized_pairs", "outbox", "flushed_ids",
++                "replay_watermark", "replay_state", "coin_terminated",
++                "boundary_complete", "_recovering"):
++        if meta.get(key):
++            raise PristineError(f"official meta carries prior-run {key}")
++    return True
++
++
++BINDING_NAME = "activation_binding.json"
++
++
++def write_activation_binding(store, activation_sha, engine_digest,
++                             site_digest, start, total):
++    """Mentor Ruling 015.2: an UNSTARTED schedule is bound to the exact
++    activation record (its SHA-256) plus the digests, start, and total it
++    was provisioned from. The binding travels with the store so a service
++    stop or reboot cannot orphan a stale schedule."""
++    path = os.path.join(store, BINDING_NAME)
++    tmp = path + ".tmp"
++    with open(tmp, "w") as f:
++        json.dump({"activation_sha": activation_sha,
++                   "engine_digest": engine_digest,
++                   "site_digest": site_digest,
++                   "start": start, "total": total}, f, indent=1)
++        f.flush()
++        os.fsync(f.fileno())
++    os.replace(tmp, path)
++    return path
++
++
++def reconcile_unstarted_schedule(store, activation_path):
++    """Mentor Ruling 015.2 startup reconciliation. Returns one of:
++      'no_schedule'  — nothing provisioned; nothing to do.
++      'started'      — a boundary has started or completed: the schedule is
++                       IMMUTABLE; normal restart recovery applies.
++      'match'        — unstarted schedule and the current activation record
++                       is byte-identical (SHA) to the bound one with the
++                       same digests/start/total: resume waiting.
++      'rolled_back'  — unstarted schedule whose activation is absent,
++                       changed, or unbound: schedule/publication artifacts
++                       safely removed; the service is back to ARMED/OFF and
++                       a later re-arm provisions the newly requested
++                       schedule."""
++    try:
++        sched = pilot.load_schedule(store)
++    except pilot.ScheduleError:
++        return "no_schedule"
++    _, meta = persistence.load_state(os.path.join(store, "state.json"),
++                                     expect_full_roster=True)
++    if sched["completed"] or meta.get("boundary") is not None:
++        return "started"                 # replacement forbidden forever
++    binding = None
++    try:
++        with open(os.path.join(store, BINDING_NAME)) as f:
++            binding = json.load(f)
++    except Exception:
++        binding = None
++    cur_sha = activation_sha(activation_path)
++    ok = (binding is not None and cur_sha is not None
++          and binding.get("activation_sha") == cur_sha
++          and binding.get("start") == sched["start"]
++          and binding.get("total") == sched["total"])
++    if ok:
++        try:
++            with open(activation_path) as f:
++                act = json.load(f)
++        except Exception:
++            act = {}
++        ok = (act.get("engine_digest") == binding.get("engine_digest")
++              and act.get("site_digest") == binding.get("site_digest")
++              and act.get("start_utc") == binding.get("start")
++              and act.get("total") == binding.get("total"))
++    if ok:
++        return "match"
++    rollback_unstarted(store)
++    return "rolled_back"
++
++
 +def rollback_unstarted(store):
 +    """Undo provisioning artifacts after a valid PRE-START disarm: allowed
 +    ONLY while zero boundaries are completed and account state carries no
@@ -1195,7 +1329,7 @@ index 0000000..7e46920
 +                                     expect_full_roster=True)
 +    if meta.get("boundary") is not None:
 +        raise RuntimeError("boundary state exists — not an unstarted run")
-+    for name in (pilot.SCHEDULE_NAME, publisher_mod.PUB_LOG):
++    for name in (pilot.SCHEDULE_NAME, publisher_mod.PUB_LOG, BINDING_NAME):
 +        try:
 +            os.remove(os.path.join(store, name))
 +        except FileNotFoundError:
@@ -1224,16 +1358,31 @@ index 0000000..7e46920
 +
 +
 +def provision_official(store, approved_digest, approved_site_digest, start,
-+                       total=TOTAL_BOUNDARIES):
++                       total=TOTAL_BOUNDARIES, activation_sha=None):
 +    """Digest-gated provisioning of the official schedule (Ruling 3): the
 +    start must be an exact UTC hour; the full boundary list is persisted
 +    (sealed) before any model call. Idempotent: an existing schedule/state is
-+    preserved verbatim — a restart can never mint new boundaries."""
++    preserved verbatim — a restart can never mint new boundaries.
++
++    Mentor Ruling 015.1: when this call would create the FIRST schedule, an
++    existing state file must be exactly pristine (PristineError otherwise —
++    refused before schedule/publication/network/model work; a missing state
++    file is created pristine by provisioning).
++    Mentor Ruling 015.2: a newly created schedule is bound to the exact
++    activation record SHA + digests + start + total via the store binding."""
 +    if start % HOUR:
 +        raise pilot.ScheduleError(
 +            f"official start {start} is not an exact UTC hour")
-+    return pilot.provision(store, approved_digest, approved_site_digest,
-+                           start, total=total)
++    creating = not os.path.exists(os.path.join(store, pilot.SCHEDULE_NAME))
++    if creating:
++        verify_pristine_official_state(store)   # raises BEFORE any write
++    sched = pilot.provision(store, approved_digest, approved_site_digest,
++                            start, total=total)
++    if creating:
++        write_activation_binding(store, activation_sha, approved_digest,
++                                 approved_site_digest, sched["start"],
++                                 sched["total"])
++    return sched
 +
 +
 +class DirectPublisher:
@@ -1616,10 +1765,18 @@ index 62e15bb..e810820 100644
          results.append((T, entry["status"]))
      return results
 diff --git a/engine/recovery.py b/engine/recovery.py
-index 68c2194..1295bd8 100644
+index 68c2194..af93889 100644
 --- a/engine/recovery.py
 +++ b/engine/recovery.py
-@@ -52,7 +52,9 @@
+@@ -23,6 +23,7 @@
+ finalized in the checkpoint is PAIR_ABORTED("crash_recovery"); finalized pairs
+ stand; replay resumes strictly after the persisted watermark.
+ """
++import copy
+ import os
+ import time
+ from concurrent.futures import ThreadPoolExecutor
+@@ -52,7 +53,9 @@
  
  
  def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
@@ -1630,7 +1787,7 @@ index 68c2194..1295bd8 100644
      """Returns (ledger_entries, attempt_records, archived_user_prompts).
  
      `deadline` (Ruling 012.3): the authoritative ABSOLUTE collection deadline
-@@ -61,7 +63,20 @@
+@@ -61,7 +64,20 @@
      retrieval, grace waits, and restarts all consume the same T..T+12min
      budget — entering this coordinator late never grants new time, and a
      restart never resets the deadline. When omitted (offline tooling/tests),
@@ -1652,7 +1809,7 @@ index 68c2194..1295bd8 100644
      # RUNTIME INTEGRITY GATE (Ruling 009.1): load the immutable APPROVED
      # launch manifest (never rebuilt from the working tree) and verify every
      # engine/script/config/prompt/schema byte BEFORE touching state, prompts,
-@@ -114,6 +129,12 @@
+@@ -114,6 +130,12 @@
              if "user" in e:
                  pregen[aid] = (e["system"], e["user"])   # bytes reused verbatim
              continue
@@ -1665,7 +1822,7 @@ index 68c2194..1295bd8 100644
          if blocked:
              entries.append({"account_id": aid,
                              "pair_id": state.pair_id(acct["coin"], acct["model"]),
-@@ -165,7 +186,9 @@
+@@ -165,7 +187,9 @@
                  continue
              a_raw = accounts[state.account_id(coin, model, "raw")]
              a_ta = accounts[state.account_id(coin, model, "ta")]
@@ -1676,7 +1833,7 @@ index 68c2194..1295bd8 100644
                  pair_meta[pid] = ("abort", rid, "crash_recovery", None)
              elif meta["coin_terminated"].get(coin):
                  pair_meta[pid] = ("abort", rid, "COIN_TERMINATED", None)
-@@ -207,6 +230,13 @@
+@@ -207,36 +231,71 @@
              if pid in recovered or pid not in pair_meta:
                  continue
              kind, rid, reason, terminal_ids = pair_meta[pid]
@@ -1690,22 +1847,109 @@ index 68c2194..1295bd8 100644
              a_raw = accounts[state.account_id(coin, model, "raw")]
              a_ta = accounts[state.account_id(coin, model, "ta")]
              snap = snapshots.get(coin)
-@@ -288,7 +318,14 @@
+             exec_links = []
++            # TRANSACTIONAL RESOLUTION (Ruling 015.3): all validation and
++            # accounting run against DEEP COPIES; the authoritative clock is
++            # read AFTER every piece of resolution work is prepared and only
++            # a fully prepared PRE-DEADLINE result is swapped in and made
++            # durable. A late preparation is discarded whole: zero account
++            # mutation, zero trades, PAIR_ABORTED/deadline_exceeded.
++            def _too_late():
++                return (resolution_deadline is not None
++                        and clock() >= resolution_deadline)
++
++            def _late_abort():
++                return {"round_id": rid, "pair": pid,
++                        "status": rounds.PAIR_ABORTED,
++                        "reason": "deadline_exceeded"}
+             if kind == "abort":
+                 entry = {"round_id": rid, "pair": pid,
+                          "status": rounds.PAIR_ABORTED, "reason": reason}
+             elif kind == "terminal_split":
+                 live = [a for a in (a_raw, a_ta) if not a["terminal"]]
+                 outs = [results.get(a["id"], (None, "missing", None)) for a in live]
+-                if all(o[0] is not None for o in outs):
+-                    _crash(crash_at, "after_validate")
+-                    for a, o in zip(live, outs):
+-                        rounds._commit_account(a, o[0], snap, T)
+-                        exec_links.append(o[2])
+-                    _crash(crash_at, "after_execute")
+                 entry = {"round_id": rid, "pair": pid,
+                          "status": rounds.PAIR_TERMINAL_SPLIT,
+                          "terminal": terminal_ids, "reason": None}
++                if all(o[0] is not None for o in outs):
++                    _crash(crash_at, "after_validate")
++                    prepared = [copy.deepcopy(a) for a in live]
++                    for p, o in zip(prepared, outs):
++                        rounds._commit_account(p, o[0], snap, T)
++                    if _too_late():
++                        entry = _late_abort()            # discard prepared
++                    else:
++                        for p, o in zip(prepared, outs):
++                            accounts[p["id"]] = p
++                            exec_links.append(o[2])
++                        _crash(crash_at, "after_execute")
+             else:
+                 o_raw = results.get(a_raw["id"], (None, "missing", None))
+                 o_ta = results.get(a_ta["id"], (None, "missing", None))
+                 if o_raw[0] is not None and o_ta[0] is not None:
+                     _crash(crash_at, "after_validate")
+-                    rounds._commit_account(a_raw, o_raw[0], snap, T)
+-                    rounds._commit_account(a_ta, o_ta[0], snap, T)
+-                    exec_links = [o_raw[2], o_ta[2]]
+-                    _crash(crash_at, "after_execute")
+-                    entry = {"round_id": rid, "pair": pid,
+-                             "status": rounds.PAIR_COMMITTED, "reason": None}
++                    prep_raw = copy.deepcopy(a_raw)
++                    prep_ta = copy.deepcopy(a_ta)
++                    rounds._commit_account(prep_raw, o_raw[0], snap, T)
++                    rounds._commit_account(prep_ta, o_ta[0], snap, T)
++                    if _too_late():
++                        entry = _late_abort()            # discard prepared
++                    else:
++                        accounts[a_raw["id"]] = prep_raw
++                        accounts[a_ta["id"]] = prep_ta
++                        exec_links = [o_raw[2], o_ta[2]]
++                        _crash(crash_at, "after_execute")
++                        entry = {"round_id": rid, "pair": pid,
++                                 "status": rounds.PAIR_COMMITTED,
++                                 "reason": None}
+                 else:
+                     entry = {"round_id": rid, "pair": pid,
+                              "status": rounds.PAIR_ABORTED,
+@@ -286,11 +345,28 @@
+                 prefix.append(have[want])
+                 want += 60
              if prefix:
-                 coin_accounts = [a for a in accounts.values()
-                                  if a["coin"] == coin]
+-                coin_accounts = [a for a in accounts.values()
+-                                 if a["coin"] == coin]
++                pids_ = [a["id"] for a in accounts.values()
++                         if a["coin"] == coin]
 +                truncated = None
                  for c in prefix:
-+                    # REPLAY DEADLINE (Ruling 014.5): stop cleanly; the
-+                    # unprocessed remainder becomes the coin's gap
++                    # REPLAY DEADLINE (Rulings 014.5/015.3, transactional):
++                    # a late candle is discarded whole; the unprocessed
++                    # remainder becomes the coin's gap
 +                    if replay_deadline is not None \
 +                            and clock() >= replay_deadline:
 +                        truncated = c["t"]
 +                        break
                      recs = []
-                     replay_mod.replay(coin_accounts, [c], recs)
+-                    replay_mod.replay(coin_accounts, [c], recs)
++                    prepared = {a2: copy.deepcopy(accounts[a2])
++                                for a2 in pids_}
++                    replay_mod.replay([prepared[a2] for a2 in pids_], [c],
++                                      recs)
++                    if replay_deadline is not None \
++                            and clock() >= replay_deadline:
++                        truncated = c["t"]               # discard prepared
++                        break
++                    for a2 in pids_:
++                        accounts[a2] = prepared[a2]
                      meta["replay_watermark"][coin] = c["t"]
-@@ -299,7 +336,7 @@
+                     for i, rc in enumerate(recs):
+                         persistence.outbox_add(
+@@ -299,7 +375,7 @@
                               "replay": [rc]})
                  persistence.save_state(spath, accounts, meta)
                  persistence.flush_outbox(store, accounts, meta)
@@ -1714,30 +1958,48 @@ index 68c2194..1295bd8 100644
              unresolved = end - eff_start
              if unresolved > MAX_GAP_S:
                  meta["coin_terminated"][coin] = True
-@@ -324,6 +361,23 @@
+@@ -322,10 +398,39 @@
+             ledger.append(ev)
+             continue
          meta["replay_state"][coin] = {"status": "REPLAY_COMPLETE"}
-         coin_accounts = [a for a in accounts.values() if a["coin"] == coin]
+-        coin_accounts = [a for a in accounts.values() if a["coin"] == coin]
++        ids = [a["id"] for a in accounts.values() if a["coin"] == coin]
++
++        def _latch_catchup(t_gap):
++            # REPLAY DEADLINE (Rulings 014.5/015.3): replay past the bound
++            # stops with the watermark preserved and latches the standard
++            # CATCHUP_REQUIRED path — never a silent deadline crossing,
++            # never lost candles, never a half-applied candle.
++            meta["replay_state"][coin] = {
++                "status": "CATCHUP_REQUIRED", "gap_since": t_gap,
++                "detail": "replay_deadline_reached"}
++            ev = {"round_id": prompts.round_id(coin, T),
++                  "replay": [{"e": "CATCHUP_REQUIRED", "gap_since": t_gap}]}
++            persistence.outbox_add(meta, f"{coin}:{t_gap}:CATCHUP_REQUIRED",
++                                   ev)
++            persistence.save_state(spath, accounts, meta)
++            persistence.flush_outbox(store, accounts, meta)
++            ledger.append(ev)
          for c in candles:
-+            # REPLAY DEADLINE (Ruling 014.5): a boundary must be terminal by
-+            # T+720; replay past the bound stops with the watermark preserved
-+            # and latches the standard CATCHUP_REQUIRED path — never a silent
-+            # deadline crossing, never lost candles.
 +            if replay_deadline is not None and clock() >= replay_deadline:
-+                meta["replay_state"][coin] = {
-+                    "status": "CATCHUP_REQUIRED", "gap_since": c["t"],
-+                    "detail": "replay_deadline_reached"}
-+                ev = {"round_id": prompts.round_id(coin, T),
-+                      "replay": [{"e": "CATCHUP_REQUIRED",
-+                                  "gap_since": c["t"]}]}
-+                persistence.outbox_add(
-+                    meta, f"{coin}:{c['t']}:CATCHUP_REQUIRED", ev)
-+                persistence.save_state(spath, accounts, meta)
-+                persistence.flush_outbox(store, accounts, meta)
-+                ledger.append(ev)
++                _latch_catchup(c["t"])
 +                break
++            # TRANSACTIONAL CANDLE (Ruling 015.3): replay runs on deep
++            # copies; the clock is re-read AFTER the candle's work and a
++            # late result is discarded whole — no partial candle ever
++            # becomes durable.
              recs = []
-             replay_mod.replay(coin_accounts, [c], recs)
+-            replay_mod.replay(coin_accounts, [c], recs)
++            prepared = {aid2: copy.deepcopy(accounts[aid2]) for aid2 in ids}
++            replay_mod.replay([prepared[aid2] for aid2 in ids], [c], recs)
++            if replay_deadline is not None and clock() >= replay_deadline:
++                _latch_catchup(c["t"])                   # discard prepared
++                break
++            for aid2 in ids:
++                accounts[aid2] = prepared[aid2]
              meta["replay_watermark"][coin] = c["t"]
+             for i, rc in enumerate(recs):
+                 persistence.outbox_add(meta, f"{coin}:{c['t']}:{i}:{rc['e']}",
 diff --git a/scripts/archive_official.py b/scripts/archive_official.py
 new file mode 100644
 index 0000000..2af96f1
@@ -1942,10 +2204,10 @@ index ad73e0e..bdee898 100644
  out2 = os.path.join(ROOT, "docs", "prestart_payload.js")
 diff --git a/scripts/preflight_official.py b/scripts/preflight_official.py
 new file mode 100644
-index 0000000..29da242
+index 0000000..7178e0f
 --- /dev/null
 +++ b/scripts/preflight_official.py
-@@ -0,0 +1,300 @@
+@@ -0,0 +1,330 @@
 +"""OFFICIAL SERVER PREFLIGHT (Mentor Ruling 014.4) — VALIDATION ONLY.
 +
 +Audited production preflight (hashed into the engine digest). Exactly 18
@@ -2009,8 +2271,23 @@ index 0000000..29da242
 +    """Core preflight, transport-injected and fully offline-testable.
 +    call_fn(account_id, system, user) -> (decision|None, response_model,
 +    stop_reason, latency_s, requested_model) or raises. Returns (summary,
-+    results); writes only the durable prompt archive + report into `store`."""
-+    from engine import decisions, persistence, prompts, state
++    results); writes only the durable prompt archive + report into `store`.
++
++    Requests run through the PRODUCTION wave structure (rounds.wave_order,
++    3 pairs = 6 requests per wave) under the production concurrency limit,
++    still making exactly 18 requests and creating no trades or schedule.
++
++    Identity rule (Mentor Ruling 015.4, documented): the response's model id
++    must EXACTLY equal the requested model id — no prefix or fuzzy matching.
++
++    PASS requires ALL of: exactly 18 requests/responses, 18 schema-valid,
++    18 semantically valid under production decisions.validate(), 18 exact
++    model identities, Raw/TA separation, accounts + store unmodified, zero
++    transport failures (the direct endpoint probe is verified separately by
++    main() into overall_pass)."""
++    from concurrent.futures import ThreadPoolExecutor
++
++    from engine import decisions, persistence, prompts, rounds, state
 +    os.makedirs(store, exist_ok=True)
 +    accounts = state.init_accounts()             # in-memory only
 +    assert all(str(a["E"]) == "10000.00" for a in accounts.values())
@@ -2046,7 +2323,8 @@ index 0000000..29da242
 +    results = {}
 +    before = json.dumps(persistence._enc_all(accounts), sort_keys=True,
 +                        default=str)
-+    for aid in sorted(accounts):                 # exactly the 18 accounts
++
++    def one(aid):
 +        system, user = rendered[aid]
 +        row = {"requested_model": None, "response_model": None,
 +               "stop_reason": None, "latency_s": None, "accepted": False,
@@ -2065,11 +2343,19 @@ index 0000000..29da242
 +                row["semantic_errors"] = decisions.validate(
 +                    acct, dec, snaps[acct["coin"]]["P_T"])
 +                row["decision_position"] = dec.get("position")
-+                row["identity_ok"] = bool(rmodel) and (
-+                    rmodel.startswith(want) or want.startswith(rmodel))
++                # EXACT identity rule (documented above)
++                row["identity_ok"] = rmodel == want
 +        except Exception as e:
 +            row["transport_error"] = str(e)[:200]
-+        results[aid] = row
++        return aid, row
++
++    concurrency = cfg["collection"]["concurrency_max_simultaneous_requests"]
++    for wave in rounds.wave_order(seed):         # production wave structure
++        aids = sorted(state.account_id(coin, model, arm)
++                      for coin, model in wave for arm in state.ARMS)
++        with ThreadPoolExecutor(max_workers=concurrency) as ex:
++            for aid, row in ex.map(one, aids):
++                results[aid] = row
 +
 +    after = json.dumps(persistence._enc_all(accounts), sort_keys=True,
 +                       default=str)
@@ -2092,9 +2378,15 @@ index 0000000..29da242
 +        "accounts_unmutated": unmutated,
 +        "marks": {c: str(s["P_T"]) for c, s in snaps.items()},
 +    }
++    summary["identity_rule"] = ("response model id must EXACTLY equal the "
++                                "requested model id")
++    # STRICT PASS (Mentor Ruling 015.4): semantic validity is REQUIRED —
++    # 18 accepted, 18 schema-valid, 18 semantically valid, 18 exact
++    # identities, zero transport failures, separation + isolation proven.
 +    summary["model_calls_pass"] = (
 +        summary["accepted"] == n == 18 and summary["schema_valid"] == 18
 +        and summary["identity_ok"] == 18
++        and summary["semantically_valid_first_try"] == 18
 +        and not summary["transport_failures"] and archive_ok and sep_ok
 +        and unmutated)
 +    out = os.path.join(store, f"preflight_report_{T}.json")
@@ -2248,10 +2540,10 @@ index 0000000..29da242
 +    main()
 diff --git a/scripts/run_official_14d.py b/scripts/run_official_14d.py
 new file mode 100644
-index 0000000..e4adb72
+index 0000000..a605d42
 --- /dev/null
 +++ b/scripts/run_official_14d.py
-@@ -0,0 +1,272 @@
+@@ -0,0 +1,284 @@
 +"""OFFICIAL 14-DAY EXPERIMENT SERVICE — INSTALLED ARMED/OFF, NEVER SELF-ACTIVATING.
 +
 +Runs under systemd (deploy/arena-official.service, Restart=always). Mentor
@@ -2473,6 +2765,14 @@ index 0000000..e4adb72
 +    from engine import config, official
 +    lock = official.acquire_runner_lock(LOCK_PATH)   # noqa: F841 (held open)
 +    verify_public_binding()          # Ruling 014.2: bound before ANYTHING
++    # DISARM SURVIVES STOP/REBOOT (Ruling 015.2): before anything else, an
++    # UNSTARTED schedule whose bound activation record is absent or changed
++    # is rolled back — the service comes up genuinely ARMED/OFF. A started
++    # schedule is immutable and takes the normal restart path.
++    status = official.reconcile_unstarted_schedule(OFFICIAL_STORE, ACTIVATION)
++    if status == "rolled_back":
++        print("STALE UNSTARTED SCHEDULE ROLLED BACK (activation record "
++              "absent or changed while the service was down). ARMED/OFF.")
 +    while True:
 +        act = armed_off_loop()
 +        # INTEGRITY GATES (Rulings 010.1/011.1): the EXTERNALLY issued
@@ -2485,11 +2785,15 @@ index 0000000..e4adb72
 +                  "made.")
 +            sys.exit(2)
 +        act_sha = official.activation_sha(ACTIVATION)
++        # re-reconcile with the CURRENT record: a leftover unstarted
++        # schedule bound to a different activation rolls back so the newly
++        # requested start can provision (Ruling 015.2)
++        official.reconcile_unstarted_schedule(OFFICIAL_STORE, ACTIVATION)
 +        print(f"ACTIVATION ACCEPTED sha256={act_sha} "
 +              f"start={act['start_utc']} total={act['total']}")
 +        sched = official.provision_official(
 +            OFFICIAL_STORE, act["engine_digest"], act["site_digest"],
-+            act["start_utc"], total=act["total"])
++            act["start_utc"], total=act["total"], activation_sha=act_sha)
 +        cfg = config.load_config()
 +        publish = direct_publisher()
 +        print(f"OFFICIAL RUN ARMED — {sched['total']} boundaries from "
@@ -2526,43 +2830,131 @@ index 0000000..e4adb72
 +    main()
 diff --git a/scripts/verify_deployment.py b/scripts/verify_deployment.py
 new file mode 100644
-index 0000000..78446d5
+index 0000000..fb38dec
 --- /dev/null
 +++ b/scripts/verify_deployment.py
-@@ -0,0 +1,115 @@
-+"""POST-DEPLOYMENT VERIFICATION (Mentor Ruling 014.6) — read-only, offline.
+@@ -0,0 +1,209 @@
++"""POST-DEPLOYMENT VERIFICATION (Mentor Rulings 014.6 + 015.5) — read-only.
 +
 +Run ON the server after any deployment. Proves the installed service and the
-+effective Nginx configuration correspond to the audited versions, and that
-+the runtime environment matches the pinned lock. Makes no network requests,
-+no model calls, no writes; prints PASS/FAIL per check and exits non-zero on
-+any failure. Never prints secrets (it never reads the env file's values).
++EFFECTIVE Nginx configuration correspond to the audited versions and expose
++nothing beyond the three approved read-only files, and that the runtime
++environment matches the pinned lock. Prints PASS/FAIL per check and exits
++non-zero on any failure. Never prints secrets (it never reads env values).
++
++Nginx policy (015.5): the exact live.akraarena.online server block(s) are
++extracted from `nginx -T` and must
++  * contain ONLY the two approved location blocks — `location /` (404 only)
++    and the approved three-file regex location (GET-only, CORS, no-store);
++  * contain NO proxy_pass/fastcgi_pass/uwsgi_pass/scgi_pass/grpc_pass,
++    no dav_methods, no other location, no upload/write surface;
++  * serve from root /var/www/arena.
++Effective HTTPS is verified live: https://live.akraarena.online/health.json
++answers 200 and plain http redirects (301/308) to https.
 +
 +usage: venv/bin/python scripts/verify_deployment.py [--engine-digest <64hex>]
-+With --engine-digest, the current tree is additionally verified against the
-+externally issued approved digest.
++                                                    [--skip-https]
 +"""
 +import hashlib
 +import os
++import re
 +import subprocess
 +import sys
++import urllib.request
 +
 +ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 +sys.path.insert(0, ROOT)
 +
 +INSTALLED_UNIT = "/etc/systemd/system/arena-official.service"
-+NGINX_SITE = "/etc/nginx/sites-enabled/arena"
++HOSTNAME = "live.akraarena.online"
 +
-+# Directives that MUST survive in the effective nginx config even after
-+# certbot rewrites the server block (content check, not byte equality):
-+REQUIRED_NGINX_LINES = [
-+    "server_name live.akraarena.online;",
-+    "root /var/www/arena;",
-+    "location ~ ^/(live_payload\\.js|live_payload\\.sha256|health\\.json)$",
++APPROVED_LOCATION_RE = (
++    r"^/(live_payload\.js|live_payload\.sha256|health\.json)$")
++FORBIDDEN_DIRECTIVES = ("proxy_pass", "fastcgi_pass", "uwsgi_pass",
++                        "scgi_pass", "grpc_pass", "dav_methods")
++REQUIRED_IN_PAYLOAD_LOCATION = (
 +    "limit_except GET { deny all; }",
 +    'add_header Access-Control-Allow-Origin "*" always;',
 +    'add_header Cache-Control "no-store, must-revalidate" always;',
-+]
++)
++
++
++def _blocks(text, keyword):
++    """Yield the full text of `keyword ... { ... }` blocks, brace-matched."""
++    for m in re.finditer(rf"(^|\n)\s*{keyword}\b[^{{]*{{", text):
++        depth, i = 1, m.end()
++        while i < len(text) and depth:
++            if text[i] == "{":
++                depth += 1
++            elif text[i] == "}":
++                depth -= 1
++            i += 1
++        yield text[m.start():i]
++
++
++def analyze_nginx(effective_text):
++    """Pure analysis of the effective nginx config (Ruling 015.5). Returns a
++    list of (check_name, ok, detail) tuples for the frozen hostname's server
++    blocks."""
++    out = []
++    servers = [b for b in _blocks(effective_text, "server")
++               if re.search(rf"server_name\s+[^;]*\b{re.escape(HOSTNAME)}\b",
++                            b)]
++    out.append((f"server block(s) for {HOSTNAME} present", bool(servers),
++                f"{len(servers)} found"))
++    payload_loc_seen = False
++    for b in servers:
++        for d in FORBIDDEN_DIRECTIVES:
++            out.append((f"no {d} in {HOSTNAME} block",
++                        not re.search(rf"\b{d}\b", b), ""))
++        locations = list(_blocks(b, "location"))
++        for loc in locations:
++            header = loc.split("{", 1)[0].strip()
++            if re.fullmatch(r"location\s+/", header):
++                body = loc.split("{", 1)[1].rsplit("}", 1)[0]
++                ok = re.fullmatch(r"\s*return\s+404;\s*", body) is not None
++                out.append(("location / returns 404 and nothing else",
++                            bool(ok), header))
++            elif APPROVED_LOCATION_RE in loc.replace("\\\\", "\\"):
++                payload_loc_seen = True
++                for req in REQUIRED_IN_PAYLOAD_LOCATION:
++                    out.append((f"payload location has: {req[:44]}",
++                                req in loc, ""))
++            else:
++                out.append(("no unexpected location block", False, header))
++        out.append(("root /var/www/arena in server block",
++                    "root /var/www/arena;" in b, ""))
++    out.append(("approved three-file payload location present",
++                payload_loc_seen, APPROVED_LOCATION_RE))
++    return out
++
++
++def check_https(fetch=None):
++    """(name, ok, detail) checks for effective HTTPS + redirect. `fetch` is
++    injectable for tests; default uses urllib against the live host."""
++    if fetch is None:
++        def fetch(url):
++            req = urllib.request.Request(url, method="GET")
++            # never follow redirects: we want to SEE the 301
++            class NoRedirect(urllib.request.HTTPRedirectHandler):
++                def redirect_request(self, *a, **k):
++                    return None
++            opener = urllib.request.build_opener(NoRedirect)
++            try:
++                with opener.open(req, timeout=15) as r:
++                    return r.status, dict(r.headers)
++            except urllib.error.HTTPError as e:
++                return e.code, dict(e.headers)
++    out = []
++    code, _ = fetch(f"https://{HOSTNAME}/health.json")
++    out.append((f"https://{HOSTNAME}/health.json answers 200", code == 200,
++                f"got {code}"))
++    code, headers = fetch(f"http://{HOSTNAME}/health.json")
++    loc = (headers or {}).get("Location", "")
++    out.append(("http redirects to https",
++                code in (301, 308) and loc.startswith(f"https://{HOSTNAME}/"),
++                f"got {code} -> {loc[:60]}"))
++    return out
 +
 +
 +def sha(path):
@@ -2577,46 +2969,52 @@ index 0000000..78446d5
 +    return None
 +
 +
-+def check(results, name, ok, detail=""):
-+    results.append(ok)
-+    print(f"{'PASS' if ok else 'FAIL'}  {name}" + (f"  ({detail})" if detail
-+                                                   else ""))
-+
-+
 +def main():
 +    from engine import config, official
 +    results = []
++
++    def check(name, ok, detail=""):
++        results.append(ok)
++        print(f"{'PASS' if ok else 'FAIL'}  {name}"
++              + (f"  ({detail})" if detail else ""))
 +
 +    # 1. tree digests reproduce (and optionally match the issued digest)
 +    man = config.build_manifest()["combined"]
 +    issued = (arg("--engine-digest") or "").strip().lower()
 +    if issued:
-+        check(results, "engine digest matches externally issued value",
-+              man == issued, man[:16] + "…")
++        check("engine digest matches externally issued value", man == issued,
++              man[:16] + "…")
 +    else:
 +        print(f"INFO  current engine digest: {man}")
 +        print(f"INFO  current site digest:   "
 +              f"{config.build_site_manifest()['combined']}")
 +
-+    # 2. installed systemd unit is byte-identical to the audited template
++    # 2. installed systemd unit byte-identical to the audited template
 +    tmpl = os.path.join(ROOT, "deploy", "arena-official.service")
 +    ok = os.path.exists(INSTALLED_UNIT) and sha(INSTALLED_UNIT) == sha(tmpl)
-+    check(results, "installed systemd unit == audited template", ok,
-+          INSTALLED_UNIT)
++    check("installed systemd unit == audited template", ok, INSTALLED_UNIT)
 +
-+    # 3. effective nginx config carries every audited directive
++    # 3. effective nginx config: approved-only exposure
 +    try:
 +        eff = subprocess.run(["nginx", "-T"], capture_output=True, text=True,
 +                             timeout=30).stdout
-+    except Exception:
-+        eff = open(NGINX_SITE).read() if os.path.exists(NGINX_SITE) else ""
-+    for line in REQUIRED_NGINX_LINES:
-+        check(results, f"nginx effective config contains: {line[:52]}",
-+              line in eff)
++    except Exception as e:
++        eff = ""
++        check("nginx -T readable", False, str(e)[:80])
++    for name, ok, detail in analyze_nginx(eff):
++        check(name, ok, detail)
 +
-+    # 4. running under the audited venv python with the pinned packages
++    # 4. effective HTTPS + redirect for the frozen hostname
++    if "--skip-https" not in sys.argv:
++        try:
++            for name, ok, detail in check_https():
++                check(name, ok, detail)
++        except Exception as e:
++            check("effective https reachable", False, str(e)[:80])
++
++    # 5. audited venv python + pinned packages
 +    venv_py = os.path.join(ROOT, "venv", "bin", "python")
-+    check(results, "executed by the audited venv python",
++    check("executed by the audited venv python",
 +          os.path.realpath(sys.executable) == os.path.realpath(venv_py),
 +          sys.executable)
 +    import importlib.metadata as md
@@ -2630,12 +3028,12 @@ index 0000000..78446d5
 +            have = md.version(pkg)
 +        except md.PackageNotFoundError:
 +            have = "MISSING"
-+        check(results, f"pinned {pkg}=={want}", have == want, f"have {have}")
++        check(f"pinned {pkg}=={want}", have == want, f"have {have}")
 +
-+    # 5. canonical endpoint constant is the frozen hostname
-+    check(results, "canonical endpoint constant",
++    # 6. canonical endpoint constant is the frozen hostname
++    check("canonical endpoint constant",
 +          official.OFFICIAL_PAYLOAD_URL
-+          == "https://live.akraarena.online/live_payload.js")
++          == f"https://{HOSTNAME}/live_payload.js")
 +
 +    n_fail = results.count(False)
 +    print(f"\nDEPLOYMENT VERIFICATION: "
@@ -3222,10 +3620,10 @@ index 211792f..1424b91 100644
  
 diff --git a/tests/test_ruling014.py b/tests/test_ruling014.py
 new file mode 100644
-index 0000000..996bb36
+index 0000000..2c53f5f
 --- /dev/null
 +++ b/tests/test_ruling014.py
-@@ -0,0 +1,422 @@
+@@ -0,0 +1,424 @@
 +"""Mentor Ruling 014 remediation regressions: real pre-start disarm, frozen
 +public-hostname binding, clean completion, audited preflight isolation,
 +enforced T+630 resolution/replay deadlines, infrastructure integrity lock,
@@ -3616,7 +4014,9 @@ index 0000000..996bb36
 +def test_verify_deployment_checks_the_frozen_hostname():
 +    mod = _load_script("verify_deployment")
 +    host = urlparse(official.OFFICIAL_PUBLIC_ORIGIN).hostname
-+    assert any(host in line for line in mod.REQUIRED_NGINX_LINES)
++    assert mod.HOSTNAME == host
++    assert any(host in line for line in mod.REQUIRED_IN_PAYLOAD_LOCATION) \
++        or host in mod.HOSTNAME                      # hostname-driven checks
 +
 +
 +# ---- 014.7 pinned reproducible environment ----
@@ -3648,3 +4048,460 @@ index 0000000..996bb36
 +    assert "Runs entirely on GitHub Actions" not in readme
 +    assert "tick.yml" not in readme
 +    assert "GitHub Pages" in readme                  # dashboard role stated
+diff --git a/tests/test_ruling015.py b/tests/test_ruling015.py
+new file mode 100644
+index 0000000..fc69c56
+--- /dev/null
++++ b/tests/test_ruling015.py
+@@ -0,0 +1,451 @@
++"""Mentor Ruling 015 remediation regressions: pristine official-state launch
++gate, disarm surviving service stop/reboot via activation binding,
++transactional pair/replay resolution (no commit after T+630), strict
++preflight PASS with production wave concurrency, and the hardened deployment
++verifier. All offline."""
++import importlib.util
++import json
++import os
++import tempfile
++import threading
++from decimal import Decimal
++
++import pytest
++
++from conftest import T0, ScriptedCaller, flat_decision, long_decision
++from engine import (config, official, persistence, pilot, publisher,
++                    recovery, state)
++from test_official import direct, provisioned_official, run_official
++from test_ruling010 import PilotClock, digests
++from test_ruling011 import _sol_price
++from test_ruling014 import ManualClock
++
++HOUR = 3600
++
++
++def _load_script(name):
++    spec = importlib.util.spec_from_file_location(
++        name, os.path.join(config.ROOT, "scripts", f"{name}.py"))
++    mod = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(mod)
++    return mod
++
++
++def _pristine_store():
++    store = tempfile.mkdtemp(prefix="arena-r15-")
++    persistence.save_state(os.path.join(store, "state.json"),
++                           state.init_accounts(), {"boundary": None})
++    return store
++
++
++def _dirty(mutate):
++    """A correctly CHECKSUMMED but dirty state (the checksum is recomputed by
++    save_state — exactly the case the gate must still refuse)."""
++    store = _pristine_store()
++    spath = os.path.join(store, "state.json")
++    accounts, meta = persistence.load_state(spath, expect_full_roster=True)
++    mutate(accounts, meta)
++    persistence.save_state(spath, accounts, meta)
++    return store
++
++
++DIRTY_CASES = {
++    "equity": lambda a, m: a["btc_haiku_raw"].update(E=Decimal("9999.99")),
++    "position": lambda a, m: a["eth_sonnet_ta"].update(
++        qty=Decimal("0.5"), entry=Decimal("1800")),
++    "trade": lambda a, m: a["sol_opus_raw"]["trades"].append(
++        {"pnl": "1", "fee": "0"}),
++    "fees": lambda a, m: a["btc_haiku_ta"].update(fees_total=Decimal("0.01")),
++    "lifecycle": lambda a, m: a["eth_haiku_raw"]["lifecycles"].append(
++        __import__("engine.lifecycle", fromlist=["new_lifecycle"])
++        .new_lifecycle(T0, {"timeframe": "1h_close",
++                            "operator": "price_at_or_above",
++                            "level": "70000"}, "eth_haiku_raw-L1")),
++    "thesis": lambda a, m: a["sol_haiku_ta"]["theses"].append(
++        {"t": "x", "text": "leftover"}),
++    "decisions": lambda a, m: a["btc_opus_raw"].update(n_decisions=1),
++    "boundary": lambda a, m: m.update(boundary=T0),
++    "history": lambda a, m: m.update(
++        equity_history={"btc_haiku_raw": [{"T": T0, "equity": "10000.00"}]}),
++}
++
++
++@pytest.mark.parametrize("case", sorted(DIRTY_CASES))
++def test_dirty_state_refused_before_any_schedule(case):
++    store = _dirty(DIRTY_CASES[case])
++    eng, site = digests()
++    with pytest.raises(official.PristineError):
++        official.provision_official(store, eng, site, T0, total=2)
++    # refused BEFORE the schedule / binding / publication existed
++    assert not os.path.exists(os.path.join(store, pilot.SCHEDULE_NAME))
++    assert not os.path.exists(os.path.join(store, official.BINDING_NAME))
++    assert not os.path.exists(os.path.join(store, publisher.PUB_LOG))
++
++
++def test_missing_state_creates_standard_pristine_state():
++    store = tempfile.mkdtemp(prefix="arena-r15-")
++    eng, site = digests()
++    sched = official.provision_official(store, eng, site, T0, total=2)
++    assert sched["start"] == T0
++    accounts, meta = persistence.load_state(
++        os.path.join(store, "state.json"), expect_full_roster=True)
++    assert all(str(a["E"]) == "10000.00" and a["qty"] == 0
++               for a in accounts.values())
++    official.verify_pristine_official_state(store)   # round-trips clean
++
++
++def test_started_schedule_uses_restart_path_not_pristine(cfg):
++    """After a completed boundary the state is legitimately non-pristine;
++    re-provisioning (restart) must NOT demand pristine accounts."""
++    store = provisioned_official(n=2)
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    caller = ScriptedCaller({"sol_haiku_raw": long_decision(
++        float(_sol_price()), 2000)})
++    with pytest.raises(recovery.CrashError):
++        run_official(store, cfg, caller, dp, vc, crash_at="after_finalize")
++    eng, site = digests()
++    sched = official.provision_official(store, eng, site, T0, total=2)
++    assert sched["boundaries"][0] == T0              # same sealed schedule
++
++
++# ---- 015.2 disarm survives stop/reboot ----
++
++def _record(tmp_path, start, name="act.json"):
++    eng, site = digests()
++    p = tmp_path / name
++    p.write_text(json.dumps({
++        "approved": "YES-OFFICIAL-RUN-APPROVED", "engine_digest": eng,
++        "site_digest": site, "start_utc": start, "total": 2}))
++    return str(p), official.activation_sha(str(p))
++
++
++def test_full_stop_delete_restart_rearm_with_new_start(cfg, tmp_path):
++    """The mentor's exact sequence: provision -> zero boundaries -> service
++    stops -> record deleted -> restart reconciles to ARMED/OFF -> owner
++    re-arms with a DIFFERENT start -> the NEW schedule is provisioned and
++    used, with zero calls for the old one."""
++    eng, site = digests()
++    store = tempfile.mkdtemp(prefix="arena-r15-")
++    act_path, sha_a = _record(tmp_path, T0)
++    official.provision_official(store, eng, site, T0, total=2,
++                                activation_sha=sha_a)
++    assert official.reconcile_unstarted_schedule(store, act_path) == "match"
++    # --- service stops; owner deletes the record; service restarts ---
++    os.remove(act_path)
++    assert official.reconcile_unstarted_schedule(store, act_path) \
++        == "rolled_back"
++    with pytest.raises(pilot.ScheduleError):
++        pilot.load_schedule(store)                   # stale schedule gone
++    assert not os.path.exists(os.path.join(store, official.BINDING_NAME))
++    official.verify_pristine_official_state(store)   # accounts untouched
++    # --- owner re-arms with a DIFFERENT start ---
++    new_start = T0 + 5 * HOUR
++    act_path2, sha_b = _record(tmp_path, new_start, "act2.json")
++    assert official.reconcile_unstarted_schedule(store, act_path2) \
++        == "no_schedule"
++    sched = official.provision_official(store, eng, site, new_start, total=2,
++                                        activation_sha=sha_b)
++    assert sched["start"] == new_start
++    vc = PilotClock(float(new_start) - 60)
++    dp, _ = direct(vc)
++    caller = ScriptedCaller({})
++    sched = run_official(store, cfg, caller, dp, vc,
++                         disarm_check=official.make_disarm_check(act_path2,
++                                                                 sha_b))
++    assert sched["completed"] == [new_start, new_start + HOUR]
++    assert len(caller.calls) == 36                   # exactly the new run
++    ledger = persistence.read_ledger(os.path.join(store, "ledger.jsonl"))
++    for e in ledger:                                 # zero OLD-schedule calls
++        assert str(T0) not in e["round_id"]
++
++
++def test_changed_record_rolls_back_unstarted_schedule(tmp_path):
++    eng, site = digests()
++    store = tempfile.mkdtemp(prefix="arena-r15-")
++    act_path, sha_a = _record(tmp_path, T0)
++    official.provision_official(store, eng, site, T0, total=2,
++                                activation_sha=sha_a)
++    _record(tmp_path, T0 + HOUR, "act.json")         # same file, new content
++    assert official.reconcile_unstarted_schedule(store, act_path) \
++        == "rolled_back"
++
++
++def test_unbound_schedule_rolls_back(tmp_path):
++    """A schedule without a binding (or bound to a different SHA) can never
++    silently survive: safety rolls it back."""
++    eng, site = digests()
++    store = tempfile.mkdtemp(prefix="arena-r15-")
++    act_path, _ = _record(tmp_path, T0)
++    official.provision_official(store, eng, site, T0, total=2)  # no sha bound
++    assert official.reconcile_unstarted_schedule(store, act_path) \
++        == "rolled_back"
++
++
++def test_started_schedule_is_immutable_after_stop(cfg, tmp_path):
++    eng, site = digests()
++    store = provisioned_official(n=2)
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    with pytest.raises(recovery.CrashError):
++        run_official(store, cfg, ScriptedCaller({}), dp, vc,
++                     crash_at="after_one_pair")      # boundary 1 STARTED
++    act_path = str(tmp_path / "gone.json")           # record never existed
++    assert official.reconcile_unstarted_schedule(store, act_path) == "started"
++    sched = pilot.load_schedule(store)
++    assert sched["boundaries"][0] == T0              # schedule preserved
++
++
++def test_runner_script_reconciles_at_startup():
++    src = open(os.path.join(config.ROOT, "scripts",
++                            "run_official_14d.py")).read()
++    assert src.count("reconcile_unstarted_schedule") >= 2   # boot + per-arm
++    assert "activation_sha=act_sha" in src           # binding is written
++
++
++# ---- 015.3 transactional resolution: nothing commits after T+630 ----
++
++def _prod_store():
++    store = tempfile.mkdtemp(prefix="arena-r15tx-")
++    persistence.save_state(store + "/state.json", state.init_accounts(),
++                           {"boundary": None})
++    config.write_launch_manifest(store)
++    return store
++
++
++def _assert_untouched(store, aid):
++    accounts, _ = persistence.load_state(store + "/state.json")
++    a = accounts[aid]
++    assert str(a["E"]) == "10000.00" and a["qty"] == 0
++    assert a["trades"] == [] and str(a["fees_total"]) == "0"
++    assert a["lifecycle"] is None and a["lifecycles"] == []
++
++
++def test_slow_account_execution_discards_prepared_commit(cfg, snapshots,
++                                                         monkeypatch):
++    """The mentor's demonstrated hole: resolution BEGINS before T+630 but the
++    execution work finishes after. The prepared result must be discarded —
++    PAIR_ABORTED, zero account mutation, zero trades, no executed links."""
++    from engine import rounds as rounds_mod
++    store = _prod_store()
++    clock = ManualClock(600.0)                       # resolution begins <630
++    real_commit = rounds_mod._commit_account
++
++    def slow_commit(acct, dec, snap, T):
++        clock.t += 100.0                             # crosses 630 mid-work
++        return real_commit(acct, dec, snap, T)
++    monkeypatch.setattr(recovery.rounds, "_commit_account", slow_commit)
++    d = long_decision(float(_sol_price()), 2000)
++    ledger, _, _ = recovery.run_checkpointed(
++        T0, snapshots, ScriptedCaller({"sol_haiku_raw": d}), cfg, store,
++        clock=clock, deadline=100000.0, resolution_deadline=630.0)
++    pairs = [e for e in ledger if e.get("status")]
++    assert len(pairs) == 9
++    assert {e["status"] for e in pairs} == {"PAIR_ABORTED"}
++    assert {e["reason"] for e in pairs} == {"deadline_exceeded"}
++    _assert_untouched(store, "sol_haiku_raw")        # discarded WHOLE
++    _assert_untouched(store, "sol_haiku_ta")
++    led = persistence.read_ledger(os.path.join(store, "ledger.jsonl"))
++    assert not [e for e in led if e.get("e") == "executed_attempt"]
++    _, meta = persistence.load_state(store + "/state.json")
++    assert meta["boundary_complete"] is True         # still terminal
++
++
++def test_slow_preparation_serialization_discards_commit(cfg, snapshots,
++                                                        monkeypatch):
++    """Slow state-copy/serialization preparation (not the model, not the
++    execution math) must also be caught by the post-preparation clock gate."""
++    import copy as copy_mod
++    store = _prod_store()
++    clock = ManualClock(600.0)
++    real_deepcopy = copy_mod.deepcopy
++
++    def slow_deepcopy(obj, *a, **k):
++        clock.t += 400.0                             # far past 630
++        return real_deepcopy(obj, *a, **k)
++    monkeypatch.setattr(recovery.copy, "deepcopy", slow_deepcopy)
++    d = long_decision(float(_sol_price()), 2000)
++    ledger, _, _ = recovery.run_checkpointed(
++        T0, snapshots, ScriptedCaller({"sol_haiku_raw": d}), cfg, store,
++        clock=clock, deadline=100000.0, resolution_deadline=630.0)
++    pairs = [e for e in ledger if e.get("status")]
++    assert {e["status"] for e in pairs} == {"PAIR_ABORTED"}
++    _assert_untouched(store, "sol_haiku_raw")
++
++
++def test_slow_replay_candle_is_discarded_whole(cfg, snapshots, monkeypatch):
++    from conftest import load_fix
++    from engine import marketdata
++    store = _prod_store()
++    candles = {c: [x for x in marketdata.to_dec(load_fix(c, "1m"))
++                   if T0 <= x["t"] < T0 + HOUR] for c in ("BTC", "ETH", "SOL")}
++    spec = {c: {"start": T0, "end": T0 + HOUR, "candles": cs}
++            for c, cs in candles.items()}
++    clock = ManualClock(600.0)                       # replay begins <630
++    real_replay = recovery.replay_mod.replay
++
++    def slow_replay(accts, cs, recs):
++        clock.t += 200.0                             # crosses 630 mid-candle
++        return real_replay(accts, cs, recs)
++    monkeypatch.setattr(recovery.replay_mod, "replay", slow_replay)
++    ledger, _, _ = recovery.run_checkpointed(
++        T0, snapshots, ScriptedCaller({}), cfg, store, clock=clock,
++        deadline=100000.0, replay_spec=spec, replay_deadline=630.0)
++    _, meta = persistence.load_state(store + "/state.json")
++    assert meta["boundary_complete"] is True
++    catchups = [e for e in ledger if e.get("replay")
++                and e["replay"][0]["e"] == "CATCHUP_REQUIRED"]
++    assert catchups                                  # declared safe behavior
++    for coin in ("BTC", "ETH", "SOL"):
++        rs = meta["replay_state"].get(coin, {})
++        if rs.get("status") == "CATCHUP_REQUIRED":
++            # the half-done candle was discarded: watermark never advanced
++            # into or past the latched gap
++            wm = meta["replay_watermark"].get(coin)
++            assert wm is None or wm < rs["gap_since"]
++
++
++# ---- 015.4 preflight must not false-pass ----
++
++def _preflight(cfg, snapshots, call_fn):
++    mod = _load_script("preflight_official")
++    store = tempfile.mkdtemp(prefix="arena-pf15-")
++    return mod.run_preflight(store, cfg, snapshots, call_fn, T0)
++
++
++def _mk_call(cfg, decision_for=None, model_for=None):
++    def call_fn(aid, system, user):
++        want = cfg["models"][aid.split("_")[1]]["model"]
++        dec = (decision_for or (lambda a: flat_decision()))(aid)
++        rmodel = (model_for or (lambda a, w: w))(aid, want)
++        return dec, rmodel, "tool_use", 0.1, want
++    return call_fn
++
++
++def test_all_semantically_invalid_is_fail(cfg, snapshots):
++    bad = dict(long_decision(50000, 2000), invalidation=None)   # sem-invalid
++    summary, _, _ = _preflight(cfg, snapshots,
++                               _mk_call(cfg, lambda a: dict(bad)))
++    assert summary["accepted"] == 18                 # the old false-pass path
++    assert summary["semantically_valid_first_try"] == 0
++    assert summary["model_calls_pass"] is False      # now correctly FAIL
++
++
++def test_one_semantically_invalid_is_fail(cfg, snapshots):
++    bad = dict(long_decision(50000, 2000), invalidation=None)
++
++    def decide(aid):
++        return dict(bad) if aid == "btc_haiku_raw" else flat_decision()
++    summary, _, _ = _preflight(cfg, snapshots, _mk_call(cfg, decide))
++    assert summary["semantically_valid_first_try"] == 17
++    assert summary["model_calls_pass"] is False
++
++
++def test_wrong_or_fuzzy_model_identity_is_fail(cfg, snapshots):
++    summary, _, _ = _preflight(
++        cfg, snapshots,
++        _mk_call(cfg, model_for=lambda a, w: w + "-20991231"
++                 if a == "eth_opus_ta" else w))
++    assert summary["identity_ok"] == 17              # prefix match REJECTED
++    assert summary["model_calls_pass"] is False
++    assert "EXACTLY equal" in summary["identity_rule"]
++
++
++def test_all_valid_passes_and_makes_exactly_18_calls(cfg, snapshots):
++    calls = []
++
++    def call_fn(aid, system, user):
++        calls.append(aid)
++        want = cfg["models"][aid.split("_")[1]]["model"]
++        return flat_decision(), want, "tool_use", 0.1, want
++    summary, _, _ = _preflight(cfg, snapshots, call_fn)
++    assert summary["model_calls_pass"] is True
++    assert len(calls) == 18 and len(set(calls)) == 18
++
++
++def test_preflight_peak_concurrency_matches_production_limit(cfg, snapshots):
++    limit = cfg["collection"]["concurrency_max_simultaneous_requests"]
++    assert limit == 6
++    barrier = threading.Barrier(limit, timeout=10)
++    lock = threading.Lock()
++    stats = {"in": 0, "peak": 0, "n": 0}
++
++    def call_fn(aid, system, user):
++        with lock:
++            stats["in"] += 1
++            stats["n"] += 1
++            stats["peak"] = max(stats["peak"], stats["in"])
++        barrier.wait()                               # 6 must run TOGETHER
++        with lock:
++            stats["in"] -= 1
++        want = cfg["models"][aid.split("_")[1]]["model"]
++        return flat_decision(), want, "tool_use", 0.1, want
++    summary, _, _ = _preflight(cfg, snapshots, call_fn)
++    assert stats["peak"] == limit                    # production concurrency
++    assert stats["n"] == 18                          # still exactly 18
++    assert summary["model_calls_pass"] is True
++
++
++# ---- 015.5 hardened deployment verifier ----
++
++GOOD_NGINX = open(os.path.join(config.ROOT, "deploy",
++                               "nginx-arena.conf")).read()
++
++
++def _fails(checks):
++    return [name for name, ok, _ in checks if not ok]
++
++
++def test_verifier_accepts_the_audited_config():
++    mod = _load_script("verify_deployment")
++    assert _fails(mod.analyze_nginx(GOOD_NGINX)) == []
++
++
++def test_verifier_rejects_proxy_and_extra_locations():
++    mod = _load_script("verify_deployment")
++    evil = GOOD_NGINX.replace(
++        "    location / { return 404; }",
++        "    location / { return 404; }\n"
++        "    location /admin { proxy_pass http://127.0.0.1:9000; }")
++    fails = _fails(mod.analyze_nginx(evil))
++    assert any("proxy_pass" in f for f in fails)
++    assert any("unexpected location" in f for f in fails)
++
++
++def test_verifier_rejects_writable_root_location():
++    mod = _load_script("verify_deployment")
++    evil = GOOD_NGINX.replace("location / { return 404; }",
++                              "location / { autoindex on; }")
++    fails = _fails(mod.analyze_nginx(evil))
++    assert any("returns 404" in f for f in fails)
++
++
++def test_verifier_rejects_missing_guard_headers():
++    mod = _load_script("verify_deployment")
++    evil = GOOD_NGINX.replace("        limit_except GET { deny all; }\n", "")
++    fails = _fails(mod.analyze_nginx(evil))
++    assert any("limit_except" in f for f in fails)
++
++
++def test_verifier_https_and_redirect_checks():
++    mod = _load_script("verify_deployment")
++
++    def good_fetch(url):
++        if url.startswith("https://"):
++            return 200, {}
++        return 301, {"Location": f"https://{mod.HOSTNAME}/health.json"}
++    assert _fails(mod.check_https(good_fetch)) == []
++
++    def no_redirect(url):
++        return 200, {}
++    fails = _fails(mod.check_https(no_redirect))
++    assert any("redirect" in f for f in fails)
++
++
++def test_docs_no_stale_restart_or_placeholder():
++    for rel in ("deploy/DEPLOYMENT.md", "docs/handoff/BUILD_BATCH_DESIGN.md",
++                "docs/handoff/NEXT_STEPS.md",
++                "docs/handoff/OPERATIONS_RUNBOOK.md"):
++        text = open(os.path.join(config.ROOT, rel)).read()
++        assert "Restart=always" not in text, rel
++        assert "ARENA_VPS_HOST" not in text, rel
