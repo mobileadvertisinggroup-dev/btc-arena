@@ -180,7 +180,7 @@ def test_collection_deadline_passed_to_coordinator_is_T_plus_510(cfg,
     assert seen["abort_all_reason"] is None
     assert sched["completed"] == [T0]
     assert official.HARD_DEADLINE_S == \
-        cfg["collection"]["collection_deadline_seconds"] == 720
+        cfg["collection"]["hard_terminal_deadline_seconds_after_T"] == 720
 
 
 def test_committed_boundary_publishes_official_branding(cfg):

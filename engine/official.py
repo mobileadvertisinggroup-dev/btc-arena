@@ -182,7 +182,8 @@ class PreflightAttestationError(Exception):
     preflight attestation (Mentor Rulings 016.7 + 017.3)."""
 
 
-def verify_preflight_attestation(act, engine_digest, site_digest, now):
+def verify_preflight_attestation(act, engine_digest, site_digest, now,
+                                 waive_freshness=False):
     """STRICT attestation verification (Mentor Ruling 017.3). The activation
     record must carry {'preflight': {'report_path', 'report_sha256'}}; the
     referenced report must exist and hash to exactly the recorded SHA-256.
@@ -201,7 +202,13 @@ def verify_preflight_attestation(act, engine_digest, site_digest, now):
 
     Timestamp policy: not in the future beyond CLOCK_TOLERANCE_S; not older
     than PREFLIGHT_VALIDITY_S at activation; and the selected T0
-    (act['start_utc']) must occur BEFORE the attestation expires."""
+    (act['start_utc']) must occur BEFORE the attestation expires.
+
+    `waive_freshness` (Mentor Ruling 018.3): ONLY the 24-hour freshness and
+    T0-expiry rules are waived — used exclusively for started/complete
+    restarts validating the immutable in-store attestation copy. Digest,
+    endpoint, report-hash, strict-PASS and model-identity checks are NEVER
+    waived."""
     def fail(msg):
         raise PreflightAttestationError(msg)
     p = act.get("preflight")
@@ -270,12 +277,83 @@ def verify_preflight_attestation(act, engine_digest, site_digest, now):
     if ts > now + CLOCK_TOLERANCE_S:
         fail(f"preflight timestamp is in the future beyond the "
              f"{CLOCK_TOLERANCE_S}s clock tolerance")
-    if now - ts > PREFLIGHT_VALIDITY_S:
-        fail(f"preflight report stale (validity {PREFLIGHT_VALIDITY_S}s)")
-    t0 = act.get("start_utc")
-    if isinstance(t0, (int, float)) and t0 >= ts + PREFLIGHT_VALIDITY_S:
-        fail("selected T0 occurs after the preflight attestation expires")
+    if not waive_freshness:
+        if now - ts > PREFLIGHT_VALIDITY_S:
+            fail(f"preflight report stale (validity {PREFLIGHT_VALIDITY_S}s)")
+        t0 = act.get("start_utc")
+        if isinstance(t0, (int, float)) and t0 >= ts + PREFLIGHT_VALIDITY_S:
+            fail("selected T0 occurs after the preflight attestation expires")
     return True
+
+
+class TrustRecordError(Exception):
+    """Durable trust evidence missing/modified/mismatched at restart
+    (Mentor Ruling 018.3) => integrity halt; the run must NOT resume merely
+    because the schedule says a boundary completed."""
+
+
+def verify_durable_trust(store, now, waive_freshness=False):
+    """Mentor Ruling 018.3: MANDATORY validation of the in-store durable
+    trust records before ANY reconciliation, publication, network operation
+    or model call on an unstarted/started/complete schedule:
+
+      1. both approved manifests exist and the CURRENT engine + site verify
+         against them;
+      2. activation_accepted.json exists; its engine/site digests equal the
+         approved manifest digests; its start/total equal the persisted
+         schedule;
+      3. activation_binding.json exists and matches the accepted activation
+         SHA, digests, start and total;
+      4. preflight_attestation.json exists, hashes to the accepted preflight
+         SHA-256, and passes the FULL strict verification (PASS fields,
+         18-account results, model identities, canonical endpoint);
+      5. freshness is waived ONLY when waive_freshness=True (after boundary
+         1); nothing else is ever waived.
+
+    Raises IntegrityError / TrustRecordError / PreflightAttestationError on
+    any failure; returns the accepted activation record. Read-only."""
+    launch = config_mod.load_launch_manifest(store)
+    site = config_mod.load_site_manifest(store)
+    config_mod.verify_integrity(launch)
+    config_mod.verify_site_integrity(site)
+    apath = os.path.join(store, ACCEPTED_ACTIVATION_NAME)
+    try:
+        with open(apath) as f:
+            stored = json.load(f)
+    except Exception as e:
+        raise TrustRecordError(f"durable accepted activation unavailable: {e}")
+    rec = stored.get("record") or {}
+    if rec.get("engine_digest") != launch["combined"]:
+        raise TrustRecordError("accepted activation engine digest does not "
+                               "match the approved launch manifest")
+    if rec.get("site_digest") != site["combined"]:
+        raise TrustRecordError("accepted activation site digest does not "
+                               "match the approved site manifest")
+    sched = pilot.load_schedule(store)
+    if rec.get("start_utc") != sched["start"] \
+            or rec.get("total") != sched["total"]:
+        raise TrustRecordError("accepted activation start/total do not "
+                               "match the persisted schedule")
+    try:
+        with open(os.path.join(store, BINDING_NAME)) as f:
+            binding = json.load(f)
+    except Exception as e:
+        raise TrustRecordError(f"schedule binding unavailable: {e}")
+    if (binding.get("start") != sched["start"]
+            or binding.get("total") != sched["total"]
+            or binding.get("engine_digest") != launch["combined"]
+            or binding.get("site_digest") != site["combined"]
+            or binding.get("activation_sha") != stored.get("activation_sha")):
+        raise TrustRecordError("schedule binding does not match the "
+                               "accepted activation and approved manifests")
+    ppath = os.path.join(store, ACCEPTED_PREFLIGHT_NAME)
+    if not os.path.exists(ppath):
+        raise TrustRecordError("archived preflight attestation missing")
+    act2 = dict(rec, preflight=dict(rec.get("preflight") or {},
+                                    report_path=ppath))
+    verify_preflight_attestation(act2, launch["combined"], site["combined"],
+                                 now, waive_freshness=waive_freshness)
+    return rec
 
 
 BINDING_NAME = "activation_binding.json"
@@ -649,7 +727,12 @@ def run_official(store, cfg, caller, fetch_market, publish, clock, sleep,
     record disappears or changes before then, Disarmed is raised with zero
     model calls and zero boundary work. Once boundary 1 has started the
     predicate is never consulted again — halting requires a service stop."""
-    assert cfg["collection"]["collection_deadline_seconds"] == HARD_DEADLINE_S
+    # separate machine-readable concepts (Ruling 018.2): the model-collection
+    # limit and the hard terminal limit are distinct fields and constants
+    assert cfg["collection"][
+        "model_collection_deadline_seconds_after_T"] == COLLECTION_DEADLINE_S
+    assert cfg["collection"][
+        "hard_terminal_deadline_seconds_after_T"] == HARD_DEADLINE_S
     sched = pilot.load_schedule(store)
     notes = []
 

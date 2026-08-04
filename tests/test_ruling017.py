@@ -434,8 +434,8 @@ def test_config_deadlines_match_official_constants(cfg):
     assert col["final_publication_target_seconds_after_T"] \
         == official.FINAL_PUBLISH_S == 690
     assert col["hard_terminal_deadline_seconds_after_T"] \
-        == official.HARD_DEADLINE_S \
-        == col["collection_deadline_seconds"] == 720
+        == official.HARD_DEADLINE_S == 720
+    assert "collection_deadline_seconds" not in col     # old dual-use gone
     assert "SCHEDULED boundary T" in col["deadline_anchor"]
 
 

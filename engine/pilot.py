@@ -132,7 +132,8 @@ def run_pilot(store, cfg, caller, fetch_market, publish, clock, sleep,
             replay_spec={c: s for c, s in spec.items()
                          if snaps.get(c) is not None},
             crash_at=crash_at, clock=clock,
-            deadline=T + cfg["collection"]["collection_deadline_seconds"])
+            deadline=T + cfg["collection"][
+                "hard_terminal_deadline_seconds_after_T"])
         sched = mark_completed(store, T)
         # lifecycle B: ROUND_COMMITTED after the atomic engine commit
         publisher_mod.publish_boundary(store, T, len(sched["completed"]),

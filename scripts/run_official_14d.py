@@ -72,23 +72,38 @@ def read_activation():
     return a if ok else None
 
 
-def fetch_market(coin, T, first):
-    from engine import marketdata
+def kraken_ohlc(pair, interval_min):
+    url = (f"https://api.kraken.com/0/public/OHLC?pair={pair}"
+           f"&interval={interval_min}")
+    with urllib.request.urlopen(url, timeout=15) as r:
+        raw = json.loads(r.read().decode())
+    key = [k for k in raw["result"] if k != "last"][0]
+    return [{"t": int(x[0]), "o": float(x[1]), "h": float(x[2]),
+             "l": float(x[3]), "c": float(x[4]), "v": float(x[6])}
+            for x in raw["result"][key]]
 
-    def ohlc(pair, interval_min):
-        url = (f"https://api.kraken.com/0/public/OHLC?pair={pair}"
-               f"&interval={interval_min}")
-        with urllib.request.urlopen(url, timeout=15) as r:
-            raw = json.loads(r.read().decode())
-        key = [k for k in raw["result"] if k != "last"][0]
-        return [{"t": int(x[0]), "o": float(x[1]), "h": float(x[2]),
-                 "l": float(x[3]), "c": float(x[4]), "v": float(x[6])}
-                for x in raw["result"][key]]
+
+def fetch_market(coin, T, first):
+    """Mentor Ruling 018.1: the 1-MINUTE REPLAY SERIES is retrieved and
+    validated INDEPENDENTLY of the hourly/daily prompt data.
+
+    * 1m failure raises => run_official installs the explicit empty interval
+      and the coordinator persists the exact replay gap (CATCHUP_REQUIRED).
+    * 1m success with 1h/1d (or snapshot-build) failure returns
+      (None, valid_spec): new model calls for the coin are blocked, but the
+      complete 1m data still replays stops, targets, liquidations and
+      invalidations. Hourly/daily failure is NEVER substituted for a 1m
+      failure."""
+    from engine import marketdata
     pair = KRAKEN[coin]
-    k1m, k1h, k1d = ohlc(pair, 1), ohlc(pair, 60), ohlc(pair, 1440)
-    snap = marketdata.build_snapshot(coin, k1m, k1h, k1d, T)
+    k1m = kraken_ohlc(pair, 1)                   # 1m failure => raise (total)
     spec = {"start": T if first else T - 3600, "end": T,
-            "candles": marketdata.to_dec(k1m)}
+            "candles": marketdata.to_dec(k1m)}   # validated conversion
+    try:
+        k1h, k1d = kraken_ohlc(pair, 60), kraken_ohlc(pair, 1440)
+        snap = marketdata.build_snapshot(coin, k1m, k1h, k1d, T)
+    except Exception:
+        snap = None                              # prompts blocked; replay intact
     return snap, spec
 
 
@@ -257,6 +272,28 @@ def verify_store_integrity():
         config.verify_site_integrity(config.load_site_manifest(OFFICIAL_STORE))
 
 
+def validate_trust_or_halt(kind):
+    """Mentor Ruling 018.3: MANDATORY durable trust-record validation for any
+    provisioned schedule (unstarted, started or complete) BEFORE any
+    reconciliation, publication, network operation or model call. Only the
+    24-hour freshness rule is waived after boundary 1; missing or modified
+    durable trust evidence is an INTEGRITY HALT — the run never resumes
+    merely because the schedule says a boundary completed."""
+    from engine import official
+    try:
+        return official.verify_durable_trust(
+            OFFICIAL_STORE, time.time(),
+            waive_freshness=(kind in ("started", "complete")))
+    except Exception as e:
+        official.write_health(public_dir(), {
+            "state": "INTEGRITY_HALT", "pid": os.getpid(),
+            "mode": official.MODE, "updated": time.time(),
+            "note": "durable trust validation failed"})
+        print(f"INTEGRITY HALT: durable trust validation failed ({e}). "
+              "No reconciliation, no publication, no model call was made.")
+        sys.exit(3)
+
+
 def main():
     from engine import config, official
     lock = official.acquire_runner_lock(LOCK_PATH)   # noqa: F841 (held open)
@@ -270,21 +307,21 @@ def main():
     #   complete    -> COMPLETE health, clean exit, zero publications/calls
     verify_store_integrity()         # integrity BEFORE any reconciliation
     kind = official.classify_official_store(OFFICIAL_STORE)
+    if kind != "no_schedule":
+        # MANDATORY durable trust validation (Ruling 018.3) — before the
+        # COMPLETE report, before resume, before unstarted reconciliation
+        validate_trust_or_halt(kind)
     if kind == "complete":
         official.write_health(public_dir(), official.health_info(
             OFFICIAL_STORE, "COMPLETE", time.time()))
-        print("OFFICIAL RUN ALREADY COMPLETE: all boundaries terminal. "
-              "Zero publications, zero model calls. Exiting cleanly.")
+        print("OFFICIAL RUN ALREADY COMPLETE (durable trust validated): all "
+              "boundaries terminal. Zero publications, zero model calls. "
+              "Exiting cleanly.")
         return
     if kind == "started":
-        stored = os.path.join(OFFICIAL_STORE,
-                              official.ACCEPTED_ACTIVATION_NAME)
-        if os.path.exists(stored):
-            print(f"RESUMING started schedule from the durable accepted "
-                  f"activation ({stored}).")
-        else:
-            print("RESUMING started schedule (per contract the activation "
-                  "record is no longer consulted after boundary 1).")
+        print("RESUMING started schedule from the validated durable trust "
+              "record (external activation file and freshness rule no "
+              "longer apply).")
         cfg = config.load_config()
         publish = direct_publisher()
         sched = official.run_official(

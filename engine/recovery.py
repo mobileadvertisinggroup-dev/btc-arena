@@ -65,7 +65,8 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
     retrieval, grace waits, and restarts all consume the same T..T+12min
     budget — entering this coordinator late never grants new time, and a
     restart never resets the deadline. When omitted (offline tooling/tests),
-    the legacy anchor `clock() + collection_deadline_seconds` applies.
+    the legacy anchor `clock() + hard_terminal_deadline_seconds_after_T`
+    applies.
 
     `abort_all_reason` (official-run Mentor Ruling 2): when set, the caller
     is NEVER invoked — every non-finalized pair aborts with exactly this
@@ -317,7 +318,8 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
 
     # 4/5. wave collection + pair resolution under ONE hard deadline
     if deadline is None:
-        deadline = clock() + cfg["collection"]["collection_deadline_seconds"]
+        deadline = clock() + cfg["collection"][
+            "hard_terminal_deadline_seconds_after_T"]
     timeout_s = cfg["request_payloads"]["common"]["timeout_seconds"]
     concurrency = cfg["collection"]["concurrency_max_simultaneous_requests"]
     n_written = [0]

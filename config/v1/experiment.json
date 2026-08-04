@@ -105,20 +105,17 @@
  },
  "collection": {
   "procedure": [
-   "freeze all three market snapshots",
-   "freeze all 18 account snapshots",
+   "complete pre-decision replay of all required 1m candles strictly before T against the pre-T account state (phase persisted)",
+   "freeze all three market snapshots and all 18 account snapshots at T",
    "generate and archive all 18 first-attempt prompts before sending any model request",
-   "submit calls with bounded concurrency",
+   "submit calls with bounded concurrency under the T+510s model-collection deadline",
    "identical frozen prompts, state, and P_T regardless of response order",
-   "resolve commit/abort independently per matched pair",
+   "resolve commit/abort independently per matched pair, transactionally, by the T+630s resolution deadline",
    "apply committed decisions logically at boundary T only after collection closes",
-   "one common post-T candle replay per coin"
+   "durable direct publication by the T+690s target; boundary terminal by the T+720s hard deadline; NO post-decision replay in the official runner"
   ],
   "concurrency_max_simultaneous_requests": 6,
-  "global_collection_deadline": "T+12 minutes, hard; transport retries must complete inside it",
   "concurrency_lock": "preflight verifies 6-way concurrency against rate limits; the final value is locked before launch and cannot change during V1",
-  "collection_deadline_seconds": 720,
-  "deadline_note": "hard monotonic wall-clock deadline for the whole collection stage, anchored at collection start; results arriving after it never execute; retries may not begin unless their full budget fits inside it (Ruling 008.9)",
   "model_collection_deadline_seconds_after_T": 510,
   "resolution_replay_deadline_seconds_after_T": 630,
   "final_publication_target_seconds_after_T": 690,
@@ -143,8 +140,8 @@
   "thesis_memory_not_updated_from_aborted_attempt": true,
   "existing_stop_target_position_lifecycle_invalidation_unchanged": true,
   "all_attempts_and_rejection_reasons_still_archived": true,
-  "post_T_replay_continues_for_both_accounts": true,
-  "market_driven_exits_never_suspended": "stops, targets, liquidation, and invalidation monitoring never pause because a discretionary round aborted or was skipped"
+  "market_driven_exits_never_suspended": "stops, targets, liquidation, and invalidation monitoring never pause because a discretionary round aborted or was skipped",
+  "replay_continues_for_both_accounts": "the pre-decision replay of subsequent boundaries continues to enforce stops, targets, liquidation and invalidation for both twins regardless of the abort"
  },
  "terminal_account_policy": {
   "trigger": "post-fee equity reaches exactly 0 (permanent closure)",
