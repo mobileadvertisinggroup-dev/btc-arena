@@ -303,7 +303,8 @@ def test_public_verification_failure_never_repeats_engine_execution(cfg):
 
 def test_drifted_site_fails_publication(cfg, tmp_path, monkeypatch):
     tree = tmp_path / "tree"
-    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs"):
+    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs",
+              "deploy"):
         shutil.copytree(os.path.join(config.ROOT, d), tree / d)
     monkeypatch.setattr(config, "ROOT", str(tree))
     store = tempfile.mkdtemp(prefix="arena-r11-site-")

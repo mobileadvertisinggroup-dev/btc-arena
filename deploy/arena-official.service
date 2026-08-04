@@ -1,8 +1,10 @@
-# AKRA ARENA — official 14-day runner (Mentor Ruling 6)
+# AKRA ARENA — official 14-day runner (Mentor Rulings 6 + 014.3/014.7)
 # Install: copy to /etc/systemd/system/arena-official.service
 #          systemctl daemon-reload && systemctl enable --now arena-official
 # The service starts ARMED/OFF and stays there (zero model calls) until the
 # owner runs scripts/arm_official.py --confirm on the server.
+# This file is part of the audited integrity manifest (Ruling 014.6);
+# scripts/verify_deployment.py checks the installed copy byte-for-byte.
 [Unit]
 Description=AKRA ARENA official 14-day experiment runner (ARMED/OFF until owner activation)
 After=network-online.target
@@ -15,8 +17,11 @@ Group=arena
 WorkingDirectory=/home/arena/btc-arena-v1
 # Secrets live ONLY here (root:arena 0640) — never in the repo or archives.
 EnvironmentFile=/etc/arena/arena.env
-ExecStart=/usr/bin/python3 -u scripts/run_official_14d.py
-Restart=always
+# Audited venv python (Ruling 014.7) — never uncertain system/user pip state.
+ExecStart=/home/arena/btc-arena-v1/venv/bin/python -u scripts/run_official_14d.py
+# Ruling 014.3: crashes and reboots recover automatically; a CLEAN exit
+# (completed experiment, code 0) stays down and never restarts the run.
+Restart=on-failure
 RestartSec=5
 # Persistent state: the repo checkout + /var/www/arena. Nothing in /tmp.
 PrivateTmp=true

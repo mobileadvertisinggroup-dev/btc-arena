@@ -43,7 +43,8 @@ def run(store, snapshots, cfg, caller):
 def test_mutation_halts_before_any_request(tmp_path, monkeypatch, snapshots,
                                            cfg, label, relpath):
     tree = tmp_path / "tree"
-    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs"):
+    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs",
+              "deploy"):
         shutil.copytree(os.path.join(config.ROOT, d), tree / d)
     store = fresh_store()                 # manifest frozen over PRISTINE tree
     monkeypatch.setattr(config, "ROOT", str(tree))

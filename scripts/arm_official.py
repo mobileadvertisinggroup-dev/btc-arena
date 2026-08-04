@@ -10,9 +10,12 @@ polls for. Refuses unless ALL of:
     or the literal "next-hour".
 
 This script makes no network requests and no model calls; it only records
-the owner's decision. Removing control/official_activation.json returns the
-service to ARMED/OFF (it will not interrupt an already-running boundary
-loop; stop the service to halt a live run).
+the owner's decision. Disarm semantics (Mentor Ruling 014.1): deleting,
+replacing, or modifying control/official_activation.json BEFORE the first
+scheduled boundary returns the service to ARMED/OFF with zero model calls —
+the runner revalidates the record's exact SHA while waiting for T0. Once the
+first boundary has started, the record is no longer consulted: halting a
+live run requires an explicit service stop (restart recovery preserved).
 """
 import json
 import os

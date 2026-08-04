@@ -22,7 +22,6 @@ Environment (systemd EnvironmentFile=/etc/arena/arena.env, never in repo):
   ARENA_PUBLIC_PAYLOAD_URL   e.g. https://<vps-host>/live_payload.js
   ARENA_DEPLOY_TOKEN         optional, mirror only
 """
-import hashlib
 import json
 import os
 import sys
@@ -125,14 +124,28 @@ def live_caller_factory(cfg):
     return caller
 
 
+def verify_public_binding():
+    """Mentor Ruling 014.2: the runner is BOUND to the single canonical
+    integrity-locked endpoint (engine.official.OFFICIAL_PAYLOAD_URL, part of
+    the audited engine digest). ARENA_PUBLIC_PAYLOAD_URL may only confirm it;
+    any other value => refusal BEFORE state initialization, provisioning, or
+    model calls."""
+    from engine import official
+    url = os.environ.get("ARENA_PUBLIC_PAYLOAD_URL",
+                         official.OFFICIAL_PAYLOAD_URL)
+    if url != official.OFFICIAL_PAYLOAD_URL:
+        print("REFUSED: runtime endpoint does not match the integrity-locked "
+              f"official endpoint {official.OFFICIAL_PAYLOAD_URL}. Zero "
+              "model calls, zero state writes.")
+        sys.exit(2)
+    return url
+
+
 def direct_publisher():
-    """Ruling 1: write locally, verify from the direct public VPS endpoint."""
-    from engine import official, publisher as publisher_mod
-    url = os.environ.get("ARENA_PUBLIC_PAYLOAD_URL")
-    if not url:
-        raise publisher_mod.PublicationError(
-            "ARENA_PUBLIC_PAYLOAD_URL not set — the direct public endpoint "
-            "is the required proof of visibility")
+    """Ruling 1: write locally, verify from the direct public VPS endpoint —
+    always the canonical integrity-locked URL (Ruling 014.2)."""
+    from engine import official
+    url = official.OFFICIAL_PAYLOAD_URL
 
     def fetch():
         cb = urllib.parse.quote(str(time.time()))
@@ -205,33 +218,54 @@ def armed_off_loop():
 def main():
     from engine import config, official
     lock = official.acquire_runner_lock(LOCK_PATH)   # noqa: F841 (held open)
-    act = armed_off_loop()
-    # INTEGRITY GATES (Rulings 010.1/011.1): the EXTERNALLY issued digests in
-    # the owner's activation record must match the current tree BEFORE any
-    # state initialization or network use. Halt A on mismatch.
-    config.check_approved_digest(act["engine_digest"])
-    config.check_approved_site_digest(act["site_digest"])
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("REFUSED: ANTHROPIC_API_KEY not set. No model call was made.")
-        sys.exit(2)
-    activation_sha = hashlib.sha256(
-        open(ACTIVATION, "rb").read()).hexdigest()
-    print(f"ACTIVATION ACCEPTED sha256={activation_sha} "
-          f"start={act['start_utc']} total={act['total']}")
-    sched = official.provision_official(
-        OFFICIAL_STORE, act["engine_digest"], act["site_digest"],
-        act["start_utc"], total=act["total"])
-    cfg = config.load_config()
-    publish = direct_publisher()
-    print(f"OFFICIAL RUN ACTIVE — {sched['total']} boundaries from "
-          f"T0={sched['start']} (UTC) | {official.BANNER}")
-    sched = official.run_official(
-        OFFICIAL_STORE, cfg, live_caller_factory(cfg), fetch_market, publish,
-        time.time, time.sleep, health_dir=public_dir(),
-        mirror=mirror_factory(), snapshot_dir=SNAPSHOT_DIR)
-    print(f"OFFICIAL RUN COMPLETE: {len(sched['completed'])}/"
-          f"{sched['total']} boundaries terminal. "
-          "Now run scripts/archive_official.py")
+    verify_public_binding()          # Ruling 014.2: bound before ANYTHING
+    while True:
+        act = armed_off_loop()
+        # INTEGRITY GATES (Rulings 010.1/011.1): the EXTERNALLY issued
+        # digests in the owner's activation record must match the current
+        # tree BEFORE any state initialization or network use.
+        config.check_approved_digest(act["engine_digest"])
+        config.check_approved_site_digest(act["site_digest"])
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            print("REFUSED: ANTHROPIC_API_KEY not set. No model call was "
+                  "made.")
+            sys.exit(2)
+        act_sha = official.activation_sha(ACTIVATION)
+        print(f"ACTIVATION ACCEPTED sha256={act_sha} "
+              f"start={act['start_utc']} total={act['total']}")
+        sched = official.provision_official(
+            OFFICIAL_STORE, act["engine_digest"], act["site_digest"],
+            act["start_utc"], total=act["total"])
+        cfg = config.load_config()
+        publish = direct_publisher()
+        print(f"OFFICIAL RUN ARMED — {sched['total']} boundaries from "
+              f"T0={sched['start']} (UTC) | {official.BANNER}")
+        try:
+            # REAL PRE-START DISARM (Ruling 014.1): the exact activation
+            # record (byte-identical SHA) is revalidated while waiting for
+            # the first boundary; deletion/replacement/modification before
+            # boundary 1 starts returns the service to ARMED/OFF with zero
+            # model calls. After boundary 1 starts, only a service stop
+            # halts the run (restart recovery semantics preserved).
+            sched = official.run_official(
+                OFFICIAL_STORE, cfg, live_caller_factory(cfg), fetch_market,
+                publish, time.time, time.sleep, health_dir=public_dir(),
+                mirror=mirror_factory(), snapshot_dir=SNAPSHOT_DIR,
+                disarm_check=official.make_disarm_check(ACTIVATION, act_sha))
+        except official.Disarmed as e:
+            official.rollback_unstarted(OFFICIAL_STORE)
+            official.write_health(public_dir(), {
+                "state": "ARMED_OFF", "pid": os.getpid(),
+                "mode": official.MODE, "updated": time.time(),
+                "note": f"pre-start disarm honored ({e}); zero model calls"})
+            print(f"DISARMED before the first boundary ({e}). Zero model "
+                  "calls were made; unstarted schedule rolled back; service "
+                  "returns to ARMED/OFF.")
+            continue
+        print(f"OFFICIAL RUN COMPLETE: {len(sched['completed'])}/"
+              f"{sched['total']} boundaries terminal. "
+              "Now run scripts/archive_official.py")
+        return                       # clean exit 0: Restart=on-failure stays down
 
 
 if __name__ == "__main__":

@@ -1,0 +1,11 @@
+# AKRA ARENA official-run runtime lock (Mentor Ruling 014.7).
+# Installed ONLY into the dedicated venv the systemd unit executes:
+#   python3 -m venv /home/arena/btc-arena-v1/venv
+#   /home/arena/btc-arena-v1/venv/bin/pip install -r deploy/requirements-official.txt
+# Exact pins; this file is part of the audited integrity manifest.
+dulwich==1.2.12
+jsonschema==4.26.0
+attrs==26.1.0
+referencing==0.37.0
+rpds-py==2026.6.3
+jsonschema-specifications==2025.9.1

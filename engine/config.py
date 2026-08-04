@@ -14,6 +14,13 @@ CANONICAL_FILES = [
     "prompts/v1/user_feature.txt",
     "prompts/v1/blocks.md",
     "prompts/v1/placeholders.json",
+    # Infrastructure integrity lock (Mentor Ruling 014.6): the systemd unit,
+    # the Nginx endpoint template (frozen hostname), and the runtime
+    # dependency lock are part of the ENGINE digest. verify_deployment.py
+    # (a scripts/*.py file) is hashed automatically by _code_files().
+    "deploy/arena-official.service",
+    "deploy/nginx-arena.conf",
+    "deploy/requirements-official.txt",
 ]
 
 # Static production UI, frozen by its own externally approved manifest

@@ -51,12 +51,24 @@ MODE = "OFFICIAL_14D"
 BANNER = ("OFFICIAL 14-DAY EXPERIMENT — REAL AI DECISIONS — PAPER MONEY")
 BRANDING = {"mode": MODE, "banner": BANNER}
 
+# THE canonical integrity-locked public origin (Mentor Ruling 014.2). The
+# dashboard's LIVE_ORIGIN, the runner's verification endpoint, and the Nginx
+# template all derive from or are tested against these exact values; the
+# runner refuses BEFORE any state initialization or model call on mismatch.
+OFFICIAL_PUBLIC_ORIGIN = "https://live.akraarena.online/"
+OFFICIAL_PAYLOAD_URL = OFFICIAL_PUBLIC_ORIGIN + "live_payload.js"
+
 # Ruling 2 sub-budgets, seconds after the scheduled boundary T
 FETCH_START_S = 5
 THINKING_DURABLE_S = 30
 THINKING_VERIFIED_S = 60
 COLLECTION_DEADLINE_S = 510          # T+08:30
-RESOLUTION_DEADLINE_S = 630          # T+10:30 (documented; see module doc)
+RESOLUTION_DEADLINE_S = 630          # T+10:30 — ENFORCED (Ruling 014.5):
+                                     # passed to the coordinator as both the
+                                     # resolution_deadline (late pairs abort
+                                     # deadline_exceeded) and replay_deadline
+                                     # (late replay => CATCHUP_REQUIRED with
+                                     # the watermark preserved)
 FINAL_PUBLISH_S = 690                # T+11:30
 HARD_DEADLINE_S = 720                # T+12:00 — must equal the frozen config
 READY_TIMEOUT_S = 300                # pre-first-boundary READY gate budget
@@ -68,6 +80,58 @@ COINS = ("BTC", "ETH", "SOL")
 
 class LockError(Exception):
     """A second runner instance tried to start (Ruling 6)."""
+
+
+class Disarmed(Exception):
+    """The owner's activation record was deleted/replaced/modified BEFORE the
+    first scheduled boundary (Mentor Ruling 014.1): the run must stop with
+    zero model calls and the service must return to ARMED_OFF. After the
+    first boundary has started this exception is never raised — halting a
+    live run requires an explicit service stop (restart recovery applies)."""
+
+
+def activation_sha(path):
+    """SHA-256 of the exact activation record bytes, or None if unreadable."""
+    try:
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        return None
+
+
+def make_disarm_check(path, expected_sha):
+    """Returns still_armed(): True only while the EXACT original activation
+    record (byte-identical SHA) is still in place. Deleting, replacing, or
+    modifying the file makes it False."""
+    def still_armed():
+        return activation_sha(path) == expected_sha
+    return still_armed
+
+
+def rollback_unstarted(store):
+    """Undo provisioning artifacts after a valid PRE-START disarm: allowed
+    ONLY while zero boundaries are completed and account state carries no
+    boundary. Removes the sealed schedule, the publication log, and durable
+    payloads so a later re-arm provisions a fresh schedule. Any sign the run
+    started => refuse loudly (halting a live run is a service-stop concern)."""
+    import shutil
+    try:
+        sched = pilot.load_schedule(store)
+        if sched["completed"]:
+            raise RuntimeError("boundaries already completed")
+    except pilot.ScheduleError:
+        return False                    # nothing provisioned; nothing to do
+    _, meta = persistence.load_state(os.path.join(store, "state.json"),
+                                     expect_full_roster=True)
+    if meta.get("boundary") is not None:
+        raise RuntimeError("boundary state exists — not an unstarted run")
+    for name in (pilot.SCHEDULE_NAME, publisher_mod.PUB_LOG):
+        try:
+            os.remove(os.path.join(store, name))
+        except FileNotFoundError:
+            pass
+    shutil.rmtree(os.path.join(store, "publish"), ignore_errors=True)
+    return True
 
 
 def acquire_runner_lock(path):
@@ -263,11 +327,17 @@ def _fire_mirror(mirror, T, notes):
 
 def run_official(store, cfg, caller, fetch_market, publish, clock, sleep,
                  health_dir=None, mirror=None, crash_at=None,
-                 snapshot_dir=None):
+                 snapshot_dir=None, disarm_check=None):
     """Drive the sealed official schedule exactly once per boundary under the
     Ruling 2 budgets. Restart-safe exactly like the pilot loop: an incomplete
     persisted boundary is recovered first (non-finalized pairs abort as
-    crash_recovery), and the SAME schedule is always resumed."""
+    crash_recovery), and the SAME schedule is always resumed.
+
+    `disarm_check` (Mentor Ruling 014.1): still_armed() predicate polled ONLY
+    until the first boundary's work begins. If the owner's exact activation
+    record disappears or changes before then, Disarmed is raised with zero
+    model calls and zero boundary work. Once boundary 1 has started the
+    predicate is never consulted again — halting requires a service stop."""
     assert cfg["collection"]["collection_deadline_seconds"] == HARD_DEADLINE_S
     sched = pilot.load_schedule(store)
     notes = []
@@ -281,6 +351,18 @@ def run_official(store, cfg, caller, fetch_market, publish, clock, sleep,
         except Exception:
             pass                        # health can never affect trading
 
+    def _pre_start_disarmed():
+        return (disarm_check is not None and not sched["completed"]
+                and not disarm_check())
+
+    # CLEAN COMPLETION (Mentor Ruling 014.3): a finished experiment stays
+    # finished — no READY republication, no publications, no model calls.
+    if all(T in sched["completed"] for T in sched["boundaries"]):
+        health("COMPLETE")
+        return sched
+
+    if _pre_start_disarmed():
+        raise Disarmed("activation record gone/changed before READY")
     health("STARTING")
     _set_deadline(publish, clock() + READY_TIMEOUT_S)
     publisher_mod.reconcile(store, cfg, publish, branding=BRANDING)
@@ -300,7 +382,15 @@ def run_official(store, cfg, caller, fetch_market, publish, clock, sleep,
             publisher_mod.reconcile(store, cfg, publish, branding=BRANDING)
         health("WAITING", T)
         while clock() < T + FETCH_START_S:
+            if _pre_start_disarmed():
+                raise Disarmed("activation record gone/changed before the "
+                               "first scheduled boundary")
             sleep(max(1, min(30, T + FETCH_START_S - clock())))
+        # last pre-start check, immediately before boundary work begins;
+        # from here on only an explicit service stop halts the run
+        if _pre_start_disarmed():
+            raise Disarmed("activation record gone/changed at the first "
+                           "boundary gate")
         health("BOUNDARY_ACTIVE", T)
         # ---- freeze boundary data: budget ends at T+00:30 ----
         snaps, spec = {}, {}
@@ -327,7 +417,9 @@ def run_official(store, cfg, caller, fetch_market, publish, clock, sleep,
                          if snaps.get(c) is not None},
             crash_at=crash_at, clock=clock,
             deadline=T + COLLECTION_DEADLINE_S,
-            abort_all_reason=abort_reason)
+            abort_all_reason=abort_reason,
+            resolution_deadline=T + RESOLUTION_DEADLINE_S,
+            replay_deadline=T + RESOLUTION_DEADLINE_S)
         sched = pilot.mark_completed(store, T)
         # ---- terminal payload durable + direct publication by T+11:30 ----
         _set_deadline(publish, T + FINAL_PUBLISH_S)

@@ -101,7 +101,8 @@ def test_mutated_tree_before_first_store_creation_halts(tmp_path, monkeypatch):
     are the PRISTINE tree's digests, supplied externally."""
     eng, site = digests()                            # mentor-approved digests
     tree = tmp_path / "tree"
-    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs"):
+    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs",
+              "deploy"):
         shutil.copytree(os.path.join(config.ROOT, d), tree / d)
     victim = tree / "prompts/v1/system.txt"
     victim.write_bytes(victim.read_bytes() + b"#pre-launch-mutation")
@@ -120,7 +121,8 @@ def test_mutated_site_before_store_creation_halts(tmp_path, monkeypatch):
     """Ruling 011.1: a mutated STATIC UI file likewise blocks provisioning."""
     eng, site = digests()
     tree = tmp_path / "tree"
-    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs"):
+    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs",
+              "deploy"):
         shutil.copytree(os.path.join(config.ROOT, d), tree / d)
     victim = tree / "docs/index.html"
     victim.write_bytes(victim.read_bytes() + b"<!--mutated-->")

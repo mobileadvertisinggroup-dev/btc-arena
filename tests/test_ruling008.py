@@ -403,7 +403,8 @@ def test_attempt_files_durable_and_duplicate_safe(accounts, snapshots, cfg):
 
 def test_manifest_covers_code_and_detects_any_byte(tmp_path, monkeypatch):
     dst = tmp_path / "tree"
-    for d in ("engine", "scripts", "prompts", "schemas", "config"):
+    for d in ("engine", "scripts", "prompts", "schemas", "config",
+              "deploy"):
         shutil.copytree(os.path.join(config.ROOT, d), dst / d)
     monkeypatch.setattr(config, "ROOT", str(dst))
     m = config.build_manifest()

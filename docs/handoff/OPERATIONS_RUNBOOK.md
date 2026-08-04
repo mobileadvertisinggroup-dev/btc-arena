@@ -11,9 +11,15 @@ All commands from repo root: ~/trading-research-machine/btc-arena-v1
     python3 scripts/arm_official.py --confirm \
       --engine-digest <externally issued> --site-digest <externally issued> \
       --start-utc next-hour
-- Disarm before start: delete control/official_activation.json.
-  Halt a live run: systemctl stop arena-official (restart-safe; same
-  schedule resumes; missed boundaries abort honestly).
+- Disarm before start (Ruling 014.1, revalidated by exact SHA while waiting
+  for T0): delete control/official_activation.json → service returns to
+  ARMED/OFF with zero model calls, unstarted schedule rolled back.
+  Halt a live run (first boundary already started): systemctl stop
+  arena-official (restart-safe; same schedule resumes; missed boundaries
+  abort honestly).
+- Post-deploy check: venv/bin/python scripts/verify_deployment.py
+- Server preflight: scripts/preflight_official.py (audited; scratch store
+  only; requires ARENA_PREFLIGHT_APPROVED + externally issued digests).
 - Monitoring: https://<vps-host>/health.json; daily sealed snapshots in
   evidence-official/daily/; final: scripts/archive_official.py --confirm
 

@@ -53,7 +53,8 @@ def _seed(T):
 
 def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                      replay_spec=None, clock=None, deadline=None,
-                     abort_all_reason=None):
+                     abort_all_reason=None, resolution_deadline=None,
+                     replay_deadline=None):
     """Returns (ledger_entries, attempt_records, archived_user_prompts).
 
     `deadline` (Ruling 012.3): the authoritative ABSOLUTE collection deadline
@@ -67,7 +68,15 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
     `abort_all_reason` (official-run Mentor Ruling 2): when set, the caller
     is NEVER invoked — every non-finalized pair aborts with exactly this
     reason and the prompt archive records not_called markers. Boundary marks
-    still freeze and the boundary still becomes terminal."""
+    still freeze and the boundary still becomes terminal.
+
+    `resolution_deadline` / `replay_deadline` (Mentor Ruling 014.5, official
+    runs pass T+630 for both): a live/terminal-split pair whose resolution
+    has not begun by resolution_deadline aborts with deadline_exceeded
+    instead of committing; replay stops processing candles at replay_deadline
+    and latches CATCHUP_REQUIRED with the watermark preserved — the standard
+    catch-up path resumes it next boundary. Both default to None (legacy
+    behavior, used by all pilot-era tests)."""
     # RUNTIME INTEGRITY GATE (Ruling 009.1): load the immutable APPROVED
     # launch manifest (never rebuilt from the working tree) and verify every
     # engine/script/config/prompt/schema byte BEFORE touching state, prompts,
@@ -221,6 +230,13 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
             if pid in recovered or pid not in pair_meta:
                 continue
             kind, rid, reason, terminal_ids = pair_meta[pid]
+            # RESOLUTION DEADLINE (Ruling 014.5): a pair whose resolution has
+            # not begun by the bound never commits — it aborts honestly. Late
+            # trades can therefore never execute past T+10:30.
+            if resolution_deadline is not None \
+                    and kind in ("live", "terminal_split") \
+                    and clock() >= resolution_deadline:
+                kind, reason, terminal_ids = "abort", "deadline_exceeded", None
             a_raw = accounts[state.account_id(coin, model, "raw")]
             a_ta = accounts[state.account_id(coin, model, "ta")]
             snap = snapshots.get(coin)
@@ -302,7 +318,14 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
             if prefix:
                 coin_accounts = [a for a in accounts.values()
                                  if a["coin"] == coin]
+                truncated = None
                 for c in prefix:
+                    # REPLAY DEADLINE (Ruling 014.5): stop cleanly; the
+                    # unprocessed remainder becomes the coin's gap
+                    if replay_deadline is not None \
+                            and clock() >= replay_deadline:
+                        truncated = c["t"]
+                        break
                     recs = []
                     replay_mod.replay(coin_accounts, [c], recs)
                     meta["replay_watermark"][coin] = c["t"]
@@ -313,7 +336,7 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                              "replay": [rc]})
                 persistence.save_state(spath, accounts, meta)
                 persistence.flush_outbox(store, accounts, meta)
-                eff_start = want
+                eff_start = truncated if truncated is not None else want
             unresolved = end - eff_start
             if unresolved > MAX_GAP_S:
                 meta["coin_terminated"][coin] = True
@@ -338,6 +361,23 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
         meta["replay_state"][coin] = {"status": "REPLAY_COMPLETE"}
         coin_accounts = [a for a in accounts.values() if a["coin"] == coin]
         for c in candles:
+            # REPLAY DEADLINE (Ruling 014.5): a boundary must be terminal by
+            # T+720; replay past the bound stops with the watermark preserved
+            # and latches the standard CATCHUP_REQUIRED path — never a silent
+            # deadline crossing, never lost candles.
+            if replay_deadline is not None and clock() >= replay_deadline:
+                meta["replay_state"][coin] = {
+                    "status": "CATCHUP_REQUIRED", "gap_since": c["t"],
+                    "detail": "replay_deadline_reached"}
+                ev = {"round_id": prompts.round_id(coin, T),
+                      "replay": [{"e": "CATCHUP_REQUIRED",
+                                  "gap_since": c["t"]}]}
+                persistence.outbox_add(
+                    meta, f"{coin}:{c['t']}:CATCHUP_REQUIRED", ev)
+                persistence.save_state(spath, accounts, meta)
+                persistence.flush_outbox(store, accounts, meta)
+                ledger.append(ev)
+                break
             recs = []
             replay_mod.replay(coin_accounts, [c], recs)
             meta["replay_watermark"][coin] = c["t"]
