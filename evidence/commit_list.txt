@@ -1,19 +1,77 @@
-246dc373458d ruling006: refreshed evidence (logs, junit, coverage, ruff, hashes, se
-0db165db947d ruling006: leverage/gap/coordinator/metrics tests (117), F-class lint 
-3a4e18501f72 ruling006: leverage A-F semantics, gap wording, single authoritative c
-4d85f6d60ed3 audit: raw logs, junit, coverage, ruff, hashes, diff bundle, determini
-300c14d7e474 audit: network block, edge/oracle/crash/fuzz/golden/schema/gap tests (
-22f9cc22ec74 audit: checkpointed recovery state machine, record schemas, persistenc
+69e5a0eafbfb build batch: official 14d cloud runner + UI wishlist (Mentor Rulin
+d05a5c663a49 docs: durable handoff package (CLAUDE.md + docs/handoff/*) - post-
+059ab2255a36 pilot: live dashboard payload update
+8b17da1cb0ef pilot: live dashboard payload update
+b2df3b0f6479 pilot: live dashboard payload update
+b9b8687590e8 pilot: live dashboard payload update
+512c0c6617f2 pilot: live dashboard payload update
+31acc3f3712d pilot: live dashboard payload update
+bb77e32ae5cf pilot: live dashboard payload update
+04125ace7aa1 pilot: live dashboard payload update
+110a0781ff72 pilot: live dashboard payload update
+23e2e3ef84ee pilot: live dashboard payload update
+1e85d18d3c2a pilot: live dashboard payload update
+490f0235999f pilot: live dashboard payload update
+6282ae5449e0 pilot: live dashboard payload update
+b346ec142bff pilot: live dashboard payload update
+8cd397346dca pilot: live dashboard payload update
+8ea5400a1f63 docs: owner UI wish list (12 items) for post-pilot batch with clou
+018e9b08b15f pilot: live dashboard payload update
+99168e52e100 pilot: live dashboard payload update
+a0ffac8e5ca0 pilot: live dashboard payload update
+6c5ad738b151 pilot: live dashboard payload update
+4a6a7a7c9d40 pilot: live dashboard payload update
+566a1a2befbd pilot: live dashboard payload update
+f379e4d13af7 pilot: live dashboard payload update
+c736311e72bf pilot: live dashboard payload update
+9b9168b3242b pilot: live dashboard payload update
+41267f1282dc pilot: live dashboard payload update
+6808babb1e67 pilot: live dashboard payload update
+c5d213b4f49b pilot: live dashboard payload update
+adfa9ab4c85c pilot: live dashboard payload update
+313a48a42ab8 preflight: 18/18 real-model validation PASS (schema, identity, raw
+8f1084f828c7 ruling013: STATIC-UI-ONLY null-mark rendering (MARK N/A, no zero c
+0f1ac9ec1808 ruling012: regenerated evidence (254-test logs, junit, coverage, r
+3a8ab2fd8121 ruling012: live PREP/DEMO/PILOT panel rendering with genuine ledge
+86b366bcb4f0 ruling011: regenerated evidence (227-test logs, junit, coverage, r
+f6b2ab137aaf ruling011: externally approved site manifest; persisted boundary m
+58cb7bb8ea9e ruling010: regenerated evidence (203-test logs, junit, coverage, r
+3d708f1d6042 ruling010: external approved-digest activation gate; internal-id v
+1754ec2cd71e ruling009: regenerated evidence (183-test logs, junit, coverage, r
+904a29de3f8b ruling009: launch-manifest integrity gate wired into coordinator; 
+e9fd98a1043b pilot: remove superseded 24h activation script
+e864e8632575 pilot: 24h -> 12h (banner, counters 0/12, store paths, archive dir
+a58d561af734 site v4: soft tinted chat cards, soft tabs/chrome, clean price-fir
+70cc8cb8baa1 site v3: display-only live ticker (Coinbase spot, non-authoritativ
+c9a5f2497929 site v2: AKRA ARENA branding, neutral gray palette, black ticker b
+a8ef7a2da269 site: editorial arena redesign (front-end only) - honest pre-start
+8efd61dc0e2c chore: lint fix in reset script
+e4610ed77e65 chore: fix F401 in new scripts
+2c7dd9936660 pilot: guarded (inert) 24h activation + archive/reset commands; op
+0c8d6b644cf8 site: new 18-account Raw-vs-Feature dashboard (PREPARATION MODE, m
+e270f253f2ad site: archive old BTC-only pilot page with NOT VALID EVIDENCE labe
+9c2f5d8f208a chore: ignore .DS_Store and local archive extraction
+2409e3b66d76 ruling008: regenerated evidence (logs, junit, coverage, ruff, seas
+8252f2d4611a ruling008: adversarial regression suite (166 tests), regenerated g
+b9f58c80ad96 ruling008: schema validation, durable prompt/attempt archives, out
+3cc8e53ee1b4 ruling007: exact $10 executable-delta leverage boundary + boundary
+add9811b30d2 ruling006: audit bundle metadata; ignore archive artifacts
+246dc373458d ruling006: refreshed evidence (logs, junit, coverage, ruff, hashes
+0db165db947d ruling006: leverage/gap/coordinator/metrics tests (117), F-class l
+3a4e18501f72 ruling006: leverage A-F semantics, gap wording, single authoritati
+4d85f6d60ed3 audit: raw logs, junit, coverage, ruff, hashes, diff bundle, deter
+300c14d7e474 audit: network block, edge/oracle/crash/fuzz/golden/schema/gap tes
+22f9cc22ec74 audit: checkpointed recovery state machine, record schemas, persis
 0be3e6f04681 chore: ignore __pycache__
-89fee459471d evidence: deterministic 18-account mock boundary samples (commit/abort
-805bd56227eb tests: hermetic suite (66 cases) + deterministic seeded fixtures, zero
-7e2a1fad9cfa engine: pair-atomic round coordination with wave rotation, atomic pers
-71169095fcff engine: deterministic prompt rendering, semantic decision validation, 
-1012402c8afa engine: config+integrity hashes, accounts/state, immutable lifecycle, 
-1d077030f20e V1.3 owner amendment: neutral minimal feature pack (8 outputs), Featur
-14928d47b03f V1.2 final addendum per Mentor Ruling 003: CHG_24H removed, strict can
-1b709d3b899d V1.1 design pack per Mentor Ruling 002: pair atomicity, immutable inva
-ed53be6d68e1 V1 design pack: prompts, decision schema, experiment config (PROPOSAL 
+89fee459471d evidence: deterministic 18-account mock boundary samples (commit/a
+805bd56227eb tests: hermetic suite (66 cases) + deterministic seeded fixtures, 
+7e2a1fad9cfa engine: pair-atomic round coordination with wave rotation, atomic 
+71169095fcff engine: deterministic prompt rendering, semantic decision validati
+1012402c8afa engine: config+integrity hashes, accounts/state, immutable lifecyc
+1d077030f20e V1.3 owner amendment: neutral minimal feature pack (8 outputs), Fe
+14928d47b03f V1.2 final addendum per Mentor Ruling 003: CHG_24H removed, strict
+1b709d3b899d V1.1 design pack per Mentor Ruling 002: pair atomicity, immutable 
+ed53be6d68e1 V1 design pack: prompts, decision schema, experiment config (PROPO
 28bf1fd78675 nudge schedule registration
 8bfc3f4ea916 tick 2026-08-02T17:40:18Z
 e80223669fa9 tick 2026-08-02T17:26:57Z

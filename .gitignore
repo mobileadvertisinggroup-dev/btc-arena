@@ -9,3 +9,6 @@ offline_audit_bundle_v1.tar.gz
 MANIFEST.sha256.json
 .DS_Store
 offline_audit_bundle_v1/
+offline_audit_bundle_v2.tar.gz
+offline_audit_bundle_v2.tar.gz.sha256
+offline_audit_bundle_v2/

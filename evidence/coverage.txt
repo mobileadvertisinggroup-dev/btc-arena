@@ -1,21 +1,22 @@
-Name                    Stmts   Miss Branch BrPart  Cover   Missing
--------------------------------------------------------------------
+Name                    Stmts   Miss Branch BrPart  Cover
+---------------------------------------------------------
 engine/__init__.py          0      0      0      0   100%
-engine/config.py          104      5     20      3    94%   35, 182-183, 185, 198
+engine/config.py          104      5     20      3    94%
 engine/dashboard.py        38      0     16      0   100%
 engine/decisions.py        80      0     46      0   100%
-engine/execution.py        95      0     26      1    99%   119->124
-engine/features.py         64      3     22      3    93%   37, 51, 64
+engine/execution.py        95      0     26      1    99%
+engine/features.py         64      3     22      3    93%
 engine/lifecycle.py        23      0     10      0   100%
-engine/marketdata.py       57      5     26      5    88%   30, 44, 46, 52, 54
+engine/marketdata.py       57      5     26      5    88%
 engine/metrics.py          85      0     32      0   100%
-engine/persistence.py     228     17     86     13    90%   55->54, 88-89, 91, 101-102, 104, 106, 109, 112, 114, 116, 147-148, 199, 215->214, 226, 277, 281
-engine/pilot.py            67      1     20      4    94%   40->42, 42->47, 69, 75->78
+engine/official.py        210     18     50      9    90%
+engine/persistence.py     228     17     86     13    90%
+engine/pilot.py            67      1     20      2    97%
 engine/prompts.py          74      0     22      0   100%
-engine/publisher.py       146      8     22      2    94%   101-102, 136-137, 213, 239-240, 262
-engine/recovery.py        239      5     96      8    96%   114->116, 171, 220->226, 268, 296, 331, 337, 379->382
-engine/replay.py           73      0     46      3    97%   91->32, 101->103, 109->96
-engine/rounds.py           87      5     28      5    91%   109, 128, 130, 132, 136
+engine/publisher.py       148      8     22      2    94%
+engine/recovery.py        244      5    100      8    96%
+engine/replay.py           73      0     46      2    98%
+engine/rounds.py           87      5     28      5    91%
 engine/state.py            48      0     14      0   100%
--------------------------------------------------------------------
-TOTAL                    1508     49    532     47    95%
+---------------------------------------------------------
+TOTAL                    1725     67    586     53    95%

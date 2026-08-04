@@ -7,8 +7,9 @@ build (see docs/handoff/BUILD_BATCH_DESIGN.md). This CHANGES the engine and
 site digests on that branch — the digests below remain the approved ones for
 the FROZEN v1-clean-experiment tree only. New digests await the next audit
 round. Nothing is deployed, pushed, preflighted, or activated; data-v1 is
-untouched. OWNER INPUT still needed: the VPS domain for LIVE_ORIGIN in
-docs/index.html before the audit archive is sealed.
+untouched. VPS provisioned 2026-08-04 (Hostinger, 186.240.147.38,
+live.akraarena.online, TLS + read-only endpoint verified; no code on it).
+LIVE_ORIGIN = https://live.akraarena.online/ frozen into docs/index.html.
 
 ## Formal standing
 - Offline audit: **PASSED** (Mentor Final Ruling, 2026-08-03) for engine +

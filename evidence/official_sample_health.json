@@ -1,0 +1,15 @@
+{
+ "state": "COMPLETE",
+ "pid": 14308,
+ "updated": 1754870405.0,
+ "mode": "OFFICIAL_14D",
+ "boundaries_done": 1,
+ "total": 1,
+ "latest_scheduled": null,
+ "latest_terminal": 1754870400,
+ "latest_publication": {
+  "key": "ready",
+  "publication_id": "1754870400:READY:0",
+  "status": "PUBLISHED"
+ }
+}

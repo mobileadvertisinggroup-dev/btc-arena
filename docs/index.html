@@ -696,7 +696,7 @@ window.setMetric = m => { metric = m; chart(); };
    OWNER INPUT: LIVE_ORIGIN must be set to the VPS origin (with trailing
    slash, e.g. 'https://arena.example.com/') before the site digest is
    sealed; '' means same-origin (VPS-hosted page, local preview, tests). */
-const LIVE_ORIGIN = '';
+const LIVE_ORIGIN = 'https://live.akraarena.online/';
 let lastPub = window.ARENA_LIVE ? window.ARENA_LIVE.publication_id : null;
 async function pollLive(){
   const sources = LIVE_ORIGIN ? [LIVE_ORIGIN + 'live_payload.js', 'live_payload.js']
