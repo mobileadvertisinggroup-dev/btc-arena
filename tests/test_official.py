@@ -291,9 +291,13 @@ def test_activation_record_validation(tmp_path, monkeypatch):
     assert mod.read_activation() is None             # malformed => ARMED/OFF
     eng, site = digests()
     good = {"approved": "YES-OFFICIAL-RUN-APPROVED", "engine_digest": eng,
-            "site_digest": site, "start_utc": T0, "total": 336}
+            "site_digest": site, "start_utc": T0, "total": 336,
+            "preflight": {"report_path": "/srv/preflight_report.json",
+                          "report_sha256": "ab" * 32}}
     for corrupt in ({"approved": "yes"}, {"start_utc": T0 + 17},
-                    {"total": 12}, {"engine_digest": "short"}):
+                    {"total": 12}, {"engine_digest": "short"},
+                    {"preflight": None},             # Ruling 016.7
+                    {"preflight": {"report_path": ""}}):
         act.write_text(json.dumps({**good, **corrupt}))
         assert mod.read_activation() is None         # every field enforced
     act.write_text(json.dumps(good))

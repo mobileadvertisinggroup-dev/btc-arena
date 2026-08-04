@@ -51,6 +51,12 @@ def main():
     if not re.fullmatch(r"[0-9a-f]{64}", site_digest):
         refuse("--site-digest must be the externally issued 64-hex "
                "mentor-approved site digest")
+    # ACTIVATION IS BOUND TO A PASSING PREFLIGHT (Mentor Ruling 016.7)
+    report_path = arg("--preflight-report")
+    report_sha = (arg("--preflight-sha") or "").strip().lower()
+    if not report_path or not re.fullmatch(r"[0-9a-f]{64}", report_sha):
+        refuse("--preflight-report <path> and --preflight-sha <64-hex> are "
+               "required: activation is bound to a passing server preflight")
     raw_start = arg("--start-utc") or ""
     now = int(time.time())
     if raw_start == "next-hour":
@@ -64,13 +70,23 @@ def main():
             refuse(f"--start-utc {start} is not an exact UTC hour")
         if start <= now:
             refuse(f"--start-utc {start} is not in the future")
-    from engine import config
+    from engine import config, official
     config.check_approved_digest(engine_digest)      # Halt A before any write
     config.check_approved_site_digest(site_digest)
     record = {"approved": "YES-OFFICIAL-RUN-APPROVED",
               "engine_digest": engine_digest, "site_digest": site_digest,
               "start_utc": start, "total": 336,
-              "armed_at": now}
+              "armed_at": now,
+              "preflight": {"report_path": os.path.abspath(report_path),
+                            "report_sha256": report_sha}}
+    # verify the attestation NOW (016.7): report bytes match the supplied
+    # SHA, PASS with exact 18/18, digests + canonical endpoint match this
+    # exact activation, and the report is fresh. The runner reverifies.
+    try:
+        official.verify_preflight_attestation(record, engine_digest,
+                                              site_digest, now)
+    except official.PreflightAttestationError as e:
+        refuse(f"preflight attestation invalid: {e}")
     os.makedirs(os.path.dirname(ACTIVATION), exist_ok=True)
     tmp = ACTIVATION + ".tmp"
     with open(tmp, "w") as f:

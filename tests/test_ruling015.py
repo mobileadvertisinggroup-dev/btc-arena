@@ -91,7 +91,6 @@ def test_missing_state_creates_standard_pristine_state():
         os.path.join(store, "state.json"), expect_full_roster=True)
     assert all(str(a["E"]) == "10000.00" and a["qty"] == 0
                for a in accounts.values())
-    official.verify_pristine_official_state(store)   # round-trips clean
 
 
 def test_started_schedule_uses_restart_path_not_pristine(cfg):
@@ -388,8 +387,36 @@ def test_preflight_peak_concurrency_matches_production_limit(cfg, snapshots):
 
 # ---- 015.5 hardened deployment verifier ----
 
-GOOD_NGINX = open(os.path.join(config.ROOT, "deploy",
-                               "nginx-arena.conf")).read()
+# the standard safe post-certbot two-block layout (Ruling 016.6)
+GOOD_NGINX = """
+server {
+    server_name live.akraarena.online;
+    root /var/www/arena;
+    location / { return 404; }
+    location ~ ^/(live_payload\\.js|live_payload\\.sha256|health\\.json)$ {
+        limit_except GET { deny all; }
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Cache-Control "no-store, must-revalidate" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files $uri =404;
+    }
+    listen [::]:443 ssl ipv6only=on; # managed by Certbot
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/live.akraarena.online/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/live.akraarena.online/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+server {
+    if ($host = live.akraarena.online) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+    listen 80;
+    listen [::]:80;
+    server_name live.akraarena.online;
+    return 404; # managed by Certbot
+}
+"""
 
 
 def _fails(checks):

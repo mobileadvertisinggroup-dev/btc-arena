@@ -1,6 +1,7 @@
 """OFFICIAL 14-DAY EXPERIMENT SERVICE — INSTALLED ARMED/OFF, NEVER SELF-ACTIVATING.
 
-Runs under systemd (deploy/arena-official.service, Restart=always). Mentor
+Runs under systemd (deploy/arena-official.service, Restart=on-failure —
+crashes/reboots recover; clean completion stays down). Mentor
 Ruling 6: the service may run indefinitely in ARMED/OFF state — zero model
 calls, zero scheduling, data-v1 untouched — until the OWNER's explicit
 activation command (scripts/arm_official.py --confirm) writes
@@ -19,7 +20,9 @@ publication; it can never consume the boundary budget or gate trading.
 Environment (systemd EnvironmentFile=/etc/arena/arena.env, never in repo):
   ANTHROPIC_API_KEY          required at activation
   ARENA_PUBLIC_DIR           default /var/www/arena
-  ARENA_PUBLIC_PAYLOAD_URL   e.g. https://<vps-host>/live_payload.js
+  ARENA_PUBLIC_PAYLOAD_URL   must equal the canonical frozen endpoint
+                             https://live.akraarena.online/live_payload.js
+                             (or be unset; any other value refuses)
   ARENA_DEPLOY_TOKEN         optional, mirror only
 """
 import json
@@ -61,7 +64,11 @@ def read_activation():
           and len(a["site_digest"]) == 64
           and isinstance(a.get("start_utc"), int)
           and a["start_utc"] % 3600 == 0
-          and a.get("total") == 336)
+          and a.get("total") == 336
+          # Mentor Ruling 016.7: activation carries a preflight attestation
+          and isinstance(a.get("preflight"), dict)
+          and a["preflight"].get("report_path")
+          and a["preflight"].get("report_sha256"))
     return a if ok else None
 
 
@@ -86,7 +93,16 @@ def fetch_market(coin, T, first):
 
 
 def live_caller_factory(cfg):
-    """Real Anthropic Messages caller — identical to the audited pilot one."""
+    """Real Anthropic Messages caller returning the AUDITED RESPONSE ENVELOPE
+    (Mentor Ruling 016.4): parsed decision + actual response model id +
+    response id + stop reason + measured latency + token usage + the raw API
+    response for private audit. engine.rounds archives the envelope verbatim
+    and rejects any response whose actual model id differs from the
+    requested frozen id (it never executes). The validation retry appends the
+    fixed rejection text as a second user message, exactly as the frozen
+    config describes."""
+    import time as time_mod
+
     from engine import config as config_mod, rounds
     schema = config_mod.load_schema()
     common = cfg["request_payloads"]["common"]
@@ -111,16 +127,30 @@ def live_caller_factory(cfg):
             headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"],
                      "anthropic-version": common["anthropic-version"],
                      "content-type": "application/json"})
+        t0 = time_mod.monotonic()
         try:
             with urllib.request.urlopen(req,
                                         timeout=common["timeout_seconds"]) as r:
                 resp = json.loads(r.read().decode())
         except Exception as e:
             raise rounds.TransportError(str(e)[:200])
+        latency_ms = round((time_mod.monotonic() - t0) * 1000)
+        dec = None
         for block in resp.get("content", []):
             if block.get("type") == "tool_use":
-                return block["input"]
-        raise rounds.TransportError(f"no tool_use (stop={resp.get('stop_reason')})")
+                dec = block["input"]
+        if dec is None:
+            raise rounds.TransportError(
+                f"no tool_use (stop={resp.get('stop_reason')})")
+        return {"decision": dec,
+                "response_model": resp.get("model"),
+                "response_id": resp.get("id"),
+                "stop_reason": resp.get("stop_reason"),
+                "latency_ms": latency_ms,
+                "token_usage": resp.get("usage"),
+                # full API response for the private attempts archive; the
+                # request key is never part of a response body
+                "raw_response": json.dumps(resp, default=str)}
     return caller
 
 
@@ -234,6 +264,20 @@ def main():
         # tree BEFORE any state initialization or network use.
         config.check_approved_digest(act["engine_digest"])
         config.check_approved_site_digest(act["site_digest"])
+        # ACTIVATION IS BOUND TO A PASSING PREFLIGHT (Ruling 016.7): the
+        # service REVERIFIES the attestation — report bytes, PASS, digests,
+        # endpoint, freshness — before creating the first schedule.
+        try:
+            official.verify_preflight_attestation(
+                act, act["engine_digest"], act["site_digest"], time.time())
+        except official.PreflightAttestationError as e:
+            official.write_health(public_dir(), {
+                "state": "ARMED_OFF", "pid": os.getpid(),
+                "mode": official.MODE, "updated": time.time(),
+                "note": f"activation refused: {e}"})
+            print(f"REFUSED: {e}. No model call was made; ARMED/OFF.")
+            time.sleep(ARMED_POLL_S)
+            continue
         if not os.environ.get("ANTHROPIC_API_KEY"):
             print("REFUSED: ANTHROPIC_API_KEY not set. No model call was "
                   "made.")
@@ -265,7 +309,10 @@ def main():
                 mirror=mirror_factory(), snapshot_dir=SNAPSHOT_DIR,
                 disarm_check=official.make_disarm_check(ACTIVATION, act_sha))
         except official.Disarmed as e:
-            official.rollback_unstarted(OFFICIAL_STORE)
+            # Ruling 016.8: the public payload from the unstarted run is
+            # removed too — the public state visibly returns to ARMED_OFF
+            official.rollback_unstarted(OFFICIAL_STORE,
+                                        public_dir=public_dir())
             official.write_health(public_dir(), {
                 "state": "ARMED_OFF", "pid": os.getpid(),
                 "mode": official.MODE, "updated": time.time(),

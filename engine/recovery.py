@@ -55,7 +55,8 @@ def _seed(T):
 def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                      replay_spec=None, clock=None, deadline=None,
                      abort_all_reason=None, resolution_deadline=None,
-                     replay_deadline=None):
+                     replay_deadline=None, pre_replay_spec=None,
+                     hard_deadline=None):
     """Returns (ledger_entries, attempt_records, archived_user_prompts).
 
     `deadline` (Ruling 012.3): the authoritative ABSOLUTE collection deadline
@@ -77,7 +78,24 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
     instead of committing; replay stops processing candles at replay_deadline
     and latches CATCHUP_REQUIRED with the watermark preserved — the standard
     catch-up path resumes it next boundary. Both default to None (legacy
-    behavior, used by all pilot-era tests)."""
+    behavior, used by all pilot-era tests).
+
+    `pre_replay_spec` (Mentor Ruling 016.1 — LIVE EVENT ORDER): 1m candles
+    STRICTLY BEFORE T, replayed against the pre-T account state BEFORE marks
+    freeze, prompts render, or any model is called, with the phase persisted
+    ("pre_replay" -> "decision") so a crash resumes idempotently and never
+    replays a candle twice. Stops/TPs/invalidations/liquidations from the
+    prior hour are therefore visible in the T prompts, and a candle with
+    timestamp < T can never touch an action taken at T. If a coin's
+    pre-decision replay cannot complete, the standard CATCHUP_REQUIRED /
+    COIN_TERMINATED policy blocks that coin's pairs with ZERO model calls.
+    The official runner uses ONLY pre_replay_spec; the legacy `replay_spec`
+    (post-decision, post-T candles) remains for offline tooling and the
+    frozen pilot-era tests.
+
+    `hard_deadline` (Mentor Ruling 016.3): absolute T+720 bound for the
+    boundary-completion checkpoint — a completion persisting at/after it is
+    still terminal but NEVER silent (late_termination_at + ledger event)."""
     # RUNTIME INTEGRITY GATE (Ruling 009.1): load the immutable APPROVED
     # launch manifest (never rebuilt from the working tree) and verify every
     # engine/script/config/prompt/schema byte BEFORE touching state, prompts,
@@ -94,6 +112,7 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
         # boundary start. Publication uses ONLY these persisted marks; a
         # crash-restart of the same boundary keeps the frozen values.
         meta = {"boundary": T, "finalized_pairs": {},
+                "phase": ("pre_replay" if pre_replay_spec else "decision"),
                 "replay_watermark": meta.get("replay_watermark", {}),
                 "boundary_complete": False,
                 "coin_terminated": meta.get("coin_terminated", {}),
@@ -115,6 +134,135 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                1 + cfg["request_payloads"]["common"]["transport_retries"]}
     # 2. reconcile any unflushed outbox from a prior crash (idempotent)
     persistence.flush_outbox(store, accounts, meta)
+
+    def _replay_pass(spec_map, crash_label):
+        """Exact-interval 1m replay: 10h catch-up policy (008.6),
+        transactional per-candle durability (015.3/016.3) — replay runs on
+        deep copies, the authoritative clock is read after the candle's work
+        AND immediately before the atomic state replacement; a late candle
+        is discarded whole with the watermark preserved."""
+        for coin, spec in (spec_map or {}).items():
+            if meta["coin_terminated"].get(coin):
+                continue
+            rs = meta["replay_state"].get(coin, {})
+            wm = meta["replay_watermark"].get(coin)
+            eff_start = (wm + 60) if wm is not None else spec["start"]
+            eff_start = max(eff_start, rs.get("gap_since", eff_start))
+            end = spec["end"]
+            if eff_start >= end:
+                continue
+            ids = [a["id"] for a in accounts.values() if a["coin"] == coin]
+
+            def _apply_candles(candle_list, append=True):
+                """Returns the first UNAPPLIED candle t (deadline
+                truncation/discard) or None when all applied durably."""
+                for c in candle_list:
+                    if replay_deadline is not None \
+                            and clock() >= replay_deadline:
+                        return c["t"]
+                    recs = []
+                    originals = {a2: accounts[a2] for a2 in ids}
+                    prepared = {a2: copy.deepcopy(accounts[a2])
+                                for a2 in ids}
+                    replay_mod.replay([prepared[a2] for a2 in ids], [c],
+                                      recs)
+                    if replay_deadline is not None \
+                            and clock() >= replay_deadline:
+                        return c["t"]                # discard prepared
+                    cand_meta = copy.deepcopy(meta)
+                    cand_meta["replay_watermark"][coin] = c["t"]
+                    for i, rc in enumerate(recs):
+                        persistence.outbox_add(
+                            cand_meta, f"{coin}:{c['t']}:{i}:{rc['e']}",
+                            {"round_id": prompts.round_id(coin, T),
+                             "replay": [rc]})
+                    for a2 in ids:
+                        accounts[a2] = prepared[a2]
+                    if not persistence.save_state_tx(spath, accounts,
+                                                     cand_meta, clock,
+                                                     replay_deadline):
+                        for a2 in ids:               # nothing durable changed
+                            accounts[a2] = originals[a2]
+                        return c["t"]
+                    meta.clear()
+                    meta.update(cand_meta)
+                    persistence.flush_outbox(store, accounts, meta)
+                    if recs and append:
+                        ledger.append({"round_id": prompts.round_id(coin, T),
+                                       "replay": recs})
+                    _crash(crash_at, crash_label)
+                return None
+
+            def _latch_catchup(t_gap):
+                meta["replay_state"][coin] = {
+                    "status": "CATCHUP_REQUIRED", "gap_since": t_gap,
+                    "detail": "replay_deadline_reached"}
+                ev = {"round_id": prompts.round_id(coin, T),
+                      "replay": [{"e": "CATCHUP_REQUIRED",
+                                  "gap_since": t_gap}]}
+                persistence.outbox_add(
+                    meta, f"{coin}:{t_gap}:CATCHUP_REQUIRED", ev)
+                persistence.save_state(spath, accounts, meta)
+                persistence.flush_outbox(store, accounts, meta)
+                ledger.append(ev)
+            try:
+                candles = marketdata.validate_1m_coverage(spec["candles"],
+                                                          eff_start, end)
+            except marketdata.DataUnavailable as e:
+                # process the contiguous prefix before the gap, preserving
+                # the last trustworthy watermark; never past the gap (008.6)
+                prefix = []
+                want = eff_start
+                have = {c["t"]: c for c in spec["candles"]}
+                while want in have:
+                    prefix.append(have[want])
+                    want += 60
+                truncated = _apply_candles(prefix, append=False) \
+                    if prefix else None
+                eff_start = truncated if truncated is not None else want
+                unresolved = end - eff_start
+                if unresolved > MAX_GAP_S:
+                    meta["coin_terminated"][coin] = True
+                    meta["replay_state"][coin] = {
+                        "status": "COIN_TERMINATED", "gap_since": eff_start}
+                    ev = {"round_id": prompts.round_id(coin, T),
+                          "replay": [{"e": "COIN_TERMINATED",
+                                      "reason": "replay_integrity_loss",
+                                      "unresolved_s": unresolved}]}
+                else:
+                    meta["replay_state"][coin] = {
+                        "status": "CATCHUP_REQUIRED", "gap_since": eff_start,
+                        "detail": str(e)[:200]}
+                    ev = {"round_id": prompts.round_id(coin, T),
+                          "replay": [{"e": "CATCHUP_REQUIRED",
+                                      "gap_since": eff_start}]}
+                persistence.outbox_add(
+                    meta, f"{coin}:{eff_start}:{ev['replay'][0]['e']}", ev)
+                persistence.save_state(spath, accounts, meta)
+                persistence.flush_outbox(store, accounts, meta)
+                ledger.append(ev)
+                continue
+            meta["replay_state"][coin] = {"status": "REPLAY_COMPLETE"}
+            truncated = _apply_candles(candles)
+            if truncated is not None:
+                _latch_catchup(truncated)
+
+    # 2b. PRE-DECISION REPLAY (Ruling 016.1): candles strictly < T applied
+    # to the pre-T account state BEFORE marks are re-frozen for prompts and
+    # BEFORE any prompt/model work. Phase-persisted: a crash here resumes
+    # idempotently (watermark) and prompt generation only ever sees the
+    # post-replay state.
+    if pre_replay_spec:
+        for coin, spec in pre_replay_spec.items():
+            # only [start, end) is ever replayed; end must not reach past T
+            if spec["end"] > T:
+                raise ValueError(
+                    f"pre_replay_spec for {coin} ends at {spec['end']} > "
+                    f"T={T} — pre-decision replay must be strictly pre-T")
+    if pre_replay_spec and meta.get("phase") == "pre_replay":
+        _replay_pass(pre_replay_spec, "during_pre_replay")
+        meta["phase"] = "decision"
+        persistence.save_state(spath, accounts, meta)
 
     # 3. durable prompt archive BEFORE any request (Ruling 008.3)
     archived = persistence.read_prompt_archive(store, _seed(T))
@@ -242,6 +390,7 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
             a_ta = accounts[state.account_id(coin, model, "ta")]
             snap = snapshots.get(coin)
             exec_links = []
+            swapped_originals = {}
             # TRANSACTIONAL RESOLUTION (Ruling 015.3): all validation and
             # accounting run against DEEP COPIES; the authoritative clock is
             # read AFTER every piece of resolution work is prepared and only
@@ -273,7 +422,8 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                     if _too_late():
                         entry = _late_abort()            # discard prepared
                     else:
-                        for p, o in zip(prepared, outs):
+                        for a, p, o in zip(live, prepared, outs):
+                            swapped_originals[p["id"]] = a
                             accounts[p["id"]] = p
                             exec_links.append(o[2])
                         _crash(crash_at, "after_execute")
@@ -289,6 +439,8 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                     if _too_late():
                         entry = _late_abort()            # discard prepared
                     else:
+                        swapped_originals = {a_raw["id"]: a_raw,
+                                             a_ta["id"]: a_ta}
                         accounts[a_raw["id"]] = prep_raw
                         accounts[a_ta["id"]] = prep_ta
                         exec_links = [o_raw[2], o_ta[2]]
@@ -301,17 +453,42 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                              "status": rounds.PAIR_ABORTED,
                              "reason": o_raw[1] or o_ta[1],
                              "caused_by_arm": "raw" if o_raw[0] is None else "ta"}
-            # FINALIZE: one atomic checkpoint (state + status + links + outbox)
-            persistence.outbox_add(meta, f"{rid}:{pid}:{entry['status']}", entry)
+            # FINALIZE (Rulings 008 + 016.3): one atomic checkpoint. For a
+            # TRADE-BEARING result the FULL serialized state is prepared and
+            # fsynced FIRST and the authoritative clock is read immediately
+            # before the atomic replacement — a late prepared commit is
+            # discarded whole (in-memory swaps reverted, no account, fee,
+            # trade, lifecycle, link or watermark survives) and the pair is
+            # re-finalized as PAIR_ABORTED/deadline_exceeded.
+            trade_bearing = bool(exec_links)
+            cand_meta = copy.deepcopy(meta)
+            persistence.outbox_add(cand_meta, f"{rid}:{pid}:{entry['status']}",
+                                   entry)
             for link in exec_links:
-                persistence.outbox_add(meta, f"{rid}:{pid}:exec:{link}",
-                                       {"e": "executed_attempt", "round_id": rid,
-                                        "pair": pid, "attempt_id": link})
+                persistence.outbox_add(cand_meta, f"{rid}:{pid}:exec:{link}",
+                                       {"e": "executed_attempt",
+                                        "round_id": rid, "pair": pid,
+                                        "attempt_id": link})
+            cand_meta["finalized_pairs"][pid] = entry["status"]
+            durable = persistence.save_state_tx(
+                spath, accounts, cand_meta, clock,
+                resolution_deadline if trade_bearing else None)
+            if not durable:
+                for aid2, orig in swapped_originals.items():
+                    accounts[aid2] = orig            # nothing survives
+                entry = _late_abort()
+                exec_links = []
+                cand_meta = copy.deepcopy(meta)
+                persistence.outbox_add(
+                    cand_meta, f"{rid}:{pid}:{entry['status']}", entry)
+                cand_meta["finalized_pairs"][pid] = entry["status"]
+                persistence.save_state(spath, accounts, cand_meta)
+            meta.clear()
+            meta.update(cand_meta)
+            for link in exec_links:
                 for rec in all_attempts:
                     if rec["attempt_id"] == link:
                         rec["became_executed_decision"] = True   # in-memory only
-            meta["finalized_pairs"][pid] = entry["status"]
-            persistence.save_state(spath, accounts, meta)
             _crash(crash_at, "after_checkpoint")
             persistence.flush_outbox(store, accounts, meta,
                                      crash=lambda p: _crash(crash_at, p))
@@ -321,127 +498,10 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                 done_one = True
                 _crash(crash_at, "after_one_pair")
 
-    # 6. replay with exact interval validation + 10h catch-up policy
-    for coin, spec in (replay_spec or {}).items():
-        if meta["coin_terminated"].get(coin):
-            continue
-        rs = meta["replay_state"].get(coin, {})
-        wm = meta["replay_watermark"].get(coin)
-        eff_start = (wm + 60) if wm is not None else spec["start"]
-        eff_start = max(eff_start, rs.get("gap_since", eff_start))
-        end = spec["end"]
-        if eff_start >= end:
-            continue
-        try:
-            candles = marketdata.validate_1m_coverage(spec["candles"],
-                                                      eff_start, end)
-        except marketdata.DataUnavailable as e:
-            # process the contiguous prefix before the gap, preserving the
-            # last trustworthy watermark; never process past the gap (008.6)
-            prefix = []
-            want = eff_start
-            have = {c["t"]: c for c in spec["candles"]}
-            while want in have:
-                prefix.append(have[want])
-                want += 60
-            if prefix:
-                pids_ = [a["id"] for a in accounts.values()
-                         if a["coin"] == coin]
-                truncated = None
-                for c in prefix:
-                    # REPLAY DEADLINE (Rulings 014.5/015.3, transactional):
-                    # a late candle is discarded whole; the unprocessed
-                    # remainder becomes the coin's gap
-                    if replay_deadline is not None \
-                            and clock() >= replay_deadline:
-                        truncated = c["t"]
-                        break
-                    recs = []
-                    prepared = {a2: copy.deepcopy(accounts[a2])
-                                for a2 in pids_}
-                    replay_mod.replay([prepared[a2] for a2 in pids_], [c],
-                                      recs)
-                    if replay_deadline is not None \
-                            and clock() >= replay_deadline:
-                        truncated = c["t"]               # discard prepared
-                        break
-                    for a2 in pids_:
-                        accounts[a2] = prepared[a2]
-                    meta["replay_watermark"][coin] = c["t"]
-                    for i, rc in enumerate(recs):
-                        persistence.outbox_add(
-                            meta, f"{coin}:{c['t']}:{i}:{rc['e']}",
-                            {"round_id": prompts.round_id(coin, T),
-                             "replay": [rc]})
-                persistence.save_state(spath, accounts, meta)
-                persistence.flush_outbox(store, accounts, meta)
-                eff_start = truncated if truncated is not None else want
-            unresolved = end - eff_start
-            if unresolved > MAX_GAP_S:
-                meta["coin_terminated"][coin] = True
-                meta["replay_state"][coin] = {"status": "COIN_TERMINATED",
-                                              "gap_since": eff_start}
-                ev = {"round_id": prompts.round_id(coin, T),
-                      "replay": [{"e": "COIN_TERMINATED",
-                                  "reason": "replay_integrity_loss",
-                                  "unresolved_s": unresolved}]}
-            else:
-                meta["replay_state"][coin] = {"status": "CATCHUP_REQUIRED",
-                                              "gap_since": eff_start,
-                                              "detail": str(e)[:200]}
-                ev = {"round_id": prompts.round_id(coin, T),
-                      "replay": [{"e": "CATCHUP_REQUIRED",
-                                  "gap_since": eff_start}]}
-            persistence.outbox_add(meta, f"{coin}:{eff_start}:{ev['replay'][0]['e']}", ev)
-            persistence.save_state(spath, accounts, meta)
-            persistence.flush_outbox(store, accounts, meta)
-            ledger.append(ev)
-            continue
-        meta["replay_state"][coin] = {"status": "REPLAY_COMPLETE"}
-        ids = [a["id"] for a in accounts.values() if a["coin"] == coin]
+    # 6. post-decision replay (LEGACY/offline path only — the official
+    # runner uses pre_replay_spec per Ruling 016.1)
+    _replay_pass(replay_spec, "during_replay")
 
-        def _latch_catchup(t_gap):
-            # REPLAY DEADLINE (Rulings 014.5/015.3): replay past the bound
-            # stops with the watermark preserved and latches the standard
-            # CATCHUP_REQUIRED path — never a silent deadline crossing,
-            # never lost candles, never a half-applied candle.
-            meta["replay_state"][coin] = {
-                "status": "CATCHUP_REQUIRED", "gap_since": t_gap,
-                "detail": "replay_deadline_reached"}
-            ev = {"round_id": prompts.round_id(coin, T),
-                  "replay": [{"e": "CATCHUP_REQUIRED", "gap_since": t_gap}]}
-            persistence.outbox_add(meta, f"{coin}:{t_gap}:CATCHUP_REQUIRED",
-                                   ev)
-            persistence.save_state(spath, accounts, meta)
-            persistence.flush_outbox(store, accounts, meta)
-            ledger.append(ev)
-        for c in candles:
-            if replay_deadline is not None and clock() >= replay_deadline:
-                _latch_catchup(c["t"])
-                break
-            # TRANSACTIONAL CANDLE (Ruling 015.3): replay runs on deep
-            # copies; the clock is re-read AFTER the candle's work and a
-            # late result is discarded whole — no partial candle ever
-            # becomes durable.
-            recs = []
-            prepared = {aid2: copy.deepcopy(accounts[aid2]) for aid2 in ids}
-            replay_mod.replay([prepared[aid2] for aid2 in ids], [c], recs)
-            if replay_deadline is not None and clock() >= replay_deadline:
-                _latch_catchup(c["t"])                   # discard prepared
-                break
-            for aid2 in ids:
-                accounts[aid2] = prepared[aid2]
-            meta["replay_watermark"][coin] = c["t"]
-            for i, rc in enumerate(recs):
-                persistence.outbox_add(meta, f"{coin}:{c['t']}:{i}:{rc['e']}",
-                                       {"round_id": prompts.round_id(coin, T),
-                                        "replay": [rc]})
-            persistence.save_state(spath, accounts, meta)
-            persistence.flush_outbox(store, accounts, meta)
-            if recs:
-                ledger.append({"round_id": prompts.round_id(coin, T),
-                               "replay": recs})
-            _crash(crash_at, "during_replay")
     # DURABLE EQUITY HISTORY (Ruling 011.2): one point per completed boundary,
     # equity computed with THIS boundary's persisted mark; explicit null when
     # an open position has no valid mark. Idempotent across same-T re-runs.
@@ -460,7 +520,19 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
         meta["equity_history_last"] = T
     meta["boundary_complete"] = True
     meta.pop("_recovering", None)
-    persistence.save_state(spath, accounts, meta)
+    # BOUNDARY-COMPLETION persistence (Ruling 016.3): terminal, and never
+    # silently late — completion at/after the hard T+720 bound is recorded
+    # explicitly in state and the ledger before it becomes durable.
+    if not persistence.save_state_tx(spath, accounts, meta, clock,
+                                     hard_deadline):
+        meta["late_termination_at"] = clock()
+        ev = {"round_id": f"v1-ALL-{T}",
+              "e": "LATE_TERMINATION",
+              "hard_deadline": hard_deadline, "at": meta["late_termination_at"]}
+        persistence.outbox_add(meta, f"{T}:LATE_TERMINATION", ev)
+        persistence.save_state(spath, accounts, meta)
+        persistence.flush_outbox(store, accounts, meta)
+        ledger.append(ev)
     return ledger, all_attempts, {aid: p[1] for aid, p in pregen.items()}
 
 
@@ -476,12 +548,22 @@ def _attempt_validator():
 
 
 def recover(store):
-    """Mark the persisted boundary as recovering (rule: abort non-finalized)."""
+    """Mark the persisted boundary as recovering (rule: abort non-finalized).
+
+    Ruling 016.1 refinement: a crash DURING the pre-decision replay phase —
+    before any prompt was archived, hence provably zero model calls — is NOT
+    marked recovering: the restart resumes the same boundary normally (the
+    replay watermark guarantees no candle replays twice). Once any prompt is
+    archived the frozen predeclared rule applies unchanged."""
     approved = config_mod.load_launch_manifest(store)
     config_mod.verify_integrity(approved)
     spath = os.path.join(store, "state.json")
     accounts, meta = persistence.load_state(spath, expect_full_roster=True)
     if not meta.get("boundary_complete"):
-        meta["_recovering"] = True
-        persistence.save_state(spath, accounts, meta)
+        in_pre_replay = (meta.get("phase") == "pre_replay"
+                         and not persistence.read_prompt_archive(
+                             store, _seed(meta.get("boundary"))))
+        if not in_pre_replay:
+            meta["_recovering"] = True
+            persistence.save_state(spath, accounts, meta)
     return meta

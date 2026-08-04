@@ -23,8 +23,11 @@ tree deployed from the approved branch — never manually edited on the server.
 - /etc/arena/arena.env  (root:arena, mode 0640), containing:
   ANTHROPIC_API_KEY=...            # owner-issued, official-run scope
   ARENA_PUBLIC_DIR=/var/www/arena
-  ARENA_PUBLIC_PAYLOAD_URL=https://<vps-host>/live_payload.js
-  ARENA_DEPLOY_TOKEN=...           # OPTIONAL, mirror-only scope
+  ARENA_PUBLIC_PAYLOAD_URL=https://live.akraarena.online/live_payload.js
+  # ARENA_DEPLOY_TOKEN: RECOMMENDED ABSENT during the official run
+  # (Ruling 016.8). The GitHub mirror is optional; if the owner enables it,
+  # mirror failure details are never published (health notes are redacted;
+  # the engine withholds exception text from the public endpoint).
 - Never committed, never in audit archives, never in payloads or logs.
 
 ## 3. Web endpoint (Ruling 1)
@@ -45,13 +48,16 @@ tree deployed from the approved branch — never manually edited on the server.
   READY republication, no further publications, health stays COMPLETE
   (a reboot after completion re-exits cleanly the same way).
 
-## 4b. Post-deployment verification (Ruling 014.6 — run after EVERY deploy)
-- venv/bin/python scripts/verify_deployment.py --engine-digest <issued>
-  Proves: tree matches the issued digest; installed systemd unit is
-  byte-identical to the audited template; the effective nginx config still
-  carries every audited directive (survives certbot rewrites); the audited
-  venv python and exact pinned package versions are in use; the canonical
-  endpoint constant is the frozen hostname. Any FAIL blocks activation.
+## 4b. Post-deployment verification (Rulings 014.6 + 016.6 — after EVERY deploy)
+- venv/bin/python scripts/verify_deployment.py \
+    --engine-digest <issued> --site-digest <issued>
+  Proves: tree matches BOTH issued digests; installed systemd unit is
+  byte-identical to the audited template; the effective nginx config is
+  exactly the certbot two-block layout (one HTTPS content block exposing
+  only the three approved files, one HTTP block doing nothing but the exact
+  redirect — no proxying, rewrites, extra locations, returns or if-blocks);
+  live HTTPS + redirect work; the audited venv python and exact pinned
+  package versions are in use. Any FAIL blocks activation.
 
 ## 5. Server preflight (owner/mentor authorized; real model calls)
 - ARENA_PREFLIGHT_APPROVED=YES-OWNER-MENTOR-AUTHORIZED \
@@ -76,7 +82,7 @@ tree deployed from the approved branch — never manually edited on the server.
   honestly).
 
 ## 7. Monitoring
-- https://<vps-host>/health.json — state, pid, done/total, latest scheduled/
+- https://live.akraarena.online/health.json — state, pid, done/total, latest scheduled/
   terminal boundary, latest publication + status.
 - journalctl -u arena-official -f for the service log (never contains
   secrets; the mirror token is read from env only).

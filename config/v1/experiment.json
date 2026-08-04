@@ -1,432 +1,439 @@
 {
-  "experiment": "v1.3",
-  "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?",
-  "classification": "DESIGN PROPOSAL — trading engine implementation NOT yet authorized",
-  "instrument_wording": "Synthetic USD-settled perpetual paper contract, marked and executed using Kraken {COIN}/USD spot-market OHLC data",
-  "coins": {
-    "BTC": {
-      "kraken_pair": "XBTUSD",
-      "price_decimals": 2,
-      "qty_decimals": 6,
-      "volume_decimals": 1
-    },
-    "ETH": {
-      "kraken_pair": "ETHUSD",
-      "price_decimals": 2,
-      "qty_decimals": 5,
-      "volume_decimals": 1
-    },
-    "SOL": {
-      "kraken_pair": "SOLUSD",
-      "price_decimals": 2,
-      "qty_decimals": 3,
-      "volume_decimals": 1
-    }
+ "experiment": "v1.3",
+ "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?",
+ "classification": "OFFICIAL V1 IMPLEMENTATION \u2014 mentor-audited engine; activation gated by externally issued digests, a passing server preflight attestation, and the owner's explicit activation command",
+ "instrument_wording": "Synthetic USD-settled perpetual paper contract, marked and executed using Kraken {COIN}/USD spot-market OHLC data",
+ "coins": {
+  "BTC": {
+   "kraken_pair": "XBTUSD",
+   "price_decimals": 2,
+   "qty_decimals": 6,
+   "volume_decimals": 1
   },
-  "market_data": {
-    "canonical_source": "kraken_spot_ohlc",
-    "coinbase_role": "monitoring, alerting reference, and offline test fixtures ONLY — never a source for committed decisions, fills, exits, invalidation evaluation, or equity",
-    "hourly_candles_supplied": 72,
-    "daily_closes_supplied": 40,
-    "completeness_policy": "exactly 72 real, contiguous, fully closed Kraken hourly candles; exactly 40 real, contiguous, fully closed Kraken daily observations; complete real Kraken 1-minute coverage for every replay interval",
-    "missing_interval_policy": "any missing interval invalidates the affected snapshot or replay: affected pairs record PAIR_ABORTED with DATA_UNAVAILABLE, no new decisions execute, and resting stop/target/liquidation/invalidation rules remain active only where complete 1-minute replay data exists; no interpolation, forward-fill, fabrication, or venue substitution of candles",
-    "final_candle_must_be_closed": true,
-    "execution_price": "close of last completed 1m candle at boundary T (P_T)",
-    "max_auto_catchup_hours": 10,
-    "beyond_catchup": "INTEGRITY HALT C: that coin's V1 arena is terminated for the remainder of the run; last trustworthy state preserved; other coin arenas continue normally",
-    "gap_fill_wording": "If a one-minute candle opens beyond a resting execution level, the fill occurs at that candle's opening price. For a protective stop or liquidation this may be worse than the trigger level; for a take-profit it may be better than the target level.",
-    "freshness": {
-      "latest_1m_open_must_equal": "T - 60",
-      "latest_1h_open_must_equal": "T - 3600",
-      "latest_1d_open_must_equal": "UTC_day_start(T) - 86400",
-      "note": "stale-but-contiguous series are DATA_UNAVAILABLE (Ruling 008.4)"
-    },
-    "replay_gap_policy": {
-      "states": [
-        "REPLAY_COMPLETE",
-        "CATCHUP_REQUIRED",
-        "COIN_TERMINATED"
-      ],
-      "rule": "a replay gap preserves the last trustworthy watermark and sets CATCHUP_REQUIRED; no candles after an unresolved gap are processed; no interpolation or venue substitution; the coin's pairs abort DATA_UNAVAILABLE while its state cannot be brought exactly to T; only unresolved required history exceeding 10 hours terminates the coin's arena (Ruling 008.6)"
-    }
+  "ETH": {
+   "kraken_pair": "ETHUSD",
+   "price_decimals": 2,
+   "qty_decimals": 5,
+   "volume_decimals": 1
   },
-  "models": {
-    "haiku": {
-      "model": "claude-haiku-4-5-20251001",
-      "pinning": "dated fixed snapshot"
-    },
-    "sonnet": {
-      "model": "claude-sonnet-5",
-      "pinning": "fixed dateless snapshot (immutable)"
-    },
-    "opus": {
-      "model": "claude-opus-4-8",
-      "pinning": "fixed dateless snapshot (immutable)"
-    }
-  },
-  "request_payloads": {
-    "common": {
-      "endpoint": "POST https://api.anthropic.com/v1/messages",
-      "anthropic-version": "2023-06-01",
-      "beta_headers": [],
-      "max_tokens": 1500,
-      "tools": [
-        "schemas/v1/decision.schema.json (strict: true)"
-      ],
-      "tool_choice": {
-        "type": "tool",
-        "name": "submit_decision",
-        "disable_parallel_tool_use": true
-      },
-      "sampling_parameters": "temperature/top_p/top_k NOT SENT",
-      "timeout_seconds": 120,
-      "transport_retries": 3,
-      "validation_retries": 1,
-      "messages": "single user message (round prompt); validation retry appends assistant tool_use + tool_result acknowledgment + fixed rejection message",
-      "transport_attempts_total": 4,
-      "transport_note": "transport_retries=3 means 1 initial attempt + 3 retries = 4 total transport attempts; the single validation-retry conversation obeys the same 4-attempt transport policy (Ruling 008.7)"
-    },
-    "per_model": {
-      "claude-haiku-4-5-20251001": {
-        "thinking": "parameter omitted (model runs without extended thinking)"
-      },
-      "claude-sonnet-5": {
-        "thinking": {
-          "type": "disabled"
-        }
-      },
-      "claude-opus-4-8": {
-        "thinking": {
-          "type": "disabled"
-        }
-      }
-    },
-    "twin_parity": "Raw and TA requests for the same model are byte-identical except the user prompt text"
-  },
-  "collection": {
-    "procedure": [
-      "freeze all three market snapshots",
-      "freeze all 18 account snapshots",
-      "generate and archive all 18 first-attempt prompts before sending any model request",
-      "submit calls with bounded concurrency",
-      "identical frozen prompts, state, and P_T regardless of response order",
-      "resolve commit/abort independently per matched pair",
-      "apply committed decisions logically at boundary T only after collection closes",
-      "one common post-T candle replay per coin"
-    ],
-    "concurrency_max_simultaneous_requests": 6,
-    "global_collection_deadline": "T+12 minutes, hard; transport retries must complete inside it",
-    "concurrency_lock": "preflight verifies 6-way concurrency against rate limits; the final value is locked before launch and cannot change during V1",
-    "collection_deadline_seconds": 720,
-    "deadline_note": "hard monotonic wall-clock deadline for the whole collection stage, anchored at collection start; results arriving after it never execute; retries may not begin unless their full budget fits inside it (Ruling 008.9)"
-  },
-  "arms": [
-    "raw",
-    "ta"
-  ],
-  "atomic_unit": "matched Raw/TA pair (same model, same coin); 9 independent pairs",
-  "pair_records": [
-    "PAIR_COMMITTED",
-    "PAIR_ABORTED",
-    "PAIR_TERMINAL_SPLIT"
-  ],
-  "pair_abort_semantics": {
-    "meaning": "zero DECISION-GENERATED state change at T for both twins",
-    "no_new_discretionary_execution": true,
-    "thesis_memory_not_updated_from_aborted_attempt": true,
-    "existing_stop_target_position_lifecycle_invalidation_unchanged": true,
-    "all_attempts_and_rejection_reasons_still_archived": true,
-    "post_T_replay_continues_for_both_accounts": true,
-    "market_driven_exits_never_suspended": "stops, targets, liquidation, and invalidation monitoring never pause because a discretionary round aborted or was skipped"
-  },
-  "terminal_account_policy": {
-    "trigger": "post-fee equity reaches exactly 0 (permanent closure)",
-    "terminal_account": "receives no further model calls",
-    "surviving_twin": "continues receiving decisions and trading normally; never force-closed or frozen",
-    "pair_status": "PAIR_TERMINAL_SPLIT from the terminal event onward (missing side is an experimental outcome, not an infrastructure failure)",
-    "metrics": "post-terminal rounds excluded from paired behavioural metrics; both accounts' complete outcomes included in performance reporting; terminal timestamp and cause reported prominently"
-  },
-  "accounts": {
-    "total": 18,
-    "id_format": "{coin_lower}_{model}_{arm}",
-    "start_cash_usd": "10000.00",
-    "max_leverage": "5.0 — governs NEW or INCREASED exposure only (open, reversal, same-side increase): such decisions above 5x pre-decision equity are rejected (TARGET_EXCEEDS_MAX_LEVERAGE), never clamped. Exact holds (within the $10 executable tolerance) and reductions are always allowed even above 5x effective leverage; no forced deleveraging and no requirement to reduce below 5x (Ruling 006.1)",
-    "fee_rate": "0.0005 on every execution including stop/take-profit/liquidation fills and both reversal legs",
-    "maintenance_margin": "0.02",
-    "min_executable_change_usd": "10.00 (below => NO_EXECUTION_BELOW_MINIMUM, logged)"
-  },
-  "accounting": {
-    "arithmetic": "decimal.Decimal for equity, P&L, fees, notional, quantity, prices; full source precision internally",
-    "quantity_rounding": "round DOWN to per-coin qty_decimals at execution",
-    "display_rounding": "presentation only; never feeds back into engine values"
-  },
-  "liquidation_contract": {
-    "balance_variable": "E = realized cash equity (Decimal): starting cash + all realized P&L - all fees to date; excludes unrealized P&L",
-    "unrealized": "u(p) = q * (p - entry), with q the signed executed quantity (already rounded down to qty_decimals) and entry the Decimal average entry price",
-    "equity_at_price": "Equity(p) = E + u(p)",
-    "maintenance_requirement": "m(p) = Decimal('0.02') * abs(q) * p",
-    "liquidation_condition": "Equity(p) <= m(p)",
-    "long_threshold": "L = (q*entry - E) / ((1 - Decimal('0.02')) * q)   [q > 0; liquidate when p <= L]",
-    "short_threshold": "L = (q*entry - E) / ((1 + Decimal('0.02')) * q)   [q < 0; liquidate when p >= L]",
-    "quantity_precision_note": "thresholds are computed with the executed rounded-down q, so precision affects L exactly as it affects the position",
-    "gap_fill": "if the 1m candle OPEN already satisfies the liquidation condition, fill at the open (worse price); otherwise fill at the threshold L",
-    "fee": "Decimal('0.0005') * abs(q) * fill_price, charged on the liquidation execution",
-    "post_fill_equity": "E' = E + q*(fill - entry) - fee",
-    "residual_equity": "a liquidation MAY leave positive residual equity: the position is closed but the account continues trading",
-    "terminal_rule": "permanent account closure ONLY when post-fee equity E' <= 0, floored to exactly 0"
-  },
-  "event_ordering": {
-    "scope": "every replayed 1-minute candle, evaluated in candle order",
-    "A_opening_gap": [
-      "1. if the account is already at or below maintenance margin at the candle open: liquidation at the open",
-      "2. else if the open has crossed the stop-loss: stop fill at the open",
-      "3. else if the open has crossed the take-profit: take-profit fill at the open"
-    ],
-    "B_intracandle": {
-      "long": "downside protective exit = the HIGHER valid level of {stop_loss, liquidation threshold}, evaluated against the candle low; upside take-profit evaluated against the candle high",
-      "short": "upside protective exit = the LOWER valid level of {stop_loss, liquidation threshold}, evaluated against the candle high; downside take-profit evaluated against the candle low",
-      "ambiguity": "if both a protective exit and a take-profit are reachable inside the same candle and order is unknowable: the protective exit wins; record AMBIGUOUS_CANDLE_PROTECTIVE_FIRST"
-    },
-    "C_invalidation_observation": {
-      "1m_intrabar": "latch if the condition is satisfied anywhere in a candle in which the lifecycle existed at candle open; if the position also exits in that candle, record SAME_CANDLE_INVALIDATION_AND_EXIT; such an exit counts as no-longer-exposed for the discipline metric",
-      "1h_close": "evaluate only at the completed hourly close; never trigger if the lifecycle ended before that close"
-    },
-    "D_lifecycle_end": "after stop, target, liquidation, decision close, or reversal ends a lifecycle, later candles cannot trigger that lifecycle's invalidation"
-  },
-  "invalidation": {
-    "operators": [
-      "price_at_or_below",
-      "price_at_or_above"
-    ],
-    "timeframes": [
-      "1h_close",
-      "1m_intrabar"
-    ],
-    "lifecycle": "set once at open-from-flat or reversal; immutable while the lifecycle is open (hold/increase/reduce/partial exits); close or reversal ends it",
-    "trigger": "inclusive comparison; first trigger latched permanently with timestamp, price, and candle reference",
-    "post_trigger": "no forced exit; next-round prompt shows the TRIGGERED block; behaviour recorded",
-    "primary_discipline_metric": "no longer exposed in the invalidated direction by the end of the account's next committed pair-round; stop, liquidation, reversal, or full close before that boundary qualifies; partial reductions reported descriptively, never as compliance"
-  },
-  "attempt_archive": {
-    "path": "data-v1/attempts/{round_id}/{account_id}_attempt{n}.json",
-    "every_attempt_recorded": true,
-    "fields": [
-      "account_id",
-      "pair_id",
-      "round_id",
-      "attempt_number",
-      "generated_prompt_hash",
-      "request_hash",
-      "requested_model",
-      "returned_model",
-      "raw_response",
-      "parsed_tool_input",
-      "schema_result",
-      "semantic_validation_result",
-      "fixed_rejection_reasons",
-      "transport_error_category",
-      "latency_ms",
-      "token_usage",
-      "became_executed_decision"
-    ]
-  },
-  "metrics": {
-    "reliability_behavioural_outcome": [
-      "first-attempt validity rate",
-      "validation-retry rate",
-      "successful-correction rate",
-      "transport-retry rate",
-      "pair-abort rate",
-      "which arm caused each pair abort"
-    ],
-    "operative_decision": "the executed corrected decision is the operative decision for behavioural analysis; formatting/semantic reliability reported separately, never hidden",
-    "denominators": {
-      "direction_disagreement": "pair-committed rounds where both twins were active and produced executable target positions",
-      "target_size_difference": "compare target notional / twin's own pre-decision equity; report absolute difference in equity multiples",
-      "stop_target_usage": "pair-committed rounds leaving the relevant account positioned",
-      "invalidation_response_rate": "lifecycle invalidations that triggered early enough for at least one later committed decision opportunity before the experiment ended",
-      "turnover": "cumulative executed notional / time-weighted average equity",
-      "exclusions": "aborted, skipped, pre-launch, and post-terminal rounds never enter paired behavioural denominators; their counts and reasons are reported separately"
-    },
-    "statistics_policy": "no p-values or claims of statistical significance in V1; report counts, rates, paired descriptive differences, and uncertainty limitations",
-    "feature_reference_frequency": "descriptive: whether the thesis explicitly names a supplied feature (RSI, SMA, ATR, volume ratio, VWAP); mentioning a feature is never inferred to prove causation"
-  },
-  "halt_policy": {
-    "normal_no_halt": [
-      "semantic validation failure",
-      "pair abort",
-      "temporary transport failure",
-      "one missing decision boundary",
-      "temporary Kraken unavailability that recovers before replay integrity is lost"
-    ],
-    "integrity_halts": {
-      "A_hash_mismatch": "code/config/prompt/schema hash mismatch => entire experiment halts PERMANENTLY; no same-run repair or resumption",
-      "B_state_corruption": "state corruption or non-atomic persistence failure => entire experiment halts PERMANENTLY",
-      "C_replay_gap": ">10 hours unrecoverable 1-minute history for one coin => that coin's arena terminated for the remainder of the run; last trustworthy state preserved; other arenas continue",
-      "D_terminal_account": "account reaches terminal zero => PAIR_TERMINAL_SPLIT (terminal_account_policy); experiment does NOT halt"
-    },
-    "no_discretionary_clearing": "there is no mid-run human clearing of halts; any integrity termination is final for V1 and is reported"
-  },
-  "dashboard": {
-    "visibility": "public from the first committed boundary",
-    "required_elements": [
-      "clear V1 experiment label",
-      "frozen experiment question",
-      "code/config/prompt hashes",
-      "scheduler and data health",
-      "committed/aborted/skipped/terminal statuses",
-      "clearly labeled link to the archived pilot page"
-    ],
-    "pilot_label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"
-  },
-  "round_contract": {
-    "cadence": "hourly boundaries at :00 UTC",
-    "duration": "exactly 14 complete days = exactly 336 scheduled boundaries",
-    "no_mid_run_changes": "no extension, shortening, coin replacement, indicator/prompt/rule change based on observed results; missed rounds are never replaced",
-    "T0_selection": "first suitable :00 UTC boundary at least 24 hours after final mentor launch approval, which itself requires: all offline tests pass, 24-hour mock soak passes, production-payload preflight passes",
-    "virtual_event_time": "replay 1m to T -> freeze accounts at T -> freeze snapshots & P_T -> generate all 18 prompts -> collect/validate with bounded concurrency -> apply committed pairs at P_T -> one common post-T 1m replay per coin -> publish; wall-clock model latency is excluded from simulated market time"
-  },
-  "scheduler": {
-    "heartbeat_cron": "2-57/5 * * * *",
-    "boundary_grace_minutes": 15,
-    "missed_boundary": "ROUND_SKIPPED for all unprocessed pairs; never executed retrospectively",
-    "heartbeat_file": "runtime branch: data-v1/heartbeat.json",
-    "stale_alert_minutes": 15
-  },
-  "persistence": {
-    "code_branch": "main pinned at approved launch tag; runtime never commits to it",
-    "runtime_branch": "v1-runtime (state, prompt archive, attempt archive, logs, dashboard docs/)",
-    "integrity": "every run verifies SHA-256 of code+prompts+schema+config against the launch manifest; mismatch => integrity halt A",
-    "recorded_code_hash": "the approved launch commit, not the runtime-data commit"
-  },
-  "outcome_hierarchy": {
-    "primary_behavioural": [
-      "direction disagreement rate",
-      "abs target-size difference in equity multiples",
-      "turnover difference",
-      "stop/target usage difference",
-      "invalidation-response difference"
-    ],
-    "secondary_descriptive": [
-      "paired equity/return/drawdown/fee differences",
-      "liquidations"
-    ],
-    "explicit_non_claim": "V1 does not prove indicators improve profitability; performance results are descriptive"
-  },
-  "token_measurement": "PENDING — count_tokens per model on 4 representative prompts (first-round raw/ta, mature raw/ta) during preflight; cost projection provisional until measured",
-  "data_namespace": "data-v1/",
-  "prompt_archive": "data-v1/prompts/{round_id}/{account_id}.txt",
-  "round_id_format": "v1-{COIN}-{ISO8601_BOUNDARY}",
-  "arm_naming": "scientific/public name for the treatment arm: 'Feature arm'; internal account-ID suffix remains _ta (legacy, permitted) to avoid migration churn",
-  "feature_pack": {
-    "principle": "the Feature arm may receive precomputed mathematical summaries, but never semantic judgments, trading guidance, recommended thresholds, or suggested actions",
-    "outputs": {
-      "RSI14_H": {
-        "calc": "Wilder RSI(14): seed avg gain/loss = mean of first 14 close diffs of the visible 72-hour window, then avg=(avg*13+cur)/14",
-        "inputs": "72 visible hourly closes only",
-        "rounding": "1 decimal",
-        "insufficient": "n/a"
-      },
-      "SMA20_H": {
-        "calc": "arithmetic mean of latest 20 completed hourly closes",
-        "inputs": "visible hourly closes only",
-        "rounding": "coin price_decimals"
-      },
-      "SMA50_H": {
-        "calc": "arithmetic mean of latest 50 completed hourly closes",
-        "inputs": "visible hourly closes only",
-        "rounding": "coin price_decimals"
-      },
-      "ATR14_H": {
-        "calc": "TR=max(h-l, abs(h-prev_c), abs(l-prev_c)); seed=mean of first 14 TRs; Wilder smoothing",
-        "inputs": "visible hourly OHLC only",
-        "rounding": "coin price_decimals"
-      },
-      "CURRENT_VOLUME_H": {
-        "calc": "base-asset volume of the most recently completed Kraken hourly candle",
-        "rounding": "volume_decimals"
-      },
-      "MEAN_VOLUME_PREV24_H": {
-        "calc": "mean volume of the 24 completed hourly candles immediately preceding the latest candle (latest excluded)",
-        "inputs": "visible OHLCV rows only",
-        "rounding": "volume_decimals"
-      },
-      "VOLUME_RATIO_24": {
-        "calc": "latest completed hourly volume / mean of previous 24 completed hourly volumes",
-        "rounding": "2 decimals",
-        "zero_baseline": "n/a",
-        "no_interpretation_suffix": true
-      },
-      "VWAP24_H": {
-        "calc": "typical=(high+low+close)/3; VWAP=sum(typical*volume)/sum(volume) over latest 24 completed hourly candles INCLUDING the latest",
-        "rounding": "coin price_decimals",
-        "zero_volume": "n/a"
-      },
-      "PRICE_MINUS_VWAP_PCT": {
-        "calc": "(P_T - VWAP24)/VWAP24*100",
-        "rounding": "2 decimals, explicit sign",
-        "zero_volume": "n/a"
-      }
-    },
-    "prohibited_language": [
-      "bullish",
-      "bearish",
-      "strong",
-      "weak",
-      "normal",
-      "abnormal",
-      "high participation",
-      "low participation",
-      "overbought",
-      "oversold",
-      "confirmation",
-      "divergence",
-      "breakout signal",
-      "buy",
-      "sell",
-      "favorable",
-      "unfavorable",
-      "stretched",
-      "extended",
-      "arrows",
-      "traffic-light colors",
-      "scores",
-      "rankings",
-      "labels",
-      "signal classifications",
-      "threshold meanings"
-    ],
-    "removed_from_v1": [
-      "MACD",
-      "Bollinger Bands",
-      "MFI",
-      "Daily SMA",
-      "Daily RSI",
-      "Fear & Greed",
-      "sentiment",
-      "any signal classification",
-      "any feature not explicitly listed"
-    ],
-    "parameter_disclosure": "RSI 14, SMA 20, SMA 50, ATR 14, and 24-hour volume/VWAP windows are predeclared design choices; they are not claimed to be universally optimal; no parameter will be changed during V1; V1 tests this exact fixed feature pack, not 'technical indicators in general'",
-    "scientific_limitation": "V1 measures the effect of this specific predeclared numerical feature pack. It does not establish that these parameters are optimal or that technical indicators generally improve trading."
-  },
-  "prompt_templates": {
-    "raw": "prompts/v1/user_raw.txt",
-    "feature": "prompts/v1/user_feature.txt",
-    "note": "user_ta.txt removed in v1.3"
-  },
-  "decision_schema_note": "schemas/v1/decision.schema.json contains NO intended_horizon field; actual holding duration is measured from lifecycle open to close",
-  "parameters": {
-    "start_cash_usd": "10000.00",
-    "fee_rate": "0.0005",
-    "maintenance_margin": "0.02",
-    "max_leverage": "5",
-    "min_delta_usd": "10.00",
-    "qty_decimals": {
-      "BTC": 6,
-      "ETH": 5,
-      "SOL": 3
-    },
-    "note": "authoritative machine-readable engine parameters; engine verifies its loaded constants against these at startup and halts on mismatch (Ruling 008.14)"
+  "SOL": {
+   "kraken_pair": "SOLUSD",
+   "price_decimals": 2,
+   "qty_decimals": 3,
+   "volume_decimals": 1
   }
+ },
+ "market_data": {
+  "canonical_source": "kraken_spot_ohlc",
+  "coinbase_role": "monitoring, alerting reference, and offline test fixtures ONLY \u2014 never a source for committed decisions, fills, exits, invalidation evaluation, or equity",
+  "hourly_candles_supplied": 72,
+  "daily_closes_supplied": 40,
+  "completeness_policy": "exactly 72 real, contiguous, fully closed Kraken hourly candles; exactly 40 real, contiguous, fully closed Kraken daily observations; complete real Kraken 1-minute coverage for every replay interval",
+  "missing_interval_policy": "any missing interval invalidates the affected snapshot or replay: affected pairs record PAIR_ABORTED with DATA_UNAVAILABLE, no new decisions execute, and resting stop/target/liquidation/invalidation rules remain active only where complete 1-minute replay data exists; no interpolation, forward-fill, fabrication, or venue substitution of candles",
+  "final_candle_must_be_closed": true,
+  "execution_price": "close of last completed 1m candle at boundary T (P_T)",
+  "max_auto_catchup_hours": 10,
+  "beyond_catchup": "INTEGRITY HALT C: that coin's V1 arena is terminated for the remainder of the run; last trustworthy state preserved; other coin arenas continue normally",
+  "gap_fill_wording": "If a one-minute candle opens beyond a resting execution level, the fill occurs at that candle's opening price. For a protective stop or liquidation this may be worse than the trigger level; for a take-profit it may be better than the target level.",
+  "freshness": {
+   "latest_1m_open_must_equal": "T - 60",
+   "latest_1h_open_must_equal": "T - 3600",
+   "latest_1d_open_must_equal": "UTC_day_start(T) - 86400",
+   "note": "stale-but-contiguous series are DATA_UNAVAILABLE (Ruling 008.4)"
+  },
+  "replay_gap_policy": {
+   "states": [
+    "REPLAY_COMPLETE",
+    "CATCHUP_REQUIRED",
+    "COIN_TERMINATED"
+   ],
+   "rule": "a replay gap preserves the last trustworthy watermark and sets CATCHUP_REQUIRED; no candles after an unresolved gap are processed; no interpolation or venue substitution; the coin's pairs abort DATA_UNAVAILABLE while its state cannot be brought exactly to T; only unresolved required history exceeding 10 hours terminates the coin's arena (Ruling 008.6)"
+  }
+ },
+ "models": {
+  "haiku": {
+   "model": "claude-haiku-4-5-20251001",
+   "pinning": "dated fixed snapshot"
+  },
+  "sonnet": {
+   "model": "claude-sonnet-5",
+   "pinning": "fixed dateless snapshot (immutable)"
+  },
+  "opus": {
+   "model": "claude-opus-4-8",
+   "pinning": "fixed dateless snapshot (immutable)"
+  }
+ },
+ "request_payloads": {
+  "common": {
+   "endpoint": "POST https://api.anthropic.com/v1/messages",
+   "anthropic-version": "2023-06-01",
+   "beta_headers": [],
+   "max_tokens": 1500,
+   "tools": [
+    "schemas/v1/decision.schema.json (strict: true)"
+   ],
+   "tool_choice": {
+    "type": "tool",
+    "name": "submit_decision",
+    "disable_parallel_tool_use": true
+   },
+   "sampling_parameters": "temperature/top_p/top_k NOT SENT",
+   "timeout_seconds": 120,
+   "transport_retries": 3,
+   "validation_retries": 1,
+   "messages": "single user message (round prompt); the single validation retry appends the fixed rejection text as a SECOND user message in the same conversation (decisions.retry_message); same 4-attempt transport policy",
+   "transport_attempts_total": 4,
+   "transport_note": "transport_retries=3 means 1 initial attempt + 3 retries = 4 total transport attempts; the single validation-retry conversation obeys the same 4-attempt transport policy (Ruling 008.7)"
+  },
+  "per_model": {
+   "claude-haiku-4-5-20251001": {
+    "thinking": "parameter omitted (model runs without extended thinking)"
+   },
+   "claude-sonnet-5": {
+    "thinking": {
+     "type": "disabled"
+    }
+   },
+   "claude-opus-4-8": {
+    "thinking": {
+     "type": "disabled"
+    }
+   }
+  },
+  "twin_parity": "Raw and TA requests for the same model are byte-identical except the user prompt text"
+ },
+ "collection": {
+  "procedure": [
+   "freeze all three market snapshots",
+   "freeze all 18 account snapshots",
+   "generate and archive all 18 first-attempt prompts before sending any model request",
+   "submit calls with bounded concurrency",
+   "identical frozen prompts, state, and P_T regardless of response order",
+   "resolve commit/abort independently per matched pair",
+   "apply committed decisions logically at boundary T only after collection closes",
+   "one common post-T candle replay per coin"
+  ],
+  "concurrency_max_simultaneous_requests": 6,
+  "global_collection_deadline": "T+12 minutes, hard; transport retries must complete inside it",
+  "concurrency_lock": "preflight verifies 6-way concurrency against rate limits; the final value is locked before launch and cannot change during V1",
+  "collection_deadline_seconds": 720,
+  "deadline_note": "hard monotonic wall-clock deadline for the whole collection stage, anchored at collection start; results arriving after it never execute; retries may not begin unless their full budget fits inside it (Ruling 008.9)"
+ },
+ "arms": [
+  "raw",
+  "ta"
+ ],
+ "atomic_unit": "matched Raw/TA pair (same model, same coin); 9 independent pairs",
+ "pair_records": [
+  "PAIR_COMMITTED",
+  "PAIR_ABORTED",
+  "PAIR_TERMINAL_SPLIT"
+ ],
+ "pair_abort_semantics": {
+  "meaning": "zero DECISION-GENERATED state change at T for both twins",
+  "no_new_discretionary_execution": true,
+  "thesis_memory_not_updated_from_aborted_attempt": true,
+  "existing_stop_target_position_lifecycle_invalidation_unchanged": true,
+  "all_attempts_and_rejection_reasons_still_archived": true,
+  "post_T_replay_continues_for_both_accounts": true,
+  "market_driven_exits_never_suspended": "stops, targets, liquidation, and invalidation monitoring never pause because a discretionary round aborted or was skipped"
+ },
+ "terminal_account_policy": {
+  "trigger": "post-fee equity reaches exactly 0 (permanent closure)",
+  "terminal_account": "receives no further model calls",
+  "surviving_twin": "continues receiving decisions and trading normally; never force-closed or frozen",
+  "pair_status": "PAIR_TERMINAL_SPLIT from the terminal event onward (missing side is an experimental outcome, not an infrastructure failure)",
+  "metrics": "post-terminal rounds excluded from paired behavioural metrics; both accounts' complete outcomes included in performance reporting; terminal timestamp and cause reported prominently"
+ },
+ "accounts": {
+  "total": 18,
+  "id_format": "{coin_lower}_{model}_{arm}",
+  "start_cash_usd": "10000.00",
+  "max_leverage": "5.0 \u2014 governs NEW or INCREASED exposure only (open, reversal, same-side increase): such decisions above 5x pre-decision equity are rejected (TARGET_EXCEEDS_MAX_LEVERAGE), never clamped. Exact holds (within the $10 executable tolerance) and reductions are always allowed even above 5x effective leverage; no forced deleveraging and no requirement to reduce below 5x (Ruling 006.1)",
+  "fee_rate": "0.0005 on every execution including stop/take-profit/liquidation fills and both reversal legs",
+  "maintenance_margin": "0.02",
+  "min_executable_change_usd": "10.00 (below => NO_EXECUTION_BELOW_MINIMUM, logged)"
+ },
+ "accounting": {
+  "arithmetic": "decimal.Decimal for equity, P&L, fees, notional, quantity, prices; full source precision internally",
+  "quantity_rounding": "round DOWN to per-coin qty_decimals at execution",
+  "display_rounding": "presentation only; never feeds back into engine values"
+ },
+ "liquidation_contract": {
+  "balance_variable": "E = realized cash equity (Decimal): starting cash + all realized P&L - all fees to date; excludes unrealized P&L",
+  "unrealized": "u(p) = q * (p - entry), with q the signed executed quantity (already rounded down to qty_decimals) and entry the Decimal average entry price",
+  "equity_at_price": "Equity(p) = E + u(p)",
+  "maintenance_requirement": "m(p) = Decimal('0.02') * abs(q) * p",
+  "liquidation_condition": "Equity(p) <= m(p)",
+  "long_threshold": "L = (q*entry - E) / ((1 - Decimal('0.02')) * q)   [q > 0; liquidate when p <= L]",
+  "short_threshold": "L = (q*entry - E) / ((1 + Decimal('0.02')) * q)   [q < 0; liquidate when p >= L]",
+  "quantity_precision_note": "thresholds are computed with the executed rounded-down q, so precision affects L exactly as it affects the position",
+  "gap_fill": "if the 1m candle OPEN already satisfies the liquidation condition, fill at the open (worse price); otherwise fill at the threshold L",
+  "fee": "Decimal('0.0005') * abs(q) * fill_price, charged on the liquidation execution",
+  "post_fill_equity": "E' = E + q*(fill - entry) - fee",
+  "residual_equity": "a liquidation MAY leave positive residual equity: the position is closed but the account continues trading",
+  "terminal_rule": "permanent account closure ONLY when post-fee equity E' <= 0, floored to exactly 0"
+ },
+ "event_ordering": {
+  "scope": "every replayed 1-minute candle, evaluated in candle order",
+  "A_opening_gap": [
+   "1. if the account is already at or below maintenance margin at the candle open: liquidation at the open",
+   "2. else if the open has crossed the stop-loss: stop fill at the open",
+   "3. else if the open has crossed the take-profit: take-profit fill at the open"
+  ],
+  "B_intracandle": {
+   "long": "downside protective exit = the HIGHER valid level of {stop_loss, liquidation threshold}, evaluated against the candle low; upside take-profit evaluated against the candle high",
+   "short": "upside protective exit = the LOWER valid level of {stop_loss, liquidation threshold}, evaluated against the candle high; downside take-profit evaluated against the candle low",
+   "ambiguity": "if both a protective exit and a take-profit are reachable inside the same candle and order is unknowable: the protective exit wins; record AMBIGUOUS_CANDLE_PROTECTIVE_FIRST"
+  },
+  "C_invalidation_observation": {
+   "1m_intrabar": "latch if the condition is satisfied anywhere in a candle in which the lifecycle existed at candle open; if the position also exits in that candle, record SAME_CANDLE_INVALIDATION_AND_EXIT; such an exit counts as no-longer-exposed for the discipline metric",
+   "1h_close": "evaluate only at the completed hourly close; never trigger if the lifecycle ended before that close"
+  },
+  "D_lifecycle_end": "after stop, target, liquidation, decision close, or reversal ends a lifecycle, later candles cannot trigger that lifecycle's invalidation"
+ },
+ "invalidation": {
+  "operators": [
+   "price_at_or_below",
+   "price_at_or_above"
+  ],
+  "timeframes": [
+   "1h_close",
+   "1m_intrabar"
+  ],
+  "lifecycle": "set once at open-from-flat or reversal; immutable while the lifecycle is open (hold/increase/reduce/partial exits); close or reversal ends it",
+  "trigger": "inclusive comparison; first trigger latched permanently with timestamp, price, and candle reference",
+  "post_trigger": "no forced exit; next-round prompt shows the TRIGGERED block; behaviour recorded",
+  "primary_discipline_metric": "no longer exposed in the invalidated direction by the end of the account's next committed pair-round; stop, liquidation, reversal, or full close before that boundary qualifies; partial reductions reported descriptively, never as compliance"
+ },
+ "attempt_archive": {
+  "path": "data-v1/attempts/{round_id with ':' replaced by '_'}/{account_id}_attempt{n}.json",
+  "every_attempt_recorded": true,
+  "fields": [
+   "account_id",
+   "pair_id",
+   "round_id",
+   "attempt_number",
+   "generated_prompt_hash",
+   "request_hash",
+   "requested_model",
+   "returned_model",
+   "raw_response",
+   "parsed_tool_input",
+   "schema_result",
+   "semantic_validation_result",
+   "fixed_rejection_reasons",
+   "transport_error_category",
+   "latency_ms",
+   "token_usage",
+   "became_executed_decision",
+   "response_id",
+   "stop_reason",
+   "identity_mismatch (only when the actual response model id differs from the requested id; such an attempt never executes)"
+  ],
+  "metadata_honesty": "returned_model, latency_ms, token_usage, response_id and stop_reason are the ACTUAL response values from the audited caller envelope; null when truly unknown (offline callers); never assumed or fabricated"
+ },
+ "metrics": {
+  "reliability_behavioural_outcome": [
+   "first-attempt validity rate",
+   "validation-retry rate",
+   "successful-correction rate",
+   "transport-retry rate",
+   "pair-abort rate",
+   "which arm caused each pair abort"
+  ],
+  "operative_decision": "the executed corrected decision is the operative decision for behavioural analysis; formatting/semantic reliability reported separately, never hidden",
+  "denominators": {
+   "direction_disagreement": "pair-committed rounds where both twins were active and produced executable target positions",
+   "target_size_difference": "compare target notional / twin's own pre-decision equity; report absolute difference in equity multiples",
+   "stop_target_usage": "pair-committed rounds leaving the relevant account positioned",
+   "invalidation_response_rate": "lifecycle invalidations that triggered early enough for at least one later committed decision opportunity before the experiment ended",
+   "turnover": "cumulative executed notional / time-weighted average equity",
+   "exclusions": "aborted, skipped, pre-launch, and post-terminal rounds never enter paired behavioural denominators; their counts and reasons are reported separately"
+  },
+  "statistics_policy": "no p-values or claims of statistical significance in V1; report counts, rates, paired descriptive differences, and uncertainty limitations",
+  "feature_reference_frequency": "descriptive: whether the thesis explicitly names a supplied feature (RSI, SMA, ATR, volume ratio, VWAP); mentioning a feature is never inferred to prove causation"
+ },
+ "halt_policy": {
+  "normal_no_halt": [
+   "semantic validation failure",
+   "pair abort",
+   "temporary transport failure",
+   "one missing decision boundary",
+   "temporary Kraken unavailability that recovers before replay integrity is lost"
+  ],
+  "integrity_halts": {
+   "A_hash_mismatch": "code/config/prompt/schema hash mismatch => entire experiment halts PERMANENTLY; no same-run repair or resumption",
+   "B_state_corruption": "state corruption or non-atomic persistence failure => entire experiment halts PERMANENTLY",
+   "C_replay_gap": ">10 hours unrecoverable 1-minute history for one coin => that coin's arena terminated for the remainder of the run; last trustworthy state preserved; other arenas continue",
+   "D_terminal_account": "account reaches terminal zero => PAIR_TERMINAL_SPLIT (terminal_account_policy); experiment does NOT halt"
+  },
+  "no_discretionary_clearing": "there is no mid-run human clearing of halts; any integrity termination is final for V1 and is reported"
+ },
+ "dashboard": {
+  "visibility": "public from the first committed boundary",
+  "required_elements": [
+   "clear V1 experiment label",
+   "frozen experiment question",
+   "code/config/prompt hashes",
+   "scheduler and data health",
+   "committed/aborted/skipped/terminal statuses",
+   "clearly labeled link to the archived pilot page"
+  ],
+  "pilot_label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE",
+  "publication_model": "authoritative live payload at https://live.akraarena.online/live_payload.js (+ .sha256, health.json), served read-only by Nginx; the GitHub Pages dashboard polls that endpoint (LIVE_ORIGIN) with same-origin fallback"
+ },
+ "round_contract": {
+  "cadence": "hourly boundaries at :00 UTC",
+  "duration": "exactly 14 complete days = exactly 336 scheduled boundaries",
+  "no_mid_run_changes": "no extension, shortening, coin replacement, indicator/prompt/rule change based on observed results; missed rounds are never replaced",
+  "T0_selection": "first explicitly owner-selected full UTC hour after activation (scripts/arm_official.py --confirm), sealed into the persisted 336-boundary schedule before any model call; activation requires the mentor's formal PASS with externally issued digests plus a passing, fresh server-preflight attestation bound into the activation record",
+  "virtual_event_time": "PRE-DECISION replay of all 1m candles strictly before T against the pre-T account state (phase persisted; crash-resume never replays a candle twice) -> freeze account snapshots & P_T at T -> archive all 18 prompts -> collect/validate with bounded concurrency by T+510s -> transactional pair resolution at frozen P_T by T+630s (late prepared results are discarded whole) -> durable direct publication by T+690s -> boundary terminal by T+720s; a candle with timestamp < T can never affect an action taken at T; wall-clock model latency is excluded from simulated market time"
+ },
+ "scheduler": {
+  "mode": "vps_systemd",
+  "service_unit": "deploy/arena-official.service (Restart=on-failure; clean completion stays down)",
+  "runner": "scripts/run_official_14d.py \u2014 ARMED/OFF until the owner's activation record",
+  "boundary_anchor": "every deadline is anchored at the scheduled boundary T; hard contract T+720s (collection T+510s, resolution/replay T+630s, publication T+690s)",
+  "missed_boundary": "honest terminal abort (deadline_exceeded / thinking_not_verified / crash_recovery); never executed retrospectively, never replayed or backfilled",
+  "monitoring": "read-only health.json at https://live.akraarena.online/health.json"
+ },
+ "persistence": {
+  "code_deployment": "GitHub is the source of truth; the VPS runs the audited tree of the approved branch in a pinned venv (deploy/requirements-official.txt); production source is never edited on the server",
+  "runtime_data": "data-v1/ on the VPS (state, prompt archive, attempt archive, publications, schedule, activation binding) \u2014 untracked, never pushed",
+  "publication": "direct write to /var/www/arena verified back from https://live.akraarena.online/ (publication id + SHA-256); GitHub Pages is the dashboard reading that endpoint; an optional asynchronous mirror never gates trading",
+  "integrity": "every run verifies SHA-256 of code+prompts+schema+config+deploy files against the externally issued launch manifest; mismatch => integrity halt A",
+  "recorded_code_hash": "the externally issued approved engine digest"
+ },
+ "outcome_hierarchy": {
+  "primary_behavioural": [
+   "direction disagreement rate",
+   "abs target-size difference in equity multiples",
+   "turnover difference",
+   "stop/target usage difference",
+   "invalidation-response difference"
+  ],
+  "secondary_descriptive": [
+   "paired equity/return/drawdown/fee differences",
+   "liquidations"
+  ],
+  "explicit_non_claim": "V1 does not prove indicators improve profitability; performance results are descriptive"
+ },
+ "token_measurement": "PENDING \u2014 count_tokens per model on 4 representative prompts (first-round raw/ta, mature raw/ta) during preflight; cost projection provisional until measured",
+ "data_namespace": "data-v1/",
+ "prompt_archive": "data-v1/prompts/v1-ALL-{T}/{account_id}.json",
+ "round_id_format": "v1-{COIN}-{ISO8601_BOUNDARY}",
+ "arm_naming": "scientific/public name for the treatment arm: 'Feature arm'; internal account-ID suffix remains _ta (legacy, permitted) to avoid migration churn",
+ "feature_pack": {
+  "principle": "the Feature arm may receive precomputed mathematical summaries, but never semantic judgments, trading guidance, recommended thresholds, or suggested actions",
+  "outputs": {
+   "RSI14_H": {
+    "calc": "Wilder RSI(14): seed avg gain/loss = mean of first 14 close diffs of the visible 72-hour window, then avg=(avg*13+cur)/14",
+    "inputs": "72 visible hourly closes only",
+    "rounding": "1 decimal",
+    "insufficient": "n/a"
+   },
+   "SMA20_H": {
+    "calc": "arithmetic mean of latest 20 completed hourly closes",
+    "inputs": "visible hourly closes only",
+    "rounding": "coin price_decimals"
+   },
+   "SMA50_H": {
+    "calc": "arithmetic mean of latest 50 completed hourly closes",
+    "inputs": "visible hourly closes only",
+    "rounding": "coin price_decimals"
+   },
+   "ATR14_H": {
+    "calc": "TR=max(h-l, abs(h-prev_c), abs(l-prev_c)); seed=mean of first 14 TRs; Wilder smoothing",
+    "inputs": "visible hourly OHLC only",
+    "rounding": "coin price_decimals"
+   },
+   "CURRENT_VOLUME_H": {
+    "calc": "base-asset volume of the most recently completed Kraken hourly candle",
+    "rounding": "volume_decimals"
+   },
+   "MEAN_VOLUME_PREV24_H": {
+    "calc": "mean volume of the 24 completed hourly candles immediately preceding the latest candle (latest excluded)",
+    "inputs": "visible OHLCV rows only",
+    "rounding": "volume_decimals"
+   },
+   "VOLUME_RATIO_24": {
+    "calc": "latest completed hourly volume / mean of previous 24 completed hourly volumes",
+    "rounding": "2 decimals",
+    "zero_baseline": "n/a",
+    "no_interpretation_suffix": true
+   },
+   "VWAP24_H": {
+    "calc": "typical=(high+low+close)/3; VWAP=sum(typical*volume)/sum(volume) over latest 24 completed hourly candles INCLUDING the latest",
+    "rounding": "coin price_decimals",
+    "zero_volume": "n/a"
+   },
+   "PRICE_MINUS_VWAP_PCT": {
+    "calc": "(P_T - VWAP24)/VWAP24*100",
+    "rounding": "2 decimals, explicit sign",
+    "zero_volume": "n/a"
+   }
+  },
+  "prohibited_language": [
+   "bullish",
+   "bearish",
+   "strong",
+   "weak",
+   "normal",
+   "abnormal",
+   "high participation",
+   "low participation",
+   "overbought",
+   "oversold",
+   "confirmation",
+   "divergence",
+   "breakout signal",
+   "buy",
+   "sell",
+   "favorable",
+   "unfavorable",
+   "stretched",
+   "extended",
+   "arrows",
+   "traffic-light colors",
+   "scores",
+   "rankings",
+   "labels",
+   "signal classifications",
+   "threshold meanings"
+  ],
+  "removed_from_v1": [
+   "MACD",
+   "Bollinger Bands",
+   "MFI",
+   "Daily SMA",
+   "Daily RSI",
+   "Fear & Greed",
+   "sentiment",
+   "any signal classification",
+   "any feature not explicitly listed"
+  ],
+  "parameter_disclosure": "RSI 14, SMA 20, SMA 50, ATR 14, and 24-hour volume/VWAP windows are predeclared design choices; they are not claimed to be universally optimal; no parameter will be changed during V1; V1 tests this exact fixed feature pack, not 'technical indicators in general'",
+  "scientific_limitation": "V1 measures the effect of this specific predeclared numerical feature pack. It does not establish that these parameters are optimal or that technical indicators generally improve trading."
+ },
+ "prompt_templates": {
+  "raw": "prompts/v1/user_raw.txt",
+  "feature": "prompts/v1/user_feature.txt",
+  "note": "user_ta.txt removed in v1.3"
+ },
+ "decision_schema_note": "schemas/v1/decision.schema.json contains NO intended_horizon field; actual holding duration is measured from lifecycle open to close",
+ "parameters": {
+  "start_cash_usd": "10000.00",
+  "fee_rate": "0.0005",
+  "maintenance_margin": "0.02",
+  "max_leverage": "5",
+  "min_delta_usd": "10.00",
+  "qty_decimals": {
+   "BTC": 6,
+   "ETH": 5,
+   "SOL": 3
+  },
+  "note": "authoritative machine-readable engine parameters; engine verifies its loaded constants against these at startup and halts on mismatch (Ruling 008.14)"
+ }
 }

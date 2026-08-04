@@ -317,12 +317,26 @@ def main():
     summary["direct_endpoint_ok"] = endpoint_ok
     summary["overall_pass"] = bool(summary["model_calls_pass"]
                                    and endpoint_ok)
+    # ATTESTATION FIELDS (Mentor Ruling 016.7): the durable report binds the
+    # exact tree, endpoint and time this preflight validated. arm_official.py
+    # requires the report + its SHA-256 and the runner reverifies both.
+    summary["engine_digest"] = eng
+    summary["site_digest"] = site
+    summary["canonical_endpoint"] = official.OFFICIAL_PAYLOAD_URL
+    summary["timestamp"] = int(time.time())
     with open(report, "w") as f:
         json.dump({"summary": summary, "results": results}, f, indent=1)
+    report_sha = hashlib.sha256(open(report, "rb").read()).hexdigest()
+    with open(report + ".sha256", "w") as f:
+        f.write(f"{report_sha}  {os.path.basename(report)}\n")
     print(json.dumps(summary, indent=1))
     print("report:", report)
+    print("report sha256:", report_sha)
     print("OFFICIAL PREFLIGHT:",
           "PASS" if summary["overall_pass"] else "FAIL")
+    if summary["overall_pass"]:
+        print("To arm: scripts/arm_official.py --confirm ... "
+              f"--preflight-report {report} --preflight-sha {report_sha}")
     sys.exit(0 if summary["overall_pass"] else 1)
 
 

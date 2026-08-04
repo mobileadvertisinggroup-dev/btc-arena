@@ -114,14 +114,33 @@ def make_disarm_check(path, expected_sha):
     return still_armed
 
 
+# The ONLY entries a pristine official store may contain before its first
+# schedule (Mentor Ruling 016.2): the pristine state + the two externally
+# approved manifests. Anything else — ledgers, prompts, attempts, payloads,
+# publication logs, schedules, bindings, temp files, unknown artifacts —
+# refuses the launch.
+PRISTINE_STORE_ALLOWLIST = frozenset({
+    "state.json", config_mod.LAUNCH_MANIFEST_NAME,
+    config_mod.SITE_MANIFEST_NAME})
+
+
 def verify_pristine_official_state(store):
-    """Mentor Ruling 015.1: before the FIRST official schedule may exist, the
-    complete official state must be exactly pristine — byte-normalized equal
-    to a freshly initialized 18-account roster (exact ids, $10,000.00 each,
-    zero qty/entry/fees/trades/lifecycles/theses/decisions) with a null
-    boundary and no history of any kind. A correctly checksummed but DIRTY
-    state refuses loudly; a missing state file is fine (standard pristine
-    state gets created by provisioning)."""
+    """Mentor Rulings 015.1 + 016.2: before the FIRST official schedule may
+    exist, the COMPLETE official store must be pristine:
+      * directory contents limited to the strict allowlist (no ledger.jsonl,
+        attempts/, prompts/, publish/, publications.json, schedule, binding,
+        temp files, or ANY unknown prior-run artifact);
+      * state byte-normalized equal to a freshly initialized 18-account
+        roster (exact ids, $10,000.00 each, zero qty/entry/fees/trades/
+        lifecycles/theses/decisions);
+      * null meta boundary and no history/replay/publication remnants.
+    A correctly checksummed but DIRTY state refuses loudly; a missing state
+    file is fine (standard pristine state gets created by provisioning)."""
+    if os.path.isdir(store):
+        stray = sorted(set(os.listdir(store)) - PRISTINE_STORE_ALLOWLIST)
+        if stray:
+            raise PristineError(
+                f"official store contains prior-run artifacts: {stray[:8]}")
     import json as _json
     from . import state as state_mod
     spath = os.path.join(store, "state.json")
@@ -143,12 +162,67 @@ def verify_pristine_official_state(store):
             f"official state is not pristine (accounts differ: {diff[:6]})")
     if meta.get("boundary") is not None:
         raise PristineError("official meta carries a boundary")
-    for key in ("equity_history", "equity_history_last", "marks", "marks_T",
-                "finalized_pairs", "outbox", "flushed_ids",
-                "replay_watermark", "replay_state", "coin_terminated",
-                "boundary_complete", "_recovering"):
-        if meta.get(key):
-            raise PristineError(f"official meta carries prior-run {key}")
+    # Ruling 016.2: ANY nonempty metadata beyond the null boundary — known
+    # remnant or unknown key — refuses the launch.
+    for key, val in meta.items():
+        if key in ("boundary", "_checksum"):     # checksum is persistence's
+            continue
+        if val:
+            raise PristineError(
+                f"official meta carries nonempty pre-launch data: {key}")
+    return True
+
+
+PREFLIGHT_VALIDITY_S = 24 * HOUR      # documented attestation freshness
+
+
+class PreflightAttestationError(Exception):
+    """Activation attempted without a valid, fresh, matching, PASSING server
+    preflight attestation (Mentor Ruling 016.7)."""
+
+
+def verify_preflight_attestation(act, engine_digest, site_digest, now):
+    """Mentor Ruling 016.7: activation is BOUND to a passing preflight. The
+    activation record must carry {'preflight': {'report_path',
+    'report_sha256'}}; the referenced report must exist, hash to exactly the
+    recorded SHA-256 (a modified report refuses), record overall_pass with
+    exactly 18/18 strict results, match the EXACT engine digest, site digest
+    and canonical endpoint being activated, and be fresh within
+    PREFLIGHT_VALIDITY_S. Any failure refuses activation."""
+    p = act.get("preflight")
+    if not isinstance(p, dict) or not p.get("report_path") \
+            or not p.get("report_sha256"):
+        raise PreflightAttestationError("missing preflight attestation")
+    path = p["report_path"]
+    try:
+        blob = open(path, "rb").read()
+    except OSError as e:
+        raise PreflightAttestationError(f"preflight report unreadable: {e}")
+    if hashlib.sha256(blob).hexdigest() != p["report_sha256"]:
+        raise PreflightAttestationError("preflight report was modified "
+                                        "(SHA-256 mismatch)")
+    try:
+        s = json.loads(blob)["summary"]
+    except Exception as e:
+        raise PreflightAttestationError(f"preflight report malformed: {e}")
+    if s.get("overall_pass") is not True:
+        raise PreflightAttestationError("preflight did not PASS")
+    if s.get("n") != 18 or s.get("accepted") != 18:
+        raise PreflightAttestationError("preflight request/result counts "
+                                        "are not exactly 18/18")
+    if s.get("engine_digest") != engine_digest:
+        raise PreflightAttestationError("preflight ran against a different "
+                                        "engine digest")
+    if s.get("site_digest") != site_digest:
+        raise PreflightAttestationError("preflight ran against a different "
+                                        "site digest")
+    if s.get("canonical_endpoint") != OFFICIAL_PAYLOAD_URL:
+        raise PreflightAttestationError("preflight verified a different "
+                                        "endpoint")
+    ts = s.get("timestamp")
+    if not isinstance(ts, (int, float)) or now - ts > PREFLIGHT_VALIDITY_S:
+        raise PreflightAttestationError(
+            f"preflight report stale (validity {PREFLIGHT_VALIDITY_S}s)")
     return True
 
 
@@ -222,12 +296,14 @@ def reconcile_unstarted_schedule(store, activation_path):
     return "rolled_back"
 
 
-def rollback_unstarted(store):
+def rollback_unstarted(store, public_dir=None):
     """Undo provisioning artifacts after a valid PRE-START disarm: allowed
     ONLY while zero boundaries are completed and account state carries no
-    boundary. Removes the sealed schedule, the publication log, and durable
-    payloads so a later re-arm provisions a fresh schedule. Any sign the run
-    started => refuse loudly (halting a live run is a service-stop concern)."""
+    boundary. Removes the sealed schedule, the publication log, durable
+    payloads, and (Mentor Ruling 016.8) any published READY payload from the
+    public dir so the public state visibly returns to ARMED_OFF. A later
+    re-arm provisions a fresh schedule. Any sign the run started => refuse
+    loudly (halting a live run is a service-stop concern)."""
     import shutil
     try:
         sched = pilot.load_schedule(store)
@@ -245,6 +321,12 @@ def rollback_unstarted(store):
         except FileNotFoundError:
             pass
     shutil.rmtree(os.path.join(store, "publish"), ignore_errors=True)
+    if public_dir:
+        for name in (DirectPublisher.PAYLOAD, DirectPublisher.CHECKSUM):
+            try:
+                os.remove(os.path.join(public_dir, name))
+            except FileNotFoundError:
+                pass
     return True
 
 
@@ -443,12 +525,16 @@ def snapshot_store(store, out_dir, label):
 
 def _fire_mirror(mirror, T, notes):
     """Asynchronous historical mirror (Ruling 1.5): never joined inside any
-    boundary budget, never raises into the trading loop."""
+    boundary budget, never raises into the trading loop. Mentor Ruling
+    016.8: exception DETAILS never reach the note (health.json is PUBLIC and
+    push errors can embed credentialed URLs) — the public note carries only
+    the fact of failure."""
     def run():
         try:
             mirror(T)
-        except Exception as e:
-            notes.append(f"mirror {T}: {str(e)[:120]}")
+        except Exception:
+            notes.append(f"mirror {T}: failed (details withheld from the "
+                         "public endpoint)")
     t = threading.Thread(target=run, name=f"mirror-{T}", daemon=True)
     t.start()
     return t
@@ -540,15 +626,20 @@ def run_official(store, cfg, caller, fetch_market, publish, clock, sleep,
         abort_reason = (None if entry["status"] == "PUBLISHED"
                         else ABORT_THINKING)
         # ---- model calls under the T+08:30 collection deadline ----
+        # PRE-DECISION replay (Ruling 016.1): the prior hour's candles
+        # [T-3600, T) are applied BEFORE prompts/model calls, so stops, TPs,
+        # invalidation latches and liquidations from before T are visible in
+        # the T prompts and no candle < T can touch an action taken at T.
         recovery.run_checkpointed(
             T, snaps, caller, cfg, store,
-            replay_spec={c: s for c, s in spec.items()
-                         if snaps.get(c) is not None},
+            pre_replay_spec={c: s for c, s in spec.items()
+                             if snaps.get(c) is not None},
             crash_at=crash_at, clock=clock,
             deadline=T + COLLECTION_DEADLINE_S,
             abort_all_reason=abort_reason,
             resolution_deadline=T + RESOLUTION_DEADLINE_S,
-            replay_deadline=T + RESOLUTION_DEADLINE_S)
+            replay_deadline=T + RESOLUTION_DEADLINE_S,
+            hard_deadline=T + HARD_DEADLINE_S)
         sched = pilot.mark_completed(store, T)
         # ---- terminal payload durable + direct publication by T+11:30 ----
         _set_deadline(publish, T + FINAL_PUBLISH_S)

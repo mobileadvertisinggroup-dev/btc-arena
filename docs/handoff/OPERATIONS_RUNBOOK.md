@@ -20,7 +20,7 @@ All commands from repo root: ~/trading-research-machine/btc-arena-v1
 - Post-deploy check: venv/bin/python scripts/verify_deployment.py
 - Server preflight: scripts/preflight_official.py (audited; scratch store
   only; requires ARENA_PREFLIGHT_APPROVED + externally issued digests).
-- Monitoring: https://<vps-host>/health.json; daily sealed snapshots in
+- Monitoring: https://live.akraarena.online/health.json; daily sealed snapshots in
   evidence-official/daily/; final: scripts/archive_official.py --confirm
 
 ## Everyday (safe, offline)

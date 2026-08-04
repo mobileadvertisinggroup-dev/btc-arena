@@ -69,7 +69,14 @@ def _checksum(enc_accounts, meta_core):
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
-def save_state(path, accounts, meta):
+def save_state_tx(path, accounts, meta, clock=None, deadline=None):
+    """DURABILITY-TRANSACTIONAL checkpoint (Mentor Ruling 016.3): the FULL
+    state is serialized and fsynced into a temporary file FIRST; the
+    authoritative clock is read IMMEDIATELY before the atomic replacement.
+    At/after `deadline` the temp file is discarded and False is returned —
+    nothing durable changed, no account/fee/trade/lifecycle/link/watermark
+    from the late result survives. Without clock/deadline this is the plain
+    atomic save (always True)."""
     enc = _enc_all(accounts)
     meta_core = {k: v for k, v in meta.items() if k != "_checksum"}
     meta_out = dict(meta_core, _checksum=_checksum(enc, meta_core))
@@ -78,7 +85,15 @@ def save_state(path, accounts, meta):
         json.dump({"meta": meta_out, "accounts": enc}, f, indent=1, default=str)
         f.flush()
         os.fsync(f.fileno())
+    if clock is not None and deadline is not None and clock() >= deadline:
+        os.remove(tmp)                   # late: discard the prepared state
+        return False
     os.replace(tmp, path)
+    return True
+
+
+def save_state(path, accounts, meta):
+    save_state_tx(path, accounts, meta)
 
 
 def _validate_account(aid, a):

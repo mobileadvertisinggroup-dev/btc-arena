@@ -16,8 +16,9 @@ extracted from `nginx -T` and must
 Effective HTTPS is verified live: https://live.akraarena.online/health.json
 answers 200 and plain http redirects (301/308) to https.
 
-usage: venv/bin/python scripts/verify_deployment.py [--engine-digest <64hex>]
-                                                    [--skip-https]
+usage: venv/bin/python scripts/verify_deployment.py \
+           --engine-digest <64hex> --site-digest <64hex> [--skip-https]
+Both externally issued digests are REQUIRED (Ruling 016.6).
 """
 import hashlib
 import os
@@ -35,17 +36,23 @@ HOSTNAME = "live.akraarena.online"
 APPROVED_LOCATION_RE = (
     r"^/(live_payload\.js|live_payload\.sha256|health\.json)$")
 FORBIDDEN_DIRECTIVES = ("proxy_pass", "fastcgi_pass", "uwsgi_pass",
-                        "scgi_pass", "grpc_pass", "dav_methods")
+                        "scgi_pass", "grpc_pass", "dav_methods", "alias",
+                        "autoindex", "rewrite", "client_body_in_file_only",
+                        "upload_store")
 REQUIRED_IN_PAYLOAD_LOCATION = (
     "limit_except GET { deny all; }",
     'add_header Access-Control-Allow-Origin "*" always;',
     'add_header Cache-Control "no-store, must-revalidate" always;',
 )
+# certbot's managed HTTP->HTTPS redirect, the ONLY if-block allowed anywhere
+CERTBOT_REDIRECT_IF = re.compile(
+    r"if\s*\(\s*\$host\s*=\s*" + re.escape(HOSTNAME)
+    + r"\s*\)\s*\{\s*return\s+301\s+https://\$host\$request_uri;\s*\}")
 
 
 def _blocks(text, keyword):
     """Yield the full text of `keyword ... { ... }` blocks, brace-matched."""
-    for m in re.finditer(rf"(^|\n)\s*{keyword}\b[^{{]*{{", text):
+    for m in re.finditer(rf"(^|\n)\s*{keyword}\b[^{{;]*{{", text):
         depth, i = 1, m.end()
         while i < len(text) and depth:
             if text[i] == "{":
@@ -56,40 +63,91 @@ def _blocks(text, keyword):
         yield text[m.start():i]
 
 
+def _strip_comments(text):
+    return "\n".join(ln.split("#", 1)[0] for ln in text.splitlines())
+
+
+def _server_level_returns(block):
+    """`return` statements at SERVER level (outside location/if blocks)."""
+    inner = block.split("{", 1)[1].rsplit("}", 1)[0]
+    for sub in list(_blocks(inner, "location")) + list(_blocks(inner, "if")):
+        inner = inner.replace(sub, "")
+    return re.findall(r"return\s+[^;]+;", inner)
+
+
 def analyze_nginx(effective_text):
-    """Pure analysis of the effective nginx config (Ruling 015.5). Returns a
-    list of (check_name, ok, detail) tuples for the frozen hostname's server
-    blocks."""
+    """Pure analysis of the effective nginx config (Rulings 015.5 + 016.6),
+    understanding the normal certbot layout: EXACTLY one HTTPS content block
+    for the frozen hostname exposing only the three approved files, and
+    EXACTLY one HTTP block doing nothing but the exact HTTPS redirect.
+    Returns (check_name, ok, detail) tuples."""
     out = []
-    servers = [b for b in _blocks(effective_text, "server")
+    text = _strip_comments(effective_text)
+    servers = [b for b in _blocks(text, "server")
                if re.search(rf"server_name\s+[^;]*\b{re.escape(HOSTNAME)}\b",
                             b)]
-    out.append((f"server block(s) for {HOSTNAME} present", bool(servers),
-                f"{len(servers)} found"))
-    payload_loc_seen = False
+    https = [b for b in servers if re.search(r"listen\s+[^;]*443", b)]
+    http = [b for b in servers if b not in https]
+    out.append((f"exactly one HTTPS content block for {HOSTNAME}",
+                len(https) == 1, f"{len(https)} found"))
+    out.append((f"exactly one HTTP redirect block for {HOSTNAME}",
+                len(http) == 1, f"{len(http)} found"))
+
     for b in servers:
         for d in FORBIDDEN_DIRECTIVES:
-            out.append((f"no {d} in {HOSTNAME} block",
+            out.append((f"no {d} in {HOSTNAME} blocks",
                         not re.search(rf"\b{d}\b", b), ""))
-        locations = list(_blocks(b, "location"))
-        for loc in locations:
+
+    if https:
+        b = https[0]
+        # server-level returns are forbidden in the content block
+        rets = _server_level_returns(b)
+        out.append(("no server-level return in the HTTPS block", not rets,
+                    "; ".join(rets)[:60]))
+        out.append(("no if-blocks in the HTTPS block",
+                    not list(_blocks(b.split("{", 1)[1], "if")), ""))
+        out.append(("root /var/www/arena in the HTTPS block",
+                    "root /var/www/arena;" in b, ""))
+        payload_loc_seen = False
+        for loc in _blocks(b.split("{", 1)[1], "location"):
             header = loc.split("{", 1)[0].strip()
             if re.fullmatch(r"location\s+/", header):
                 body = loc.split("{", 1)[1].rsplit("}", 1)[0]
                 ok = re.fullmatch(r"\s*return\s+404;\s*", body) is not None
                 out.append(("location / returns 404 and nothing else",
-                            bool(ok), header))
-            elif APPROVED_LOCATION_RE in loc.replace("\\\\", "\\"):
+                            bool(ok), ""))
+            elif APPROVED_LOCATION_RE in loc:
                 payload_loc_seen = True
                 for req in REQUIRED_IN_PAYLOAD_LOCATION:
                     out.append((f"payload location has: {req[:44]}",
                                 req in loc, ""))
             else:
-                out.append(("no unexpected location block", False, header))
-        out.append(("root /var/www/arena in server block",
-                    "root /var/www/arena;" in b, ""))
-    out.append(("approved three-file payload location present",
-                payload_loc_seen, APPROVED_LOCATION_RE))
+                out.append(("no unexpected location block", False,
+                            header[:60]))
+        out.append(("approved three-file payload location present",
+                    payload_loc_seen, ""))
+
+    if http:
+        b = http[0]
+        body = b.split("{", 1)[1].rsplit("}", 1)[0]
+        ifs = list(_blocks(body, "if"))
+        redirect_ok = len(ifs) == 1 and bool(CERTBOT_REDIRECT_IF.search(
+            re.sub(r"\s+", " ", ifs[0])))
+        out.append(("HTTP block contains exactly the approved HTTPS "
+                    "redirect", redirect_ok, ""))
+        out.append(("no location blocks in the HTTP redirect block",
+                    not list(_blocks(body, "location")), ""))
+        residue = body
+        for sub in ifs:
+            residue = residue.replace(sub, "")
+        stmts = [s.strip() for s in residue.split(";") if s.strip()]
+        allowed = all(s.startswith(("listen", "server_name", "return 404"))
+                      for s in stmts)
+        out.append(("HTTP block does nothing else (listen/server_name/"
+                    "return 404 only)", allowed,
+                    "; ".join(s for s in stmts
+                              if not s.startswith(("listen", "server_name",
+                                                   "return 404")))[:60]))
     return out
 
 
@@ -142,16 +200,21 @@ def main():
         print(f"{'PASS' if ok else 'FAIL'}  {name}"
               + (f"  ({detail})" if detail else ""))
 
-    # 1. tree digests reproduce (and optionally match the issued digest)
+    # 1. BOTH externally issued digests are REQUIRED (Ruling 016.6) and the
+    # deployed tree must match them exactly.
+    issued_eng = (arg("--engine-digest") or "").strip().lower()
+    issued_site = (arg("--site-digest") or "").strip().lower()
+    if not re.fullmatch(r"[0-9a-f]{64}", issued_eng) \
+            or not re.fullmatch(r"[0-9a-f]{64}", issued_site):
+        print("REFUSED: --engine-digest and --site-digest (both externally "
+              "issued 64-hex values) are required.")
+        sys.exit(2)
     man = config.build_manifest()["combined"]
-    issued = (arg("--engine-digest") or "").strip().lower()
-    if issued:
-        check("engine digest matches externally issued value", man == issued,
-              man[:16] + "…")
-    else:
-        print(f"INFO  current engine digest: {man}")
-        print(f"INFO  current site digest:   "
-              f"{config.build_site_manifest()['combined']}")
+    site = config.build_site_manifest()["combined"]
+    check("engine digest matches externally issued value", man == issued_eng,
+          man[:16] + "…")
+    check("site digest matches externally issued value", site == issued_site,
+          site[:16] + "…")
 
     # 2. installed systemd unit byte-identical to the audited template
     tmpl = os.path.join(ROOT, "deploy", "arena-official.service")
