@@ -1,3 +1,5 @@
+6a60b2812bd6 ruling 017 remediation: restart state machine, exact replay-gap tr
+ea71d9a8825a audit round v5: regenerate evidence after ruling 016 remediation
 45bc09531c8d ruling 016 remediation: causal event order, store allowlist, durab
 ba3d2381caa5 audit round v4: regenerate evidence after ruling 015 remediation
 a066598c5563 ruling 015 remediation: pristine gate, reboot-safe disarm, transac

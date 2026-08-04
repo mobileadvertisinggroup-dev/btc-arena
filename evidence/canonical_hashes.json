@@ -1,6 +1,6 @@
 {
  "files": {
-  "config/v1/experiment.json": "4487f9f9acb8bdc5dace3cd3cfe69e0e3bcb158299e076433ea8d0deffcbe381",
+  "config/v1/experiment.json": "730d8966934a1aaa43b09e18bef234e390479f8e85d4fbaff74d461ba007c288",
   "deploy/arena-official.service": "f918bd1dff679955acb054a2bf22fbba5902e63fc4176a5a2debbd84b287ca94",
   "deploy/nginx-arena.conf": "b2ead8442059cfc686d3c61c1b342c39f53696468e83b2b4c95a79d678a677ab",
   "deploy/requirements-official.txt": "4d802d7c1ca0eff85563b5e1aa5ae100dcc789a32049fcc0d65e710e3c551f31",
@@ -13,12 +13,12 @@
   "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872",
   "engine/marketdata.py": "0b035211e44d0b3978dfbd56230c342dfb2bf77a9f3b310211748b8dede19a28",
   "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9",
-  "engine/official.py": "ec9aaf39f15627c5ce5a304a85c1f9c6dcd280eb5e2352bcaccab92bd3c14cf2",
+  "engine/official.py": "1247fea2dad058a26e99aa26370ea5efd21026c9340ac41bc4cda482d6fe0f80",
   "engine/persistence.py": "08802532f7e3ad1023730f4d4c2a6c2092710bc356f2bff720766d1120d21c73",
   "engine/pilot.py": "bb8af7eb4a4de5a1af17768234bed815363a69f9cc46d4f88dbd15da66823228",
   "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22",
   "engine/publisher.py": "739560008fd90b0ebb492b58338034ee75c63dd459bb674852f6bc2c2511e30e",
-  "engine/recovery.py": "2f05bfeda85f95e27d6ce8e58242920df8299f8e1eab1c93bfd35ccb2da5bf5f",
+  "engine/recovery.py": "96386b69cf2215ef543210674b89252246e9e279ecbdf20b2b9f7e57ef59d7bb",
   "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42",
   "engine/rounds.py": "9faa51d6194c198ede7a842e274393c9d6eefe83d2e5e5c22f36c56c40a5c5fc",
   "engine/state.py": "ca395fb36b0f4a3798309e8f1d254c55d330ed2dabb9d219c3d18cfd2abf5b70",
@@ -36,9 +36,9 @@
   "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02",
   "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752",
   "scripts/preflight_official.py": "e484b825c105cf465e6902e2c09421d942f756c13298c07a7e39593ee19924c4",
-  "scripts/run_official_14d.py": "b4ba51168a3a3e2d4fcc065778fb5f3254f5c12783c3368d9b8447245906da08",
+  "scripts/run_official_14d.py": "32cb0b583ba862b31a566d192439e5629b115b0b7c2ecdfbf7b1e2d210147bf2",
   "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d",
   "scripts/verify_deployment.py": "5f902023980d133ba7183482b0bf951117350aec6dda6f09c41ccf0260b16de2"
  },
- "combined": "303a577660323f56c3daab0c418c1eedae82d9e65c0926a26591962e4fbe331c"
+ "combined": "4a2ffed478aa68ecc9b80e75bd005dd0af80bb0957fa6fec7003113db607ad01"
 }
