@@ -1,6 +1,6 @@
 {
- "note": "CANDIDATE digests produced by the build-batch tree. NOT approved. Activation requires the mentor to independently verify this archive and EXTERNALLY issue these values.",
- "candidate_engine_combined_digest": "da5a8063f4862d02f7763a95af3ffa7176b9212cd21eea0489f970f27da3181b",
+ "note": "CANDIDATE digests produced by the ruling-014-remediated tree. NOT approved. Activation requires the mentor to independently verify this archive and EXTERNALLY issue these values.",
+ "candidate_engine_combined_digest": "970f2c56a2ee70366d5b4e8e2fa39598eb6e62e6ac3666dc700f25fbe86a0809",
  "candidate_site_combined_digest": "f867018b23ad6440cd391db38670f220297c692da71af698781558c303fd1e36",
  "site_manifest": {
   "files": {
@@ -12,5 +12,9 @@
  },
  "previous_approved_engine_digest": "c425200e1b840524bb444288d6725bc1f728f60d94d72ed725d0fc704ec5432c",
  "previous_approved_site_digest": "2bfff2cb28b970c09a76b5a9045c4ffee909d37ccd8f39ab69001a95c264b7fa",
+ "superseded_v2_candidates": {
+  "engine": "da5a8063f4862d02f7763a95af3ffa7176b9212cd21eea0489f970f27da3181b",
+  "site": "f867018b23ad6440cd391db38670f220297c692da71af698781558c303fd1e36"
+ },
  "live_origin_frozen": "https://live.akraarena.online/"
 }

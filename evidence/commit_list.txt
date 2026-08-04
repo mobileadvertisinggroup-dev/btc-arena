@@ -1,3 +1,5 @@
+efa3eb826f96 ruling 014 remediation: disarm, hostname binding, completion, pref
+9c325023b34a audit round v2: freeze LIVE_ORIGIN + regenerate evidence + seal ar
 69e5a0eafbfb build batch: official 14d cloud runner + UI wishlist (Mentor Rulin
 d05a5c663a49 docs: durable handoff package (CLAUDE.md + docs/handoff/*) - post-
 059ab2255a36 pilot: live dashboard payload update

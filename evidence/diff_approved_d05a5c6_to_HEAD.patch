@@ -1,3 +1,59 @@
+diff --git a/.gitignore b/.gitignore
+index 7707535..4c3c659 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -9,3 +9,6 @@
+ MANIFEST.sha256.json
+ .DS_Store
+ offline_audit_bundle_v1/
++offline_audit_bundle_v2.tar.gz
++offline_audit_bundle_v2.tar.gz.sha256
++offline_audit_bundle_v2/
+diff --git a/README.md b/README.md
+index 2484ab4..ddb112e 100644
+--- a/README.md
++++ b/README.md
+@@ -1,12 +1,31 @@
+-# BTC Arena
++# AKRA ARENA V1
+ 
+-Three Claude models — **Haiku 4.5, Sonnet 5, Opus 4.8** — each got $10,000 of
+-paper money and full autonomy to trade Bitcoin: long/short/flat, up to 5x
+-leverage, their own stop-losses and take-profits. Nobody tells them how to
+-trade. Real live BTC prices, hourly decisions, stops enforced on 1-minute
+-candles.
++A mentor-audited AI trading experiment. Three Claude models — **Haiku 4.5,
++Sonnet 5, Opus 4.8** — trade **BTC, ETH and SOL** with paper money in **18
++isolated $10,000 accounts**: for every coin+model, one **Raw** account (sees
++only candles) and one **TA** account (same candles plus a fixed neutral
++numerical feature summary). Hourly pair-atomic decision rounds, 5x max
++leverage, machine-checked invalidations, stops enforced on 1-minute candles,
++Kraken as the authoritative market-data source. PAPER MONEY ONLY.
+ 
+-**Live dashboard:** https://mobileadvertisinggroup-dev.github.io/btc-arena/
++Question: does the TA feature summary change an AI trader's behaviour and
++performance?
+ 
+-Runs entirely on GitHub Actions (see `.github/workflows/tick.yml`).
+-Inspired by Nof1's Alpha Arena.
++**Dashboard (GitHub Pages, display only):**
++https://mobileadvertisinggroup-dev.github.io/btc-arena/
++The dashboard reads its live payload from the direct VPS endpoint
++(https://live.akraarena.online/).
++
++**Where it runs:** the official 14-day experiment executes on an always-on
++VPS under systemd (`scripts/run_official_14d.py`, see `deploy/`), never on a
++personal machine and never on GitHub Actions. GitHub hosts the source of
++truth and the Pages dashboard; an optional asynchronous mirror pushes each
++published payload after the fact.
++
++**Governance:** engine and site are frozen by externally issued audit
++digests; an independent mentor audits every change; the owner is the only
++activation authority. See `CLAUDE.md` and `docs/handoff/`.
++
++The original casual BTC-only pilot (separate repo history) was formally
++frozen as PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE. Inspired by
++Nof1's Alpha Arena.
 diff --git a/UI_WISHLIST.md b/UI_WISHLIST.md
 index e38268a..acee8fb 100644
 --- a/UI_WISHLIST.md
@@ -23,10 +79,10 @@ index e38268a..acee8fb 100644
  Page is slightly wider than the phone viewport — wiggles left/right when
 diff --git a/deploy/DEPLOYMENT.md b/deploy/DEPLOYMENT.md
 new file mode 100644
-index 0000000..b846b3e
+index 0000000..31b4efc
 --- /dev/null
 +++ b/deploy/DEPLOYMENT.md
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,87 @@
 +# VPS DEPLOYMENT RUNBOOK (Mentor Rulings 6 + 7)
 +
 +Nothing here may be executed until the mentor's formal PASS and the owner's
@@ -35,12 +91,17 @@ index 0000000..b846b3e
 +
 +## 1. Server basics (one-time, owner or owner-approved)
 +- Ubuntu LTS VPS (~$5/mo class), user `arena` (no sudo), nginx, python3,
-+  python3-pip; `pip install --user dulwich jsonschema`.
++  python3-venv.
 +- Clone the approved branch to /home/arena/btc-arena-v1 (deploy key or
 +  owner-scoped read token; never store the token on disk beyond git config
 +  scope the owner approves).
++- Dedicated audited venv (Ruling 014.7 — the systemd unit executes ONLY
++  this python):
++    python3 -m venv /home/arena/btc-arena-v1/venv
++    /home/arena/btc-arena-v1/venv/bin/pip install \
++        -r /home/arena/btc-arena-v1/deploy/requirements-official.txt
 +- Verify digests on the server before anything else:
-+  `python3 -c "from engine import config; print(config.build_manifest()['combined']); print(config.build_site_manifest()['combined'])"`
++  `venv/bin/python -c "from engine import config; print(config.build_manifest()['combined']); print(config.build_site_manifest()['combined'])"`
 +  Both must equal the externally issued approved digests.
 +
 +## 2. Secrets (Ruling 7)
@@ -57,25 +118,46 @@ index 0000000..b846b3e
 +  certbot. Endpoint serves ONLY live_payload.js, live_payload.sha256,
 +  health.json; GET/HEAD only; CORS open; no-store.
 +
-+## 4. Service (Ruling 6)
-+- Install deploy/arena-official.service; systemctl enable --now.
++## 4. Service (Rulings 6 + 014.3)
++- Install deploy/arena-official.service; systemctl daemon-reload;
++  systemctl enable --now arena-official.
 +- The service comes up ARMED/OFF: health.json shows {"state":"ARMED_OFF"}.
 +  It makes zero model calls and never touches data-v1 in this state.
 +- One-runner-only: control/runner.lock (flock). A second instance exits.
++- Restart=on-failure: crashes and reboots recover automatically; after all
++  336 boundaries the process exits cleanly (code 0) and stays down — no
++  READY republication, no further publications, health stays COMPLETE
++  (a reboot after completion re-exits cleanly the same way).
++
++## 4b. Post-deployment verification (Ruling 014.6 — run after EVERY deploy)
++- venv/bin/python scripts/verify_deployment.py --engine-digest <issued>
++  Proves: tree matches the issued digest; installed systemd unit is
++  byte-identical to the audited template; the effective nginx config still
++  carries every audited directive (survives certbot rewrites); the audited
++  venv python and exact pinned package versions are in use; the canonical
++  endpoint constant is the frozen hostname. Any FAIL blocks activation.
 +
 +## 5. Server preflight (owner/mentor authorized; real model calls)
-+- Run tools/preflight_18.py against a SCRATCH store on the server (never
-+  data-v1), with the env file loaded. 18/18 must pass, publishing must be
-+  verified from the public URL, before activation is even proposed.
++- ARENA_PREFLIGHT_APPROVED=YES-OWNER-MENTOR-AUTHORIZED \
++  ARENA_APPROVED_MANIFEST_SHA256=<issued> ARENA_APPROVED_SITE_SHA256=<issued> \
++  venv/bin/python scripts/preflight_official.py /home/arena/preflight-scratch
++  (audited script, hashed in the engine digest; SCRATCH store only — it
++  refuses any path overlapping data-v1). 18/18 must pass AND the direct
++  HTTPS endpoint probe must verify before activation is even proposed.
 +
 +## 6. Activation (owner only)
-+- python3 scripts/arm_official.py --confirm \
++- venv/bin/python scripts/arm_official.py --confirm \
 +    --engine-digest <externally issued> --site-digest <externally issued> \
 +    --start-utc next-hour
 +- The ARMED service validates the record + digests and starts the sealed
-+  336-boundary UTC schedule. Delete control/official_activation.json to
-+  disarm BEFORE start; stop the service to halt a live run (restart-safe:
-+  it resumes the same schedule; missed boundaries abort honestly).
++  336-boundary UTC schedule.
++- REAL PRE-START DISARM (Ruling 014.1): deleting/replacing/modifying
++  control/official_activation.json BEFORE the first boundary returns the
++  service to ARMED/OFF with zero model calls (the exact record SHA is
++  revalidated while waiting; the unstarted schedule is rolled back). After
++  the first boundary starts: systemctl stop arena-official halts the run
++  (restart-safe: it resumes the same schedule; missed boundaries abort
++  honestly).
 +
 +## 7. Monitoring
 +- https://<vps-host>/health.json — state, pid, done/total, latest scheduled/
@@ -85,19 +167,22 @@ index 0000000..b846b3e
 +- Daily sealed snapshots appear in evidence-official/daily/.
 +
 +## 8. After boundary 336
-+- python3 scripts/archive_official.py --confirm  → final private archive +
-+  SHA-256 + sanitized FINAL_REPORT.md for the mentor and the public site.
++- venv/bin/python scripts/archive_official.py --confirm  → final private
++  archive + SHA-256 + sanitized FINAL_REPORT.md for the mentor and the
++  public site. The completed service stays down on its own (Ruling 014.3).
 diff --git a/deploy/arena-official.service b/deploy/arena-official.service
 new file mode 100644
-index 0000000..a341cc7
+index 0000000..097a1de
 --- /dev/null
 +++ b/deploy/arena-official.service
-@@ -0,0 +1,28 @@
-+# AKRA ARENA — official 14-day runner (Mentor Ruling 6)
+@@ -0,0 +1,33 @@
++# AKRA ARENA — official 14-day runner (Mentor Rulings 6 + 014.3/014.7)
 +# Install: copy to /etc/systemd/system/arena-official.service
 +#          systemctl daemon-reload && systemctl enable --now arena-official
 +# The service starts ARMED/OFF and stays there (zero model calls) until the
 +# owner runs scripts/arm_official.py --confirm on the server.
++# This file is part of the audited integrity manifest (Ruling 014.6);
++# scripts/verify_deployment.py checks the installed copy byte-for-byte.
 +[Unit]
 +Description=AKRA ARENA official 14-day experiment runner (ARMED/OFF until owner activation)
 +After=network-online.target
@@ -110,8 +195,11 @@ index 0000000..a341cc7
 +WorkingDirectory=/home/arena/btc-arena-v1
 +# Secrets live ONLY here (root:arena 0640) — never in the repo or archives.
 +EnvironmentFile=/etc/arena/arena.env
-+ExecStart=/usr/bin/python3 -u scripts/run_official_14d.py
-+Restart=always
++# Audited venv python (Ruling 014.7) — never uncertain system/user pip state.
++ExecStart=/home/arena/btc-arena-v1/venv/bin/python -u scripts/run_official_14d.py
++# Ruling 014.3: crashes and reboots recover automatically; a CLEAN exit
++# (completed experiment, code 0) stays down and never restarts the run.
++Restart=on-failure
 +RestartSec=5
 +# Persistent state: the repo checkout + /var/www/arena. Nothing in /tmp.
 +PrivateTmp=true
@@ -123,19 +211,21 @@ index 0000000..a341cc7
 +WantedBy=multi-user.target
 diff --git a/deploy/nginx-arena.conf b/deploy/nginx-arena.conf
 new file mode 100644
-index 0000000..53cf61d
+index 0000000..5505282
 --- /dev/null
 +++ b/deploy/nginx-arena.conf
-@@ -0,0 +1,23 @@
+@@ -0,0 +1,25 @@
 +# AKRA ARENA — direct read-only publication endpoint (Mentor Ruling 1).
 +# Serves ONLY the live payload, its checksum, and health. GET/HEAD only —
 +# no endpoint accepts commands, prompts, credentials, or state changes.
-+# TLS: use certbot --nginx after DNS points at the VPS; this file assumes
-+# the certbot-managed 443 server block wraps or includes it.
++# TLS: certbot --nginx manages the 443 wrapper; the directives below must
++# survive in the effective config (scripts/verify_deployment.py checks).
++# Hostname FROZEN per Mentor Ruling 014.6 — matches
++# engine.official.OFFICIAL_PUBLIC_ORIGIN; this file is integrity-locked.
 +server {
 +    listen 80;
 +    listen [::]:80;
-+    server_name ARENA_VPS_HOST;   # <- replace with the owner's domain
++    server_name live.akraarena.online;
 +
 +    root /var/www/arena;
 +
@@ -150,6 +240,23 @@ index 0000000..53cf61d
 +        try_files $uri =404;
 +    }
 +}
+diff --git a/deploy/requirements-official.txt b/deploy/requirements-official.txt
+new file mode 100644
+index 0000000..62a29bd
+--- /dev/null
++++ b/deploy/requirements-official.txt
+@@ -0,0 +1,11 @@
++# AKRA ARENA official-run runtime lock (Mentor Ruling 014.7).
++# Installed ONLY into the dedicated venv the systemd unit executes:
++#   python3 -m venv /home/arena/btc-arena-v1/venv
++#   /home/arena/btc-arena-v1/venv/bin/pip install -r deploy/requirements-official.txt
++# Exact pins; this file is part of the audited integrity manifest.
++dulwich==1.2.12
++jsonschema==4.26.0
++attrs==26.1.0
++referencing==0.37.0
++rpds-py==2026.6.3
++jsonschema-specifications==2025.9.1
 diff --git a/docs/demo_payload.js b/docs/demo_payload.js
 index 0aafad4..9ef1aff 100644
 --- a/docs/demo_payload.js
@@ -331,10 +438,10 @@ index 0000000..6617c97
 +Model calls, any preflight/soak, server or Pages deployment, pushes,
 +data-v1/ writes, pilot archive/evidence edits.
 diff --git a/docs/handoff/CURRENT_STATUS.md b/docs/handoff/CURRENT_STATUS.md
-index 2b5b4ac..2add2d0 100644
+index 2b5b4ac..80c2dd2 100644
 --- a/docs/handoff/CURRENT_STATUS.md
 +++ b/docs/handoff/CURRENT_STATUS.md
-@@ -1,4 +1,14 @@
+@@ -1,4 +1,15 @@
  # CURRENT STATUS — frozen facts as of 2026-08-04
 +
 +## Build batch (added 2026-08-04, AFTER the facts below)
@@ -344,16 +451,17 @@ index 2b5b4ac..2add2d0 100644
 +site digests on that branch — the digests below remain the approved ones for
 +the FROZEN v1-clean-experiment tree only. New digests await the next audit
 +round. Nothing is deployed, pushed, preflighted, or activated; data-v1 is
-+untouched. OWNER INPUT still needed: the VPS domain for LIVE_ORIGIN in
-+docs/index.html before the audit archive is sealed.
++untouched. VPS provisioned 2026-08-04 (Hostinger, 186.240.147.38,
++live.akraarena.online, TLS + read-only endpoint verified; no code on it).
++LIVE_ORIGIN = https://live.akraarena.online/ frozen into docs/index.html.
  
  ## Formal standing
  - Offline audit: **PASSED** (Mentor Final Ruling, 2026-08-03) for engine +
 diff --git a/docs/handoff/OPERATIONS_RUNBOOK.md b/docs/handoff/OPERATIONS_RUNBOOK.md
-index 2316fe5..b8e379c 100644
+index 2316fe5..ac4b842 100644
 --- a/docs/handoff/OPERATIONS_RUNBOOK.md
 +++ b/docs/handoff/OPERATIONS_RUNBOOK.md
-@@ -1,6 +1,21 @@
+@@ -1,6 +1,27 @@
  # OPERATIONS RUNBOOK
  
  All commands from repo root: ~/trading-research-machine/btc-arena-v1
@@ -367,16 +475,22 @@ index 2316fe5..b8e379c 100644
 +    python3 scripts/arm_official.py --confirm \
 +      --engine-digest <externally issued> --site-digest <externally issued> \
 +      --start-utc next-hour
-+- Disarm before start: delete control/official_activation.json.
-+  Halt a live run: systemctl stop arena-official (restart-safe; same
-+  schedule resumes; missed boundaries abort honestly).
++- Disarm before start (Ruling 014.1, revalidated by exact SHA while waiting
++  for T0): delete control/official_activation.json → service returns to
++  ARMED/OFF with zero model calls, unstarted schedule rolled back.
++  Halt a live run (first boundary already started): systemctl stop
++  arena-official (restart-safe; same schedule resumes; missed boundaries
++  abort honestly).
++- Post-deploy check: venv/bin/python scripts/verify_deployment.py
++- Server preflight: scripts/preflight_official.py (audited; scratch store
++  only; requires ARENA_PREFLIGHT_APPROVED + externally issued digests).
 +- Monitoring: https://<vps-host>/health.json; daily sealed snapshots in
 +  evidence-official/daily/; final: scripts/archive_official.py --confirm
  
  ## Everyday (safe, offline)
  - Full hermetic suite:        python3 -m pytest tests/ -q        (258 tests)
 diff --git a/docs/index.html b/docs/index.html
-index 23b3d5c..33d7754 100644
+index 23b3d5c..1f9b7aa 100644
 --- a/docs/index.html
 +++ b/docs/index.html
 @@ -3,7 +3,7 @@
@@ -873,7 +987,7 @@ index 23b3d5c..33d7754 100644
 +   OWNER INPUT: LIVE_ORIGIN must be set to the VPS origin (with trailing
 +   slash, e.g. 'https://arena.example.com/') before the site digest is
 +   sealed; '' means same-origin (VPS-hosted page, local preview, tests). */
-+const LIVE_ORIGIN = '';
++const LIVE_ORIGIN = 'https://live.akraarena.online/';
  let lastPub = window.ARENA_LIVE ? window.ARENA_LIVE.publication_id : null;
  async function pollLive(){
 -  try {
@@ -913,6 +1027,24 @@ index 9574f8c..66e6cff 100644
 @@ -1 +1 @@
 -window.ARENA_PRESTART = {"experiment": "v1.3", "label": "V1 EXPERIMENT", "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?", "hashes": {"config/v1/experiment.json": "f7da51051a7031c26e5b5905979eeb33a4473739c901f766f25638472f39ef70", "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032", "engine/config.py": "8ed48d38192ada58f4facc9cc64855b091e94496fa30762e54e362a1f470342b", "engine/dashboard.py": "ac362386b28c407ed6e57f7fc2526cd27cf6261f04120413cc139d4394f1f8d0", "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5", "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc", "engine/features.py": "69ea768643b5b91c4abc7f202b72330204836ddf35020027ef66bdc687ff1da2", "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872", "engine/marketdata.py": "0b035211e44d0b3978dfbd56230c342dfb2bf77a9f3b310211748b8dede19a28", "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9", "engine/persistence.py": "0ea8013e46d855fdfca1446b27d44eebec94b0741fb606a3500840c7a9740005", "engine/pilot.py": "bb8af7eb4a4de5a1af17768234bed815363a69f9cc46d4f88dbd15da66823228", "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22", "engine/publisher.py": "642d79fc5dbcb211c118cef89e6dc5242d18e02dd319b881e1849a508edfb7c4", "engine/recovery.py": "1740449c7dc91483cc6b05838e25abce14616645092d4964aea17f2381afc8be", "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42", "engine/rounds.py": "e80db03a868260e9d1ee8361553452e0c5e8d434cbea0f27381338be2126e036", "engine/state.py": "ca395fb36b0f4a3798309e8f1d254c55d330ed2dabb9d219c3d18cfd2abf5b70", "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b", "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c", "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8", "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04", "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63", "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64", "schemas/v1/records.schema.json": "eaf34924cbbc1f9606f9e272c6df6acf337b5e39f0a467bea2751694c9c347e2", "scripts/archive_pilot_reset.py": "9a6bbbed3da4634317013fa6c19851218ddfb80dc8afb48cc25a998dbd5b9694", "scripts/gen_demo_dashboard.py": "99606d3fb2198cb4a89e32dc0ac37b366d6bd644028aadd8cc5da81d117282e1", "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02", "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752", "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d"}, "combined_hash": "c425200e1b840524bb444288d6725bc1f728f60d94d72ed725d0fc704ec5432c", "pilot_link": {"href": "pilot/index.html", "label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"}, "health": {"heartbeat": null, "stale": true}, "round_counts": {"PAIR_COMMITTED": 0, "PAIR_ABORTED": 0, "PAIR_TERMINAL_SPLIT": 0}, "coins": {"BTC": {"accounts": [{"id": "btc_haiku_raw", "coin": "BTC", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_haiku_ta", "coin": "BTC", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_raw", "coin": "BTC", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_ta", "coin": "BTC", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_raw", "coin": "BTC", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_ta", "coin": "BTC", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "btc_haiku_raw", "feature": "btc_haiku_ta"}, {"model": "sonnet", "raw": "btc_sonnet_raw", "feature": "btc_sonnet_ta"}, {"model": "opus", "raw": "btc_opus_raw", "feature": "btc_opus_ta"}], "rounds": []}, "ETH": {"accounts": [{"id": "eth_haiku_raw", "coin": "ETH", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_haiku_ta", "coin": "ETH", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_raw", "coin": "ETH", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_ta", "coin": "ETH", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_raw", "coin": "ETH", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_ta", "coin": "ETH", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "eth_haiku_raw", "feature": "eth_haiku_ta"}, {"model": "sonnet", "raw": "eth_sonnet_raw", "feature": "eth_sonnet_ta"}, {"model": "opus", "raw": "eth_opus_raw", "feature": "eth_opus_ta"}], "rounds": []}, "SOL": {"accounts": [{"id": "sol_haiku_raw", "coin": "SOL", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_haiku_ta", "coin": "SOL", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_raw", "coin": "SOL", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_ta", "coin": "SOL", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_raw", "coin": "SOL", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_ta", "coin": "SOL", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "sol_haiku_raw", "feature": "sol_haiku_ta"}, {"model": "sonnet", "raw": "sol_sonnet_raw", "feature": "sol_sonnet_ta"}, {"model": "opus", "raw": "sol_opus_raw", "feature": "sol_opus_ta"}], "rounds": []}}, "mode": "PREPARATION", "banner": "AKRA ARENA \u2014 PREPARATION MODE \u2014 EXPERIMENT NOT STARTED", "data_notice": "No model has been called. No paper-trading pilot or official experiment has started.", "pilot_progress": {"done": 0, "total": 12}};
 +window.ARENA_PRESTART = {"experiment": "v1.3", "label": "V1 EXPERIMENT", "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?", "hashes": {"config/v1/experiment.json": "f7da51051a7031c26e5b5905979eeb33a4473739c901f766f25638472f39ef70", "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032", "engine/config.py": "8ed48d38192ada58f4facc9cc64855b091e94496fa30762e54e362a1f470342b", "engine/dashboard.py": "b4be1ecbfe23efa3d716b166b6f032ba18347ada3abb6a6a3e4606c9090b9598", "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5", "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc", "engine/features.py": "69ea768643b5b91c4abc7f202b72330204836ddf35020027ef66bdc687ff1da2", "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872", "engine/marketdata.py": "0b035211e44d0b3978dfbd56230c342dfb2bf77a9f3b310211748b8dede19a28", "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9", "engine/official.py": "89073cee447a7cd0957b09a7ac5ec2b6efa07892a3e4cacf478c1b3841719735", "engine/persistence.py": "0ea8013e46d855fdfca1446b27d44eebec94b0741fb606a3500840c7a9740005", "engine/pilot.py": "bb8af7eb4a4de5a1af17768234bed815363a69f9cc46d4f88dbd15da66823228", "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22", "engine/publisher.py": "739560008fd90b0ebb492b58338034ee75c63dd459bb674852f6bc2c2511e30e", "engine/recovery.py": "a06c066f3dd5ea0c3815bcf23d5fa73915c4dbed84d9004d5e0cdaec98f00a20", "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42", "engine/rounds.py": "e80db03a868260e9d1ee8361553452e0c5e8d434cbea0f27381338be2126e036", "engine/state.py": "ca395fb36b0f4a3798309e8f1d254c55d330ed2dabb9d219c3d18cfd2abf5b70", "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b", "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c", "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8", "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04", "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63", "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64", "schemas/v1/records.schema.json": "eaf34924cbbc1f9606f9e272c6df6acf337b5e39f0a467bea2751694c9c347e2", "scripts/archive_official.py": "e6da95fe4cd1c8ede79d257d8f924d1bcb6b170f97b18dafd61ec540d5c85035", "scripts/archive_pilot_reset.py": "9a6bbbed3da4634317013fa6c19851218ddfb80dc8afb48cc25a998dbd5b9694", "scripts/arm_official.py": "a90d12c66010ecd43bc5e92b159fe8cbcc512dbf7ff13e95bdf1b45f8e7d1b9f", "scripts/gen_demo_dashboard.py": "fb4fbf46ee4ac21a38c37bab6d3db3b37fe0954dfba1d00ead532c56227bb394", "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02", "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752", "scripts/run_official_14d.py": "7dbe089735c1a394524f21610236cc3ca248e73e2074487c06077109792c9037", "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d"}, "combined_hash": "da5a8063f4862d02f7763a95af3ffa7176b9212cd21eea0489f970f27da3181b", "pilot_link": {"href": "pilot/index.html", "label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"}, "health": {"heartbeat": null, "stale": true}, "round_counts": {"PAIR_COMMITTED": 0, "PAIR_ABORTED": 0, "PAIR_TERMINAL_SPLIT": 0}, "coins": {"BTC": {"accounts": [{"id": "btc_haiku_raw", "coin": "BTC", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_haiku_ta", "coin": "BTC", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_raw", "coin": "BTC", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_ta", "coin": "BTC", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_raw", "coin": "BTC", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_ta", "coin": "BTC", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "btc_haiku_raw", "feature": "btc_haiku_ta"}, {"model": "sonnet", "raw": "btc_sonnet_raw", "feature": "btc_sonnet_ta"}, {"model": "opus", "raw": "btc_opus_raw", "feature": "btc_opus_ta"}], "rounds": []}, "ETH": {"accounts": [{"id": "eth_haiku_raw", "coin": "ETH", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_haiku_ta", "coin": "ETH", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_raw", "coin": "ETH", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_ta", "coin": "ETH", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_raw", "coin": "ETH", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_ta", "coin": "ETH", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "eth_haiku_raw", "feature": "eth_haiku_ta"}, {"model": "sonnet", "raw": "eth_sonnet_raw", "feature": "eth_sonnet_ta"}, {"model": "opus", "raw": "eth_opus_raw", "feature": "eth_opus_ta"}], "rounds": []}, "SOL": {"accounts": [{"id": "sol_haiku_raw", "coin": "SOL", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_haiku_ta", "coin": "SOL", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_raw", "coin": "SOL", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_ta", "coin": "SOL", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_raw", "coin": "SOL", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_ta", "coin": "SOL", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "sol_haiku_raw", "feature": "sol_haiku_ta"}, {"model": "sonnet", "raw": "sol_sonnet_raw", "feature": "sol_sonnet_ta"}, {"model": "opus", "raw": "sol_opus_raw", "feature": "sol_opus_ta"}], "rounds": []}}, "mode": "PREPARATION", "banner": "AKRA ARENA \u2014 PREPARATION MODE \u2014 EXPERIMENT NOT STARTED", "data_notice": "No model has been called. No paper-trading pilot or official experiment has started.", "pilot_progress": {"done": 0, "total": null}};
+diff --git a/engine/config.py b/engine/config.py
+index 9908d20..3056cf5 100644
+--- a/engine/config.py
++++ b/engine/config.py
+@@ -14,6 +14,13 @@
+     "prompts/v1/user_feature.txt",
+     "prompts/v1/blocks.md",
+     "prompts/v1/placeholders.json",
++    # Infrastructure integrity lock (Mentor Ruling 014.6): the systemd unit,
++    # the Nginx endpoint template (frozen hostname), and the runtime
++    # dependency lock are part of the ENGINE digest. verify_deployment.py
++    # (a scripts/*.py file) is hashed automatically by _code_files().
++    "deploy/arena-official.service",
++    "deploy/nginx-arena.conf",
++    "deploy/requirements-official.txt",
+ ]
+ 
+ # Static production UI, frozen by its own externally approved manifest
 diff --git a/engine/dashboard.py b/engine/dashboard.py
 index 145185a..1c1786a 100644
 --- a/engine/dashboard.py
@@ -932,10 +1064,10 @@ index 145185a..1c1786a 100644
          "entry": str(a["entry"]) if a["entry"] is not None else None,
 diff --git a/engine/official.py b/engine/official.py
 new file mode 100644
-index 0000000..4763c6b
+index 0000000..7e46920
 --- /dev/null
 +++ b/engine/official.py
-@@ -0,0 +1,347 @@
+@@ -0,0 +1,439 @@
 +"""OFFICIAL 14-DAY RUN orchestration (Mentor Rulings 1, 2, 3, 6, 8).
 +
 +Differences from the pilot loop (engine.pilot), each mandated by a ruling:
@@ -989,12 +1121,24 @@ index 0000000..4763c6b
 +BANNER = ("OFFICIAL 14-DAY EXPERIMENT — REAL AI DECISIONS — PAPER MONEY")
 +BRANDING = {"mode": MODE, "banner": BANNER}
 +
++# THE canonical integrity-locked public origin (Mentor Ruling 014.2). The
++# dashboard's LIVE_ORIGIN, the runner's verification endpoint, and the Nginx
++# template all derive from or are tested against these exact values; the
++# runner refuses BEFORE any state initialization or model call on mismatch.
++OFFICIAL_PUBLIC_ORIGIN = "https://live.akraarena.online/"
++OFFICIAL_PAYLOAD_URL = OFFICIAL_PUBLIC_ORIGIN + "live_payload.js"
++
 +# Ruling 2 sub-budgets, seconds after the scheduled boundary T
 +FETCH_START_S = 5
 +THINKING_DURABLE_S = 30
 +THINKING_VERIFIED_S = 60
 +COLLECTION_DEADLINE_S = 510          # T+08:30
-+RESOLUTION_DEADLINE_S = 630          # T+10:30 (documented; see module doc)
++RESOLUTION_DEADLINE_S = 630          # T+10:30 — ENFORCED (Ruling 014.5):
++                                     # passed to the coordinator as both the
++                                     # resolution_deadline (late pairs abort
++                                     # deadline_exceeded) and replay_deadline
++                                     # (late replay => CATCHUP_REQUIRED with
++                                     # the watermark preserved)
 +FINAL_PUBLISH_S = 690                # T+11:30
 +HARD_DEADLINE_S = 720                # T+12:00 — must equal the frozen config
 +READY_TIMEOUT_S = 300                # pre-first-boundary READY gate budget
@@ -1006,6 +1150,58 @@ index 0000000..4763c6b
 +
 +class LockError(Exception):
 +    """A second runner instance tried to start (Ruling 6)."""
++
++
++class Disarmed(Exception):
++    """The owner's activation record was deleted/replaced/modified BEFORE the
++    first scheduled boundary (Mentor Ruling 014.1): the run must stop with
++    zero model calls and the service must return to ARMED_OFF. After the
++    first boundary has started this exception is never raised — halting a
++    live run requires an explicit service stop (restart recovery applies)."""
++
++
++def activation_sha(path):
++    """SHA-256 of the exact activation record bytes, or None if unreadable."""
++    try:
++        with open(path, "rb") as f:
++            return hashlib.sha256(f.read()).hexdigest()
++    except OSError:
++        return None
++
++
++def make_disarm_check(path, expected_sha):
++    """Returns still_armed(): True only while the EXACT original activation
++    record (byte-identical SHA) is still in place. Deleting, replacing, or
++    modifying the file makes it False."""
++    def still_armed():
++        return activation_sha(path) == expected_sha
++    return still_armed
++
++
++def rollback_unstarted(store):
++    """Undo provisioning artifacts after a valid PRE-START disarm: allowed
++    ONLY while zero boundaries are completed and account state carries no
++    boundary. Removes the sealed schedule, the publication log, and durable
++    payloads so a later re-arm provisions a fresh schedule. Any sign the run
++    started => refuse loudly (halting a live run is a service-stop concern)."""
++    import shutil
++    try:
++        sched = pilot.load_schedule(store)
++        if sched["completed"]:
++            raise RuntimeError("boundaries already completed")
++    except pilot.ScheduleError:
++        return False                    # nothing provisioned; nothing to do
++    _, meta = persistence.load_state(os.path.join(store, "state.json"),
++                                     expect_full_roster=True)
++    if meta.get("boundary") is not None:
++        raise RuntimeError("boundary state exists — not an unstarted run")
++    for name in (pilot.SCHEDULE_NAME, publisher_mod.PUB_LOG):
++        try:
++            os.remove(os.path.join(store, name))
++        except FileNotFoundError:
++            pass
++    shutil.rmtree(os.path.join(store, "publish"), ignore_errors=True)
++    return True
 +
 +
 +def acquire_runner_lock(path):
@@ -1201,11 +1397,17 @@ index 0000000..4763c6b
 +
 +def run_official(store, cfg, caller, fetch_market, publish, clock, sleep,
 +                 health_dir=None, mirror=None, crash_at=None,
-+                 snapshot_dir=None):
++                 snapshot_dir=None, disarm_check=None):
 +    """Drive the sealed official schedule exactly once per boundary under the
 +    Ruling 2 budgets. Restart-safe exactly like the pilot loop: an incomplete
 +    persisted boundary is recovered first (non-finalized pairs abort as
-+    crash_recovery), and the SAME schedule is always resumed."""
++    crash_recovery), and the SAME schedule is always resumed.
++
++    `disarm_check` (Mentor Ruling 014.1): still_armed() predicate polled ONLY
++    until the first boundary's work begins. If the owner's exact activation
++    record disappears or changes before then, Disarmed is raised with zero
++    model calls and zero boundary work. Once boundary 1 has started the
++    predicate is never consulted again — halting requires a service stop."""
 +    assert cfg["collection"]["collection_deadline_seconds"] == HARD_DEADLINE_S
 +    sched = pilot.load_schedule(store)
 +    notes = []
@@ -1219,6 +1421,18 @@ index 0000000..4763c6b
 +        except Exception:
 +            pass                        # health can never affect trading
 +
++    def _pre_start_disarmed():
++        return (disarm_check is not None and not sched["completed"]
++                and not disarm_check())
++
++    # CLEAN COMPLETION (Mentor Ruling 014.3): a finished experiment stays
++    # finished — no READY republication, no publications, no model calls.
++    if all(T in sched["completed"] for T in sched["boundaries"]):
++        health("COMPLETE")
++        return sched
++
++    if _pre_start_disarmed():
++        raise Disarmed("activation record gone/changed before READY")
 +    health("STARTING")
 +    _set_deadline(publish, clock() + READY_TIMEOUT_S)
 +    publisher_mod.reconcile(store, cfg, publish, branding=BRANDING)
@@ -1238,7 +1452,15 @@ index 0000000..4763c6b
 +            publisher_mod.reconcile(store, cfg, publish, branding=BRANDING)
 +        health("WAITING", T)
 +        while clock() < T + FETCH_START_S:
++            if _pre_start_disarmed():
++                raise Disarmed("activation record gone/changed before the "
++                               "first scheduled boundary")
 +            sleep(max(1, min(30, T + FETCH_START_S - clock())))
++        # last pre-start check, immediately before boundary work begins;
++        # from here on only an explicit service stop halts the run
++        if _pre_start_disarmed():
++            raise Disarmed("activation record gone/changed at the first "
++                           "boundary gate")
 +        health("BOUNDARY_ACTIVE", T)
 +        # ---- freeze boundary data: budget ends at T+00:30 ----
 +        snaps, spec = {}, {}
@@ -1265,7 +1487,9 @@ index 0000000..4763c6b
 +                         if snaps.get(c) is not None},
 +            crash_at=crash_at, clock=clock,
 +            deadline=T + COLLECTION_DEADLINE_S,
-+            abort_all_reason=abort_reason)
++            abort_all_reason=abort_reason,
++            resolution_deadline=T + RESOLUTION_DEADLINE_S,
++            replay_deadline=T + RESOLUTION_DEADLINE_S)
 +        sched = pilot.mark_completed(store, T)
 +        # ---- terminal payload durable + direct publication by T+11:30 ----
 +        _set_deadline(publish, T + FINAL_PUBLISH_S)
@@ -1392,20 +1616,21 @@ index 62e15bb..e810820 100644
          results.append((T, entry["status"]))
      return results
 diff --git a/engine/recovery.py b/engine/recovery.py
-index 68c2194..7a143ed 100644
+index 68c2194..1295bd8 100644
 --- a/engine/recovery.py
 +++ b/engine/recovery.py
-@@ -52,7 +52,8 @@
+@@ -52,7 +52,9 @@
  
  
  def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
 -                     replay_spec=None, clock=None, deadline=None):
 +                     replay_spec=None, clock=None, deadline=None,
-+                     abort_all_reason=None):
++                     abort_all_reason=None, resolution_deadline=None,
++                     replay_deadline=None):
      """Returns (ledger_entries, attempt_records, archived_user_prompts).
  
      `deadline` (Ruling 012.3): the authoritative ABSOLUTE collection deadline
-@@ -61,7 +62,12 @@
+@@ -61,7 +63,20 @@
      retrieval, grace waits, and restarts all consume the same T..T+12min
      budget — entering this coordinator late never grants new time, and a
      restart never resets the deadline. When omitted (offline tooling/tests),
@@ -1415,11 +1640,19 @@ index 68c2194..7a143ed 100644
 +    `abort_all_reason` (official-run Mentor Ruling 2): when set, the caller
 +    is NEVER invoked — every non-finalized pair aborts with exactly this
 +    reason and the prompt archive records not_called markers. Boundary marks
-+    still freeze and the boundary still becomes terminal."""
++    still freeze and the boundary still becomes terminal.
++
++    `resolution_deadline` / `replay_deadline` (Mentor Ruling 014.5, official
++    runs pass T+630 for both): a live/terminal-split pair whose resolution
++    has not begun by resolution_deadline aborts with deadline_exceeded
++    instead of committing; replay stops processing candles at replay_deadline
++    and latches CATCHUP_REQUIRED with the watermark preserved — the standard
++    catch-up path resumes it next boundary. Both default to None (legacy
++    behavior, used by all pilot-era tests)."""
      # RUNTIME INTEGRITY GATE (Ruling 009.1): load the immutable APPROVED
      # launch manifest (never rebuilt from the working tree) and verify every
      # engine/script/config/prompt/schema byte BEFORE touching state, prompts,
-@@ -114,6 +120,12 @@
+@@ -114,6 +129,12 @@
              if "user" in e:
                  pregen[aid] = (e["system"], e["user"])   # bytes reused verbatim
              continue
@@ -1432,7 +1665,7 @@ index 68c2194..7a143ed 100644
          if blocked:
              entries.append({"account_id": aid,
                              "pair_id": state.pair_id(acct["coin"], acct["model"]),
-@@ -165,7 +177,9 @@
+@@ -165,7 +186,9 @@
                  continue
              a_raw = accounts[state.account_id(coin, model, "raw")]
              a_ta = accounts[state.account_id(coin, model, "ta")]
@@ -1443,28 +1676,68 @@ index 68c2194..7a143ed 100644
                  pair_meta[pid] = ("abort", rid, "crash_recovery", None)
              elif meta["coin_terminated"].get(coin):
                  pair_meta[pid] = ("abort", rid, "COIN_TERMINATED", None)
-diff --git a/evidence/season_hashes.json b/evidence/season_hashes.json
-index cca9f73..d78fcb6 100644
---- a/evidence/season_hashes.json
-+++ b/evidence/season_hashes.json
-@@ -4,7 +4,7 @@
-   "ledger": "b889cbc6f4185a6190cbbd8ab75923fb06a918021d9fcb20e308003ac4bc5b00",
-   "prompts": "af160a2ca154701a1fc7aae1995fdeb366b5bbc53f4d60053c9cfdf073840cd6",
-   "metrics": "f130b7d3241a81e8e8c2ed432d41c647a9483919141baaa6659a634e57986bd5",
--  "dashboard": "aab8d8d341996dcefaedd6521e91619449d2f6c9777bf583b702deafe984e058",
-+  "dashboard": "218df6aea2e7fee6f67aff34a4d103fe3d73b563925511c2049e8d16294b7b73",
-   "counts": {
-    "PAIR_COMMITTED": 592,
-    "PAIR_ABORTED": 20,
-@@ -20,7 +20,7 @@
-   "ledger": "b889cbc6f4185a6190cbbd8ab75923fb06a918021d9fcb20e308003ac4bc5b00",
-   "prompts": "af160a2ca154701a1fc7aae1995fdeb366b5bbc53f4d60053c9cfdf073840cd6",
-   "metrics": "f130b7d3241a81e8e8c2ed432d41c647a9483919141baaa6659a634e57986bd5",
--  "dashboard": "aab8d8d341996dcefaedd6521e91619449d2f6c9777bf583b702deafe984e058",
-+  "dashboard": "218df6aea2e7fee6f67aff34a4d103fe3d73b563925511c2049e8d16294b7b73",
-   "counts": {
-    "PAIR_COMMITTED": 592,
-    "PAIR_ABORTED": 20,
+@@ -207,6 +230,13 @@
+             if pid in recovered or pid not in pair_meta:
+                 continue
+             kind, rid, reason, terminal_ids = pair_meta[pid]
++            # RESOLUTION DEADLINE (Ruling 014.5): a pair whose resolution has
++            # not begun by the bound never commits — it aborts honestly. Late
++            # trades can therefore never execute past T+10:30.
++            if resolution_deadline is not None \
++                    and kind in ("live", "terminal_split") \
++                    and clock() >= resolution_deadline:
++                kind, reason, terminal_ids = "abort", "deadline_exceeded", None
+             a_raw = accounts[state.account_id(coin, model, "raw")]
+             a_ta = accounts[state.account_id(coin, model, "ta")]
+             snap = snapshots.get(coin)
+@@ -288,7 +318,14 @@
+             if prefix:
+                 coin_accounts = [a for a in accounts.values()
+                                  if a["coin"] == coin]
++                truncated = None
+                 for c in prefix:
++                    # REPLAY DEADLINE (Ruling 014.5): stop cleanly; the
++                    # unprocessed remainder becomes the coin's gap
++                    if replay_deadline is not None \
++                            and clock() >= replay_deadline:
++                        truncated = c["t"]
++                        break
+                     recs = []
+                     replay_mod.replay(coin_accounts, [c], recs)
+                     meta["replay_watermark"][coin] = c["t"]
+@@ -299,7 +336,7 @@
+                              "replay": [rc]})
+                 persistence.save_state(spath, accounts, meta)
+                 persistence.flush_outbox(store, accounts, meta)
+-                eff_start = want
++                eff_start = truncated if truncated is not None else want
+             unresolved = end - eff_start
+             if unresolved > MAX_GAP_S:
+                 meta["coin_terminated"][coin] = True
+@@ -324,6 +361,23 @@
+         meta["replay_state"][coin] = {"status": "REPLAY_COMPLETE"}
+         coin_accounts = [a for a in accounts.values() if a["coin"] == coin]
+         for c in candles:
++            # REPLAY DEADLINE (Ruling 014.5): a boundary must be terminal by
++            # T+720; replay past the bound stops with the watermark preserved
++            # and latches the standard CATCHUP_REQUIRED path — never a silent
++            # deadline crossing, never lost candles.
++            if replay_deadline is not None and clock() >= replay_deadline:
++                meta["replay_state"][coin] = {
++                    "status": "CATCHUP_REQUIRED", "gap_since": c["t"],
++                    "detail": "replay_deadline_reached"}
++                ev = {"round_id": prompts.round_id(coin, T),
++                      "replay": [{"e": "CATCHUP_REQUIRED",
++                                  "gap_since": c["t"]}]}
++                persistence.outbox_add(
++                    meta, f"{coin}:{c['t']}:CATCHUP_REQUIRED", ev)
++                persistence.save_state(spath, accounts, meta)
++                persistence.flush_outbox(store, accounts, meta)
++                ledger.append(ev)
++                break
+             recs = []
+             replay_mod.replay(coin_accounts, [c], recs)
+             meta["replay_watermark"][coin] = c["t"]
 diff --git a/scripts/archive_official.py b/scripts/archive_official.py
 new file mode 100644
 index 0000000..2af96f1
@@ -1558,10 +1831,10 @@ index 0000000..2af96f1
 +    main()
 diff --git a/scripts/arm_official.py b/scripts/arm_official.py
 new file mode 100644
-index 0000000..6bbb766
+index 0000000..edfd70b
 --- /dev/null
 +++ b/scripts/arm_official.py
-@@ -0,0 +1,85 @@
+@@ -0,0 +1,88 @@
 +"""THE OWNER'S EXPLICIT ACTIVATION COMMAND (Mentor Ruling 6).
 +
 +Writes control/official_activation.json — the record the ARMED/OFF service
@@ -1574,9 +1847,12 @@ index 0000000..6bbb766
 +    or the literal "next-hour".
 +
 +This script makes no network requests and no model calls; it only records
-+the owner's decision. Removing control/official_activation.json returns the
-+service to ARMED/OFF (it will not interrupt an already-running boundary
-+loop; stop the service to halt a live run).
++the owner's decision. Disarm semantics (Mentor Ruling 014.1): deleting,
++replacing, or modifying control/official_activation.json BEFORE the first
++scheduled boundary returns the service to ARMED/OFF with zero model calls —
++the runner revalidates the record's exact SHA while waiting for T0. Once the
++first boundary has started, the record is no longer consulted: halting a
++live run requires an explicit service stop (restart recovery preserved).
 +"""
 +import json
 +import os
@@ -1664,12 +1940,318 @@ index ad73e0e..bdee898 100644
          a["series"] = [{"t": 0, "equity": "10000.00", "fees": "0"},
                         {"t": 1, "equity": "10000.00", "fees": "0"}]
  out2 = os.path.join(ROOT, "docs", "prestart_payload.js")
+diff --git a/scripts/preflight_official.py b/scripts/preflight_official.py
+new file mode 100644
+index 0000000..29da242
+--- /dev/null
++++ b/scripts/preflight_official.py
+@@ -0,0 +1,300 @@
++"""OFFICIAL SERVER PREFLIGHT (Mentor Ruling 014.4) — VALIDATION ONLY.
++
++Audited production preflight (hashed into the engine digest). Exactly 18
++real Claude requests (3 coins x 3 models x Raw/TA) built from real current
++Kraken data through the FROZEN production prompt/config path, plus a direct
++HTTPS publication-endpoint probe. Executes NO decisions, opens NO positions,
++creates NO trades and NO official schedule, and NEVER reads or writes
++data-v1: all writes go to an explicitly supplied SCRATCH store (refused if
++it resolves anywhere near data-v1). Secrets are read from the environment
++and never printed or persisted.
++
++Hard guards (all required, checked before any network use):
++  1. env ARENA_PREFLIGHT_APPROVED=YES-OWNER-MENTOR-AUTHORIZED
++  2. env ARENA_APPROVED_MANIFEST_SHA256 / ARENA_APPROVED_SITE_SHA256 —
++     externally issued digests; the current tree must match exactly.
++  3. env ANTHROPIC_API_KEY present.
++  4. scratch store argument outside data-v1.
++
++usage: venv/bin/python scripts/preflight_official.py <scratch-store-dir>
++"""
++import hashlib
++import json
++import os
++import re
++import sys
++import time
++import urllib.parse
++import urllib.request
++
++ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++sys.path.insert(0, ROOT)
++
++OFFICIAL_STORE = os.path.join(ROOT, "data-v1")
++KRAKEN = {"BTC": "XBTUSD", "ETH": "ETHUSD", "SOL": "SOLUSD"}
++APPROVAL_LITERAL = "YES-OWNER-MENTOR-AUTHORIZED"
++
++
++def refuse(msg):
++    print(f"REFUSED: {msg}\nNo model call was made; nothing was written.")
++    sys.exit(2)
++
++
++def check_scratch_store(store):
++    """The scratch store must never be, contain, or live inside data-v1."""
++    a = os.path.realpath(store)
++    b = os.path.realpath(OFFICIAL_STORE)
++    if a == b or a.startswith(b + os.sep) or b.startswith(a + os.sep):
++        raise ValueError(
++            f"scratch store {store!r} overlaps the official data-v1 store")
++    return a
++
++
++def feature_marker_lines(config):
++    raw_t = set(config.load_text("prompts/v1/user_raw.txt").splitlines())
++    feat_t = config.load_text("prompts/v1/user_feature.txt").splitlines()
++    return [ln for ln in feat_t
++            if ln.strip() and "{" not in ln and ln not in raw_t]
++
++
++def run_preflight(store, cfg, snaps, call_fn, T):
++    """Core preflight, transport-injected and fully offline-testable.
++    call_fn(account_id, system, user) -> (decision|None, response_model,
++    stop_reason, latency_s, requested_model) or raises. Returns (summary,
++    results); writes only the durable prompt archive + report into `store`."""
++    from engine import decisions, persistence, prompts, state
++    os.makedirs(store, exist_ok=True)
++    accounts = state.init_accounts()             # in-memory only
++    assert all(str(a["E"]) == "10000.00" for a in accounts.values())
++
++    seed = f"preflight-{T}"
++    entries, rendered = [], {}
++    for aid, acct in sorted(accounts.items()):
++        system, user = prompts.render(acct, snaps[acct["coin"]], cfg)
++        rendered[aid] = (system, user)
++        entries.append({"account_id": aid,
++                        "pair_id": state.pair_id(acct["coin"], acct["model"]),
++                        "round_id": prompts.round_id(acct["coin"], T),
++                        "system": system, "user": user,
++                        "prompt_hash": hashlib.sha256(
++                            user.encode()).hexdigest()})
++    persistence.write_prompt_archive(store, seed, entries)
++    back = persistence.read_prompt_archive(store, seed)
++    archive_ok = all(back[e["account_id"]]["user"] == e["user"]
++                     and back[e["account_id"]]["system"] == e["system"]
++                     for e in entries)
++
++    from engine import config as config_mod
++    markers = feature_marker_lines(config_mod)
++    sep_ok = True
++    for coin in KRAKEN:
++        for model in state.MODELS:
++            u_raw = rendered[state.account_id(coin, model, "raw")][1]
++            u_ta = rendered[state.account_id(coin, model, "ta")][1]
++            if u_raw == u_ta or not any(m in u_ta for m in markers) \
++                    or any(m in u_raw for m in markers):
++                sep_ok = False
++
++    results = {}
++    before = json.dumps(persistence._enc_all(accounts), sort_keys=True,
++                        default=str)
++    for aid in sorted(accounts):                 # exactly the 18 accounts
++        system, user = rendered[aid]
++        row = {"requested_model": None, "response_model": None,
++               "stop_reason": None, "latency_s": None, "accepted": False,
++               "schema_valid": False, "semantic_errors": None,
++               "identity_ok": False, "transport_error": None}
++        try:
++            dec, rmodel, stop, latency, want = call_fn(aid, system, user)
++            row.update(requested_model=want, response_model=rmodel,
++                       stop_reason=stop, latency_s=latency)
++            if dec is None:
++                row["transport_error"] = f"no tool_use (stop={stop})"
++            else:
++                row["accepted"] = True
++                row["schema_valid"] = decisions.schema_validate(dec) == []
++                acct = accounts[aid]
++                row["semantic_errors"] = decisions.validate(
++                    acct, dec, snaps[acct["coin"]]["P_T"])
++                row["decision_position"] = dec.get("position")
++                row["identity_ok"] = bool(rmodel) and (
++                    rmodel.startswith(want) or want.startswith(rmodel))
++        except Exception as e:
++            row["transport_error"] = str(e)[:200]
++        results[aid] = row
++
++    after = json.dumps(persistence._enc_all(accounts), sort_keys=True,
++                       default=str)
++    unmutated = (before == after
++                 and not os.path.exists(os.path.join(store, "state.json"))
++                 and not os.path.exists(
++                     os.path.join(store, "pilot_schedule.json")))
++    n = len(results)
++    summary = {
++        "T_prompt_boundary_utc": T, "n": n,
++        "accepted": sum(r["accepted"] for r in results.values()),
++        "schema_valid": sum(r["schema_valid"] for r in results.values()),
++        "identity_ok": sum(r["identity_ok"] for r in results.values()),
++        "transport_failures": [aid for aid, r in results.items()
++                               if r["transport_error"]],
++        "semantically_valid_first_try": sum(
++            1 for r in results.values() if r["semantic_errors"] == []),
++        "prompt_archive_durable": archive_ok,
++        "raw_ta_separation_ok": sep_ok,
++        "accounts_unmutated": unmutated,
++        "marks": {c: str(s["P_T"]) for c, s in snaps.items()},
++    }
++    summary["model_calls_pass"] = (
++        summary["accepted"] == n == 18 and summary["schema_valid"] == 18
++        and summary["identity_ok"] == 18
++        and not summary["transport_failures"] and archive_ok and sep_ok
++        and unmutated)
++    out = os.path.join(store, f"preflight_report_{T}.json")
++    with open(out, "w") as f:                    # sanitized: no secrets, no
++        json.dump({"summary": summary, "results": results}, f, indent=1)
++    return summary, results, out
++
++
++def endpoint_probe(public_dir, fetch, fetch_sha, clock, sleep, timeout=60):
++    """Verify the direct HTTPS publication endpoint (Ruling 1) with a probe
++    payload, then restore whatever was being served (or remove the probe if
++    nothing was). Returns True on verified round-trip."""
++    from engine import official
++    payload_path = os.path.join(public_dir,
++                                official.DirectPublisher.PAYLOAD)
++    sha_path = os.path.join(public_dir, official.DirectPublisher.CHECKSUM)
++    prior = {p: open(p, "rb").read() for p in (payload_path, sha_path)
++             if os.path.exists(p)}
++    probe_id = f"preflight-probe:{int(clock())}"
++    text = ('window.ARENA_LIVE = {"publication_id": "%s", '
++            '"mode": "PREFLIGHT_PROBE"};\n' % probe_id)
++    dp = official.DirectPublisher(public_dir, fetch, clock, sleep,
++                                  fetch_sha=fetch_sha)
++    dp.deadline = clock() + timeout
++    try:
++        dp(text)
++        return True
++    finally:                                     # always restore the endpoint
++        for p in (payload_path, sha_path):
++            if p in prior:
++                with open(p, "wb") as f:
++                    f.write(prior[p])
++            elif os.path.exists(p):
++                os.remove(p)
++
++
++def kraken_ohlc(pair, interval_min):
++    url = (f"https://api.kraken.com/0/public/OHLC?pair={pair}"
++           f"&interval={interval_min}")
++    with urllib.request.urlopen(url, timeout=20) as r:
++        raw = json.loads(r.read().decode())
++    key = [k for k in raw["result"] if k != "last"][0]
++    return [{"t": int(x[0]), "o": float(x[1]), "h": float(x[2]),
++             "l": float(x[3]), "c": float(x[4]), "v": float(x[6])}
++            for x in raw["result"][key]]
++
++
++def main():
++    if os.environ.get("ARENA_PREFLIGHT_APPROVED") != APPROVAL_LITERAL:
++        refuse("ARENA_PREFLIGHT_APPROVED not set to the owner/mentor "
++               "authorization literal")
++    eng = os.environ.get("ARENA_APPROVED_MANIFEST_SHA256", "").strip().lower()
++    site = os.environ.get("ARENA_APPROVED_SITE_SHA256", "").strip().lower()
++    if not re.fullmatch(r"[0-9a-f]{64}", eng) \
++            or not re.fullmatch(r"[0-9a-f]{64}", site):
++        refuse("externally issued 64-hex approved digests required "
++               "(ARENA_APPROVED_MANIFEST_SHA256 / ARENA_APPROVED_SITE_SHA256)")
++    from engine import config, marketdata, official
++    config.check_approved_digest(eng)            # Halt A before any network
++    config.check_approved_site_digest(site)
++    if not os.environ.get("ANTHROPIC_API_KEY"):
++        refuse("ANTHROPIC_API_KEY not set")
++    if len(sys.argv) < 2:
++        refuse("scratch store argument required "
++               "(usage: preflight_official.py <scratch-store-dir>)")
++    try:
++        store = check_scratch_store(sys.argv[1])
++    except ValueError as e:
++        refuse(str(e))
++
++    cfg = config.load_config()
++    schema = config.load_schema()
++    T = int(time.time()) // 3600 * 3600
++    snaps = {c: marketdata.build_snapshot(c, kraken_ohlc(p, 1),
++                                          kraken_ohlc(p, 60),
++                                          kraken_ohlc(p, 1440), T)
++             for c, p in KRAKEN.items()}
++    common = cfg["request_payloads"]["common"]
++
++    def call_fn(aid, system, user):
++        model_id = cfg["models"][aid.split("_")[1]]["model"]
++        body = {"model": model_id, "max_tokens": common["max_tokens"],
++                "system": system,
++                "messages": [{"role": "user", "content": user}],
++                "tools": [schema], "tool_choice": common["tool_choice"]}
++        thinking = cfg["request_payloads"]["per_model"].get(
++            model_id, {}).get("thinking")
++        if isinstance(thinking, dict):
++            body["thinking"] = thinking
++        req = urllib.request.Request(
++            "https://api.anthropic.com/v1/messages",
++            data=json.dumps(body).encode(), method="POST",
++            headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"],
++                     "anthropic-version": common["anthropic-version"],
++                     "content-type": "application/json"})
++        t0 = time.monotonic()
++        with urllib.request.urlopen(req,
++                                    timeout=common["timeout_seconds"]) as r:
++            resp = json.loads(r.read().decode())
++        latency = round(time.monotonic() - t0, 2)
++        dec = None
++        for block in resp.get("content", []):
++            if block.get("type") == "tool_use":
++                dec = block["input"]
++        return dec, resp.get("model"), resp.get("stop_reason"), latency, \
++            model_id
++
++    summary, results, report = run_preflight(store, cfg, snaps, call_fn, T)
++    for aid, row in results.items():
++        print(f"{aid:16s} accepted={row['accepted']} "
++              f"schema={row['schema_valid']} identity={row['identity_ok']} "
++              f"sem={len(row['semantic_errors'] or [])}"
++              f"{' ERR=' + row['transport_error'] if row['transport_error'] else ''}")
++
++    # direct HTTPS endpoint probe against the canonical frozen URL
++    public_dir = os.environ.get("ARENA_PUBLIC_DIR", "/var/www/arena")
++
++    def fetch():
++        cb = urllib.parse.quote(str(time.time()))
++        req = urllib.request.Request(
++            f"{official.OFFICIAL_PAYLOAD_URL}?cb={cb}",
++            headers={"Cache-Control": "no-cache"})
++        with urllib.request.urlopen(req, timeout=10) as r:
++            return r.read().decode()
++
++    def fetch_sha():
++        base = official.OFFICIAL_PUBLIC_ORIGIN
++        with urllib.request.urlopen(
++                f"{base}live_payload.sha256?cb="
++                + urllib.parse.quote(str(time.time())), timeout=10) as r:
++            return r.read().decode()
++    try:
++        endpoint_ok = endpoint_probe(public_dir, fetch, fetch_sha,
++                                     time.time, time.sleep)
++    except Exception as e:
++        endpoint_ok = False
++        print(f"endpoint probe failed: {str(e)[:200]}")
++    summary["direct_endpoint_ok"] = endpoint_ok
++    summary["overall_pass"] = bool(summary["model_calls_pass"]
++                                   and endpoint_ok)
++    with open(report, "w") as f:
++        json.dump({"summary": summary, "results": results}, f, indent=1)
++    print(json.dumps(summary, indent=1))
++    print("report:", report)
++    print("OFFICIAL PREFLIGHT:",
++          "PASS" if summary["overall_pass"] else "FAIL")
++    sys.exit(0 if summary["overall_pass"] else 1)
++
++
++if __name__ == "__main__":
++    main()
 diff --git a/scripts/run_official_14d.py b/scripts/run_official_14d.py
 new file mode 100644
-index 0000000..ad0c495
+index 0000000..e4adb72
 --- /dev/null
 +++ b/scripts/run_official_14d.py
-@@ -0,0 +1,238 @@
+@@ -0,0 +1,272 @@
 +"""OFFICIAL 14-DAY EXPERIMENT SERVICE — INSTALLED ARMED/OFF, NEVER SELF-ACTIVATING.
 +
 +Runs under systemd (deploy/arena-official.service, Restart=always). Mentor
@@ -1694,7 +2276,6 @@ index 0000000..ad0c495
 +  ARENA_PUBLIC_PAYLOAD_URL   e.g. https://<vps-host>/live_payload.js
 +  ARENA_DEPLOY_TOKEN         optional, mirror only
 +"""
-+import hashlib
 +import json
 +import os
 +import sys
@@ -1797,14 +2378,28 @@ index 0000000..ad0c495
 +    return caller
 +
 +
++def verify_public_binding():
++    """Mentor Ruling 014.2: the runner is BOUND to the single canonical
++    integrity-locked endpoint (engine.official.OFFICIAL_PAYLOAD_URL, part of
++    the audited engine digest). ARENA_PUBLIC_PAYLOAD_URL may only confirm it;
++    any other value => refusal BEFORE state initialization, provisioning, or
++    model calls."""
++    from engine import official
++    url = os.environ.get("ARENA_PUBLIC_PAYLOAD_URL",
++                         official.OFFICIAL_PAYLOAD_URL)
++    if url != official.OFFICIAL_PAYLOAD_URL:
++        print("REFUSED: runtime endpoint does not match the integrity-locked "
++              f"official endpoint {official.OFFICIAL_PAYLOAD_URL}. Zero "
++              "model calls, zero state writes.")
++        sys.exit(2)
++    return url
++
++
 +def direct_publisher():
-+    """Ruling 1: write locally, verify from the direct public VPS endpoint."""
-+    from engine import official, publisher as publisher_mod
-+    url = os.environ.get("ARENA_PUBLIC_PAYLOAD_URL")
-+    if not url:
-+        raise publisher_mod.PublicationError(
-+            "ARENA_PUBLIC_PAYLOAD_URL not set — the direct public endpoint "
-+            "is the required proof of visibility")
++    """Ruling 1: write locally, verify from the direct public VPS endpoint —
++    always the canonical integrity-locked URL (Ruling 014.2)."""
++    from engine import official
++    url = official.OFFICIAL_PAYLOAD_URL
 +
 +    def fetch():
 +        cb = urllib.parse.quote(str(time.time()))
@@ -1877,33 +2472,175 @@ index 0000000..ad0c495
 +def main():
 +    from engine import config, official
 +    lock = official.acquire_runner_lock(LOCK_PATH)   # noqa: F841 (held open)
-+    act = armed_off_loop()
-+    # INTEGRITY GATES (Rulings 010.1/011.1): the EXTERNALLY issued digests in
-+    # the owner's activation record must match the current tree BEFORE any
-+    # state initialization or network use. Halt A on mismatch.
-+    config.check_approved_digest(act["engine_digest"])
-+    config.check_approved_site_digest(act["site_digest"])
-+    if not os.environ.get("ANTHROPIC_API_KEY"):
-+        print("REFUSED: ANTHROPIC_API_KEY not set. No model call was made.")
-+        sys.exit(2)
-+    activation_sha = hashlib.sha256(
-+        open(ACTIVATION, "rb").read()).hexdigest()
-+    print(f"ACTIVATION ACCEPTED sha256={activation_sha} "
-+          f"start={act['start_utc']} total={act['total']}")
-+    sched = official.provision_official(
-+        OFFICIAL_STORE, act["engine_digest"], act["site_digest"],
-+        act["start_utc"], total=act["total"])
-+    cfg = config.load_config()
-+    publish = direct_publisher()
-+    print(f"OFFICIAL RUN ACTIVE — {sched['total']} boundaries from "
-+          f"T0={sched['start']} (UTC) | {official.BANNER}")
-+    sched = official.run_official(
-+        OFFICIAL_STORE, cfg, live_caller_factory(cfg), fetch_market, publish,
-+        time.time, time.sleep, health_dir=public_dir(),
-+        mirror=mirror_factory(), snapshot_dir=SNAPSHOT_DIR)
-+    print(f"OFFICIAL RUN COMPLETE: {len(sched['completed'])}/"
-+          f"{sched['total']} boundaries terminal. "
-+          "Now run scripts/archive_official.py")
++    verify_public_binding()          # Ruling 014.2: bound before ANYTHING
++    while True:
++        act = armed_off_loop()
++        # INTEGRITY GATES (Rulings 010.1/011.1): the EXTERNALLY issued
++        # digests in the owner's activation record must match the current
++        # tree BEFORE any state initialization or network use.
++        config.check_approved_digest(act["engine_digest"])
++        config.check_approved_site_digest(act["site_digest"])
++        if not os.environ.get("ANTHROPIC_API_KEY"):
++            print("REFUSED: ANTHROPIC_API_KEY not set. No model call was "
++                  "made.")
++            sys.exit(2)
++        act_sha = official.activation_sha(ACTIVATION)
++        print(f"ACTIVATION ACCEPTED sha256={act_sha} "
++              f"start={act['start_utc']} total={act['total']}")
++        sched = official.provision_official(
++            OFFICIAL_STORE, act["engine_digest"], act["site_digest"],
++            act["start_utc"], total=act["total"])
++        cfg = config.load_config()
++        publish = direct_publisher()
++        print(f"OFFICIAL RUN ARMED — {sched['total']} boundaries from "
++              f"T0={sched['start']} (UTC) | {official.BANNER}")
++        try:
++            # REAL PRE-START DISARM (Ruling 014.1): the exact activation
++            # record (byte-identical SHA) is revalidated while waiting for
++            # the first boundary; deletion/replacement/modification before
++            # boundary 1 starts returns the service to ARMED/OFF with zero
++            # model calls. After boundary 1 starts, only a service stop
++            # halts the run (restart recovery semantics preserved).
++            sched = official.run_official(
++                OFFICIAL_STORE, cfg, live_caller_factory(cfg), fetch_market,
++                publish, time.time, time.sleep, health_dir=public_dir(),
++                mirror=mirror_factory(), snapshot_dir=SNAPSHOT_DIR,
++                disarm_check=official.make_disarm_check(ACTIVATION, act_sha))
++        except official.Disarmed as e:
++            official.rollback_unstarted(OFFICIAL_STORE)
++            official.write_health(public_dir(), {
++                "state": "ARMED_OFF", "pid": os.getpid(),
++                "mode": official.MODE, "updated": time.time(),
++                "note": f"pre-start disarm honored ({e}); zero model calls"})
++            print(f"DISARMED before the first boundary ({e}). Zero model "
++                  "calls were made; unstarted schedule rolled back; service "
++                  "returns to ARMED/OFF.")
++            continue
++        print(f"OFFICIAL RUN COMPLETE: {len(sched['completed'])}/"
++              f"{sched['total']} boundaries terminal. "
++              "Now run scripts/archive_official.py")
++        return                       # clean exit 0: Restart=on-failure stays down
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/verify_deployment.py b/scripts/verify_deployment.py
+new file mode 100644
+index 0000000..78446d5
+--- /dev/null
++++ b/scripts/verify_deployment.py
+@@ -0,0 +1,115 @@
++"""POST-DEPLOYMENT VERIFICATION (Mentor Ruling 014.6) — read-only, offline.
++
++Run ON the server after any deployment. Proves the installed service and the
++effective Nginx configuration correspond to the audited versions, and that
++the runtime environment matches the pinned lock. Makes no network requests,
++no model calls, no writes; prints PASS/FAIL per check and exits non-zero on
++any failure. Never prints secrets (it never reads the env file's values).
++
++usage: venv/bin/python scripts/verify_deployment.py [--engine-digest <64hex>]
++With --engine-digest, the current tree is additionally verified against the
++externally issued approved digest.
++"""
++import hashlib
++import os
++import subprocess
++import sys
++
++ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
++sys.path.insert(0, ROOT)
++
++INSTALLED_UNIT = "/etc/systemd/system/arena-official.service"
++NGINX_SITE = "/etc/nginx/sites-enabled/arena"
++
++# Directives that MUST survive in the effective nginx config even after
++# certbot rewrites the server block (content check, not byte equality):
++REQUIRED_NGINX_LINES = [
++    "server_name live.akraarena.online;",
++    "root /var/www/arena;",
++    "location ~ ^/(live_payload\\.js|live_payload\\.sha256|health\\.json)$",
++    "limit_except GET { deny all; }",
++    'add_header Access-Control-Allow-Origin "*" always;',
++    'add_header Cache-Control "no-store, must-revalidate" always;',
++]
++
++
++def sha(path):
++    with open(path, "rb") as f:
++        return hashlib.sha256(f.read()).hexdigest()
++
++
++def arg(name):
++    for i, a in enumerate(sys.argv):
++        if a == name and i + 1 < len(sys.argv):
++            return sys.argv[i + 1]
++    return None
++
++
++def check(results, name, ok, detail=""):
++    results.append(ok)
++    print(f"{'PASS' if ok else 'FAIL'}  {name}" + (f"  ({detail})" if detail
++                                                   else ""))
++
++
++def main():
++    from engine import config, official
++    results = []
++
++    # 1. tree digests reproduce (and optionally match the issued digest)
++    man = config.build_manifest()["combined"]
++    issued = (arg("--engine-digest") or "").strip().lower()
++    if issued:
++        check(results, "engine digest matches externally issued value",
++              man == issued, man[:16] + "…")
++    else:
++        print(f"INFO  current engine digest: {man}")
++        print(f"INFO  current site digest:   "
++              f"{config.build_site_manifest()['combined']}")
++
++    # 2. installed systemd unit is byte-identical to the audited template
++    tmpl = os.path.join(ROOT, "deploy", "arena-official.service")
++    ok = os.path.exists(INSTALLED_UNIT) and sha(INSTALLED_UNIT) == sha(tmpl)
++    check(results, "installed systemd unit == audited template", ok,
++          INSTALLED_UNIT)
++
++    # 3. effective nginx config carries every audited directive
++    try:
++        eff = subprocess.run(["nginx", "-T"], capture_output=True, text=True,
++                             timeout=30).stdout
++    except Exception:
++        eff = open(NGINX_SITE).read() if os.path.exists(NGINX_SITE) else ""
++    for line in REQUIRED_NGINX_LINES:
++        check(results, f"nginx effective config contains: {line[:52]}",
++              line in eff)
++
++    # 4. running under the audited venv python with the pinned packages
++    venv_py = os.path.join(ROOT, "venv", "bin", "python")
++    check(results, "executed by the audited venv python",
++          os.path.realpath(sys.executable) == os.path.realpath(venv_py),
++          sys.executable)
++    import importlib.metadata as md
++    for line in open(os.path.join(ROOT, "deploy",
++                                  "requirements-official.txt")):
++        line = line.strip()
++        if not line or line.startswith("#"):
++            continue
++        pkg, want = line.split("==")
++        try:
++            have = md.version(pkg)
++        except md.PackageNotFoundError:
++            have = "MISSING"
++        check(results, f"pinned {pkg}=={want}", have == want, f"have {have}")
++
++    # 5. canonical endpoint constant is the frozen hostname
++    check(results, "canonical endpoint constant",
++          official.OFFICIAL_PAYLOAD_URL
++          == "https://live.akraarena.online/live_payload.js")
++
++    n_fail = results.count(False)
++    print(f"\nDEPLOYMENT VERIFICATION: "
++          f"{'PASS' if n_fail == 0 else f'FAIL ({n_fail} checks failed)'}")
++    sys.exit(0 if n_fail == 0 else 1)
 +
 +
 +if __name__ == "__main__":
@@ -2390,6 +3127,72 @@ index 0000000..2b3a117
 +    assert "feed unavailable" in res["dom"]["strip"]
 +    assert "cell mkt" not in res["dom"]["strip"]
 +    assert "display-only" in res["dom"]["foot"].lower()
+diff --git a/tests/test_ruling008.py b/tests/test_ruling008.py
+index 81e23b0..12260ff 100644
+--- a/tests/test_ruling008.py
++++ b/tests/test_ruling008.py
+@@ -403,7 +403,8 @@
+ 
+ def test_manifest_covers_code_and_detects_any_byte(tmp_path, monkeypatch):
+     dst = tmp_path / "tree"
+-    for d in ("engine", "scripts", "prompts", "schemas", "config"):
++    for d in ("engine", "scripts", "prompts", "schemas", "config",
++              "deploy"):
+         shutil.copytree(os.path.join(config.ROOT, d), dst / d)
+     monkeypatch.setattr(config, "ROOT", str(dst))
+     m = config.build_manifest()
+diff --git a/tests/test_ruling009.py b/tests/test_ruling009.py
+index bf8c2e1..f165cfa 100644
+--- a/tests/test_ruling009.py
++++ b/tests/test_ruling009.py
+@@ -43,7 +43,8 @@
+ def test_mutation_halts_before_any_request(tmp_path, monkeypatch, snapshots,
+                                            cfg, label, relpath):
+     tree = tmp_path / "tree"
+-    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs"):
++    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs",
++              "deploy"):
+         shutil.copytree(os.path.join(config.ROOT, d), tree / d)
+     store = fresh_store()                 # manifest frozen over PRISTINE tree
+     monkeypatch.setattr(config, "ROOT", str(tree))
+diff --git a/tests/test_ruling010.py b/tests/test_ruling010.py
+index 221236d..23febbf 100644
+--- a/tests/test_ruling010.py
++++ b/tests/test_ruling010.py
+@@ -101,7 +101,8 @@
+     are the PRISTINE tree's digests, supplied externally."""
+     eng, site = digests()                            # mentor-approved digests
+     tree = tmp_path / "tree"
+-    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs"):
++    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs",
++              "deploy"):
+         shutil.copytree(os.path.join(config.ROOT, d), tree / d)
+     victim = tree / "prompts/v1/system.txt"
+     victim.write_bytes(victim.read_bytes() + b"#pre-launch-mutation")
+@@ -120,7 +121,8 @@
+     """Ruling 011.1: a mutated STATIC UI file likewise blocks provisioning."""
+     eng, site = digests()
+     tree = tmp_path / "tree"
+-    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs"):
++    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs",
++              "deploy"):
+         shutil.copytree(os.path.join(config.ROOT, d), tree / d)
+     victim = tree / "docs/index.html"
+     victim.write_bytes(victim.read_bytes() + b"<!--mutated-->")
+diff --git a/tests/test_ruling011.py b/tests/test_ruling011.py
+index 8c5531b..b3e7ea3 100644
+--- a/tests/test_ruling011.py
++++ b/tests/test_ruling011.py
+@@ -303,7 +303,8 @@
+ 
+ def test_drifted_site_fails_publication(cfg, tmp_path, monkeypatch):
+     tree = tmp_path / "tree"
+-    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs"):
++    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs",
++              "deploy"):
+         shutil.copytree(os.path.join(config.ROOT, d), tree / d)
+     monkeypatch.setattr(config, "ROOT", str(tree))
+     store = tempfile.mkdtemp(prefix="arena-r11-site-")
 diff --git a/tests/test_ruling012.py b/tests/test_ruling012.py
 index 211792f..1424b91 100644
 --- a/tests/test_ruling012.py
@@ -2417,3 +3220,431 @@ index 211792f..1424b91 100644
      opens = res["dom"]["panel:OPEN POSITIONS"]
      assert "LONG" in opens                           # the live SOL position
  
+diff --git a/tests/test_ruling014.py b/tests/test_ruling014.py
+new file mode 100644
+index 0000000..996bb36
+--- /dev/null
++++ b/tests/test_ruling014.py
+@@ -0,0 +1,422 @@
++"""Mentor Ruling 014 remediation regressions: real pre-start disarm, frozen
++public-hostname binding, clean completion, audited preflight isolation,
++enforced T+630 resolution/replay deadlines, infrastructure integrity lock,
++pinned runtime environment, and README correction. All offline."""
++import importlib.util
++import json
++import os
++import re
++import shutil
++import tempfile
++from urllib.parse import urlparse
++
++import pytest
++
++from conftest import T0, ScriptedCaller, flat_decision
++from engine import config, official, persistence, pilot, publisher, recovery
++from test_official import direct, provisioned_official, run_official
++from test_ruling010 import PilotClock, digests
++
++HOUR = 3600
++
++
++def _load_script(name):
++    spec = importlib.util.spec_from_file_location(
++        name, os.path.join(config.ROOT, "scripts", f"{name}.py"))
++    mod = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(mod)
++    return mod
++
++
++# ---- 014.1 real pre-start disarm ----
++
++def _armed_activation(tmp_path):
++    eng, site = digests()
++    act = tmp_path / "official_activation.json"
++    act.write_text(json.dumps({
++        "approved": "YES-OFFICIAL-RUN-APPROVED", "engine_digest": eng,
++        "site_digest": site, "start_utc": T0, "total": 336}))
++    return str(act), official.activation_sha(str(act))
++
++
++def test_arm_read_delete_before_T0_zero_calls_and_armed_off(cfg, tmp_path):
++    """The mentor's exact scenario: arm -> service reads the activation ->
++    the record is deleted before T0 -> zero model calls, no boundary, the
++    store rolls back to its unprovisioned (ARMED/OFF-ready) shape."""
++    act_path, act_sha = _armed_activation(tmp_path)
++    store = provisioned_official(n=1)
++    state_before = open(os.path.join(store, "state.json"), "rb").read()
++    vc = PilotClock(float(T0) - 300)
++    dp, _ = direct(vc)
++    caller = ScriptedCaller({})
++
++    real_sleep = vc.sleep
++
++    def deleting_sleep(s):              # the owner deletes the file pre-T0
++        if os.path.exists(act_path) and vc() > T0 - 200:
++            os.remove(act_path)
++        real_sleep(s)
++    with pytest.raises(official.Disarmed):
++        official.run_official(
++            store, cfg, caller, lambda *a: (_ for _ in ()).throw(
++                AssertionError("fetch must never run after disarm")),
++            dp, vc, deleting_sleep,
++            disarm_check=official.make_disarm_check(act_path, act_sha))
++    assert caller.calls == []                        # ZERO model calls
++    assert pilot.load_schedule(store)["completed"] == []
++    assert not os.path.exists(os.path.join(store, "ledger.jsonl"))
++    # rollback returns the store to the ARMED/OFF-ready unprovisioned shape
++    assert official.rollback_unstarted(store) is True
++    with pytest.raises(pilot.ScheduleError):
++        pilot.load_schedule(store)                   # schedule removed
++    assert not os.path.exists(os.path.join(store, publisher.PUB_LOG))
++    assert open(os.path.join(store, "state.json"), "rb").read() \
++        == state_before                              # accounts untouched
++
++
++def test_modified_or_replaced_record_also_disarms(tmp_path):
++    act_path, act_sha = _armed_activation(tmp_path)
++    check = official.make_disarm_check(act_path, act_sha)
++    assert check() is True
++    with open(act_path, "a") as f:                   # modified
++        f.write("\n")
++    assert check() is False
++    _, sha2 = _armed_activation(tmp_path)            # byte-identical rewrite
++    assert sha2 == official.activation_sha(act_path) and check() is False \
++        or check() is True                           # identical bytes re-arm
++    os.remove(act_path)                              # deleted
++    assert check() is False
++
++
++def test_deletion_after_first_boundary_started_does_not_halt(cfg, tmp_path):
++    """After boundary 1 begins, the activation record is no longer consulted:
++    the run finishes; halting mid-run is a service-stop concern."""
++    act_path, act_sha = _armed_activation(tmp_path)
++    store = provisioned_official(n=2)
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++
++    def deleting_caller(aid, system, user, retry):   # fires DURING boundary 1
++        try:
++            os.remove(act_path)
++        except FileNotFoundError:
++            pass                                     # a concurrent call won
++        return flat_decision()
++    sched = run_official(store, cfg, deleting_caller, dp, vc,
++                         disarm_check=official.make_disarm_check(act_path,
++                                                                 act_sha))
++    assert len(sched["completed"]) == 2              # both boundaries ran
++
++
++def test_rollback_refuses_a_started_run(cfg):
++    store = provisioned_official(n=1)
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    run_official(store, cfg, ScriptedCaller({}), dp, vc)
++    with pytest.raises(RuntimeError):
++        official.rollback_unstarted(store)
++    assert pilot.load_schedule(store)["completed"] == [T0]   # nothing removed
++
++
++def test_runner_script_wires_disarm_and_rollback():
++    src = open(os.path.join(config.ROOT, "scripts",
++                            "run_official_14d.py")).read()
++    assert "make_disarm_check" in src
++    assert "except official.Disarmed" in src
++    assert "rollback_unstarted" in src
++    assert '"ARMED_OFF"' in src                      # health returns to OFF
++
++
++# ---- 014.2 canonical frozen hostname binding ----
++
++def test_canonical_constants_are_the_frozen_hostname():
++    assert official.OFFICIAL_PUBLIC_ORIGIN == "https://live.akraarena.online/"
++    assert official.OFFICIAL_PAYLOAD_URL \
++        == "https://live.akraarena.online/live_payload.js"
++
++
++def test_runner_refuses_non_canonical_endpoint(monkeypatch):
++    mod = _load_script("run_official_14d")
++    monkeypatch.setenv("ARENA_PUBLIC_PAYLOAD_URL",
++                       "https://evil.example.com/live_payload.js")
++    with pytest.raises(SystemExit) as e:
++        mod.verify_public_binding()
++    assert e.value.code == 2                         # refusal, zero side effects
++
++
++def test_runner_accepts_only_the_canonical_endpoint(monkeypatch):
++    mod = _load_script("run_official_14d")
++    monkeypatch.delenv("ARENA_PUBLIC_PAYLOAD_URL", raising=False)
++    assert mod.verify_public_binding() == official.OFFICIAL_PAYLOAD_URL
++    monkeypatch.setenv("ARENA_PUBLIC_PAYLOAD_URL",
++                       official.OFFICIAL_PAYLOAD_URL)
++    assert mod.verify_public_binding() == official.OFFICIAL_PAYLOAD_URL
++
++
++def test_dashboard_live_origin_derives_from_canonical():
++    src = open(os.path.join(config.ROOT, "docs", "index.html")).read()
++    assert f"const LIVE_ORIGIN = '{official.OFFICIAL_PUBLIC_ORIGIN}';" in src
++
++
++def test_nginx_template_hostname_matches_canonical():
++    conf = open(os.path.join(config.ROOT, "deploy",
++                             "nginx-arena.conf")).read()
++    host = urlparse(official.OFFICIAL_PUBLIC_ORIGIN).hostname
++    assert f"server_name {host};" in conf
++    assert "ARENA_VPS_HOST" not in conf              # placeholder gone
++
++
++# ---- 014.3 clean completion ----
++
++class NeverPublish:
++    """A publisher that must never be invoked."""
++    deadline = None
++
++    def __call__(self, text):
++        raise AssertionError("publication after completion is forbidden")
++
++
++def test_completed_run_restart_publishes_nothing(cfg):
++    store = provisioned_official(n=1)
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    run_official(store, cfg, ScriptedCaller({}), dp, vc)     # completes
++    hdir = tempfile.mkdtemp(prefix="arena-health-")
++    caller = ScriptedCaller({})
++    sched = official.run_official(                   # e.g. reboot restart
++        store, cfg, caller, None, NeverPublish(), vc, vc.sleep,
++        health_dir=hdir)
++    assert len(sched["completed"]) == 1
++    assert caller.calls == []                        # no model calls
++    h = json.load(open(os.path.join(hdir, "health.json")))
++    assert h["state"] == "COMPLETE"                  # health stays COMPLETE
++
++
++def test_service_unit_recovers_crashes_but_not_completion():
++    unit = open(os.path.join(config.ROOT, "deploy",
++                             "arena-official.service")).read()
++    assert "Restart=on-failure" in unit              # crash/reboot recovery
++    assert "Restart=always" not in unit              # clean exit stays down
++    assert "venv/bin/python" in unit                 # 014.7 audited venv
++
++
++# ---- 014.4 audited preflight ----
++
++def test_preflight_scratch_store_isolation():
++    mod = _load_script("preflight_official")
++    for bad in (os.path.join(config.ROOT, "data-v1"),
++                os.path.join(config.ROOT, "data-v1", "sub"),
++                config.ROOT):                        # parent of data-v1
++        with pytest.raises(ValueError):
++            mod.check_scratch_store(bad)
++    ok = tempfile.mkdtemp(prefix="arena-preflight-")
++    assert mod.check_scratch_store(ok) == os.path.realpath(ok)
++
++
++def test_preflight_refuses_without_authorization(monkeypatch):
++    mod = _load_script("preflight_official")
++    monkeypatch.delenv("ARENA_PREFLIGHT_APPROVED", raising=False)
++    with pytest.raises(SystemExit) as e:
++        mod.main()
++    assert e.value.code == 2
++
++
++def test_preflight_offline_18_requests_validation_only(cfg, snapshots):
++    mod = _load_script("preflight_official")
++    store = tempfile.mkdtemp(prefix="arena-preflight-")
++    calls = []
++
++    def call_fn(aid, system, user):
++        calls.append(aid)
++        model_id = cfg["models"][aid.split("_")[1]]["model"]
++        return flat_decision(), model_id, "tool_use", 0.5, model_id
++    summary, results, report = mod.run_preflight(store, cfg, snapshots,
++                                                 call_fn, T0)
++    assert len(calls) == 18 and len(set(calls)) == 18    # exactly 18, unique
++    assert summary["n"] == summary["accepted"] == 18
++    assert summary["schema_valid"] == summary["identity_ok"] == 18
++    assert summary["raw_ta_separation_ok"] is True
++    assert summary["accounts_unmutated"] is True
++    assert summary["model_calls_pass"] is True
++    # validation only: no trades, no state, no schedule anywhere
++    assert not os.path.exists(os.path.join(store, "state.json"))
++    assert not os.path.exists(os.path.join(store, "pilot_schedule.json"))
++    assert not os.path.exists(os.path.join(store, "ledger.jsonl"))
++    rep = json.load(open(report))                    # durable sanitized report
++    assert rep["summary"]["model_calls_pass"] is True
++    assert "ANTHROPIC" not in open(report).read()    # no secrets
++
++
++def test_preflight_endpoint_probe_restores_served_payload():
++    mod = _load_script("preflight_official")
++    from test_official import ServedDir
++    pub_dir = tempfile.mkdtemp(prefix="arena-probe-")
++    prior = 'window.ARENA_LIVE = {"publication_id": "1:READY:0"};\n'
++    with open(os.path.join(pub_dir, "live_payload.js"), "w") as f:
++        f.write(prior)
++    vc = PilotClock(1000.0)
++    served = ServedDir(pub_dir, vc)
++    assert mod.endpoint_probe(pub_dir, served.fetch, served.fetch_sha,
++                              vc, vc.sleep) is True
++    assert open(os.path.join(pub_dir, "live_payload.js")).read() == prior
++    assert not os.path.exists(os.path.join(pub_dir, "live_payload.sha256"))
++    # with nothing served before, the probe cleans up entirely
++    empty = tempfile.mkdtemp(prefix="arena-probe2-")
++    served2 = ServedDir(empty, vc)
++    assert mod.endpoint_probe(empty, served2.fetch, served2.fetch_sha,
++                              vc, vc.sleep) is True
++    assert os.listdir(empty) == []
++
++
++# ---- 014.5 enforced resolution/replay deadlines ----
++
++class ManualClock:
++    """Reads do not advance time; test hooks advance .t explicitly, so the
++    slow stage under test is modeled deterministically."""
++
++    def __init__(self, t=0.0):
++        self.t = t
++
++    def __call__(self):
++        return self.t
++
++
++def _fresh_store(accounts):
++    store = tempfile.mkdtemp(prefix="arena-r14-")
++    persistence.save_state(store + "/state.json", accounts,
++                           {"boundary": None})
++    config.write_launch_manifest(store)
++    return store
++
++
++def test_resolution_deadline_aborts_late_pairs(cfg, snapshots):
++    """Each model call costs 100s: wave 1's resolution happens at T+600
++    (< 630, commits), waves 2-3 resolve past T+630 (abort). Deterministic:
++    only the caller advances the clock."""
++    from engine import state as state_mod
++    accounts = state_mod.init_accounts()
++    store = _fresh_store(accounts)
++    clock = ManualClock(0.0)
++
++    def slow_caller(aid, system, user, retry):
++        clock.t += 100.0                             # 6 calls/wave => +600
++        return flat_decision()
++    ledger, _, _ = recovery.run_checkpointed(
++        T0, snapshots, slow_caller, cfg, store, clock=clock,
++        deadline=100000.0, resolution_deadline=630.0)
++    pairs = [e for e in ledger if e.get("status")]
++    assert len(pairs) == 9                           # every pair terminal
++    late = [e for e in pairs if e["status"] == "PAIR_ABORTED"]
++    assert late and {e["reason"] for e in late} == {"deadline_exceeded"}
++    committed = [e for e in pairs if e["status"] == "PAIR_COMMITTED"]
++    assert committed                                 # early pairs still commit
++    _, meta = persistence.load_state(store + "/state.json")
++    assert meta["boundary_complete"] is True         # terminal, no crash
++
++
++def test_replay_deadline_latches_catchup_with_watermark(cfg, snapshots):
++    from conftest import load_fix
++    from engine import marketdata, state as state_mod
++    accounts = state_mod.init_accounts()
++    store = _fresh_store(accounts)
++    candles = {c: [x for x in marketdata.to_dec(load_fix(c, "1m"))
++                   if T0 <= x["t"] < T0 + HOUR] for c in ("BTC", "ETH", "SOL")}
++    spec = {c: {"start": T0, "end": T0 + HOUR, "candles": cs}
++            for c, cs in candles.items()}
++    clock = ManualClock(0.0)
++
++    def slow_caller(aid, system, user, retry):       # collection eats T+1800
++        clock.t += 100.0
++        return flat_decision()
++    ledger, _, _ = recovery.run_checkpointed(
++        T0, snapshots, slow_caller, cfg, store, clock=clock,
++        deadline=100000.0, replay_spec=spec, replay_deadline=630.0)
++    _, meta = persistence.load_state(store + "/state.json")
++    # deliberately slow replay => the DECLARED safe terminal behavior:
++    # CATCHUP_REQUIRED latched, watermark preserved, boundary terminal
++    catchups = [e for e in ledger
++                if e.get("replay") and e["replay"][0]["e"] == "CATCHUP_REQUIRED"]
++    assert catchups                                  # never a silent crossing
++    assert meta["boundary_complete"] is True
++    for coin, rs in meta["replay_state"].items():
++        if rs["status"] == "CATCHUP_REQUIRED":
++            wm = meta["replay_watermark"].get(coin)
++            assert wm is None or wm < rs["gap_since"]    # nothing lost
++
++
++def test_official_passes_both_630_deadlines(cfg, monkeypatch):
++    seen = {}
++    real = recovery.run_checkpointed
++
++    def spy(T, snaps, caller, cfg_, store_, **kw):
++        seen.update(kw)
++        return real(T, snaps, caller, cfg_, store_, **kw)
++    monkeypatch.setattr(recovery, "run_checkpointed", spy)
++    store = provisioned_official(n=1)
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    run_official(store, cfg, ScriptedCaller({}), dp, vc)
++    assert seen["resolution_deadline"] == T0 + 630
++    assert seen["replay_deadline"] == T0 + 630
++    assert seen["deadline"] == T0 + 510
++
++
++# ---- 014.6 infrastructure integrity lock ----
++
++def test_deploy_files_are_in_the_engine_manifest():
++    files = config.build_manifest()["files"]
++    for f in ("deploy/arena-official.service", "deploy/nginx-arena.conf",
++              "deploy/requirements-official.txt"):
++        assert f in config.CANONICAL_FILES and f in files
++    assert "scripts/verify_deployment.py" in files   # hashed with scripts
++
++
++def test_mutated_infra_file_breaks_the_approved_digest(tmp_path, monkeypatch):
++    eng, _ = digests()                               # pristine tree digest
++    tree = tmp_path / "tree"
++    for d in ("engine", "scripts", "prompts", "schemas", "config", "docs",
++              "deploy"):
++        shutil.copytree(os.path.join(config.ROOT, d), tree / d)
++    victim = tree / "deploy" / "nginx-arena.conf"
++    victim.write_text(victim.read_text().replace(
++        "live.akraarena.online", "attacker.example.com"))
++    monkeypatch.setattr(config, "ROOT", str(tree))
++    with pytest.raises(config.IntegrityError):
++        config.check_approved_digest(eng)            # Halt A on infra drift
++
++
++def test_verify_deployment_checks_the_frozen_hostname():
++    mod = _load_script("verify_deployment")
++    host = urlparse(official.OFFICIAL_PUBLIC_ORIGIN).hostname
++    assert any(host in line for line in mod.REQUIRED_NGINX_LINES)
++
++
++# ---- 014.7 pinned reproducible environment ----
++
++def test_requirements_lock_is_fully_pinned():
++    path = os.path.join(config.ROOT, "deploy", "requirements-official.txt")
++    pins = [ln.strip() for ln in open(path)
++            if ln.strip() and not ln.startswith("#")]
++    assert pins, "lock file must pin at least the runtime deps"
++    for ln in pins:
++        assert re.fullmatch(r"[A-Za-z0-9_.-]+==[A-Za-z0-9_.!+-]+", ln), ln
++    names = {ln.split("==")[0] for ln in pins}
++    assert {"dulwich", "jsonschema"} <= names        # runner's runtime deps
++
++
++def test_deployment_doc_installs_into_the_audited_venv():
++    doc = open(os.path.join(config.ROOT, "deploy", "DEPLOYMENT.md")).read()
++    assert "python3 -m venv" in doc
++    assert "requirements-official.txt" in doc
++    assert "venv/bin/python scripts/verify_deployment.py" in doc
++
++
++# ---- 014.8 README correction ----
++
++def test_readme_describes_the_real_experiment():
++    readme = open(os.path.join(config.ROOT, "README.md")).read()
++    assert "BTC, ETH and SOL" in readme
++    assert "18" in readme and "VPS" in readme
++    assert "Runs entirely on GitHub Actions" not in readme
++    assert "tick.yml" not in readme
++    assert "GitHub Pages" in readme                  # dashboard role stated
