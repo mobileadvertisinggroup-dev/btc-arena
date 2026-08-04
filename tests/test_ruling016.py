@@ -556,14 +556,37 @@ def test_verifier_requires_both_digests(monkeypatch):
 
 # ---- 016.7 activation bound to a passing preflight ----
 
-def _passing_report(tmp_path, eng, site, ts=None, **over):
-    summary = {"overall_pass": True, "n": 18, "accepted": 18,
+def _full_results():
+    cfg = config.load_config()
+    out = {}
+    for c in state.COINS:
+        for m in state.MODELS:
+            for arm in state.ARMS:
+                want = cfg["models"][m]["model"]
+                out[state.account_id(c, m, arm)] = {
+                    "accepted": True, "schema_valid": True,
+                    "identity_ok": True, "semantic_errors": [],
+                    "transport_error": None, "requested_model": want,
+                    "response_model": want}
+    return out
+
+
+def _passing_report(tmp_path, eng, site, ts=None, results=None,
+                    name="preflight_report.json", **over):
+    summary = {"overall_pass": True, "model_calls_pass": True,
+               "n": 18, "accepted": 18, "schema_valid": 18,
+               "identity_ok": 18, "semantically_valid_first_try": 18,
+               "transport_failures": [], "prompt_archive_durable": True,
+               "raw_ta_separation_ok": True, "accounts_unmutated": True,
+               "direct_endpoint_ok": True,
                "engine_digest": eng, "site_digest": site,
                "canonical_endpoint": official.OFFICIAL_PAYLOAD_URL,
                "timestamp": int(ts if ts is not None else time.time())}
     summary.update(over)
-    p = tmp_path / "preflight_report.json"
-    p.write_text(json.dumps({"summary": summary, "results": {}}))
+    p = tmp_path / name
+    p.write_text(json.dumps({
+        "summary": summary,
+        "results": results if results is not None else _full_results()}))
     import hashlib
     return str(p), hashlib.sha256(p.read_bytes()).hexdigest()
 

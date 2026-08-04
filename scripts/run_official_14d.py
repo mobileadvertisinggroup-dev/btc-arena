@@ -245,14 +245,59 @@ def armed_off_loop():
         time.sleep(ARMED_POLL_S)
 
 
+def verify_store_integrity():
+    """Mentor Ruling 017.1: the CURRENT tree is verified against the store's
+    immutable approved manifests BEFORE anything may touch or reconcile
+    state. Halt A on mismatch; a store with no manifests yet has nothing to
+    protect."""
+    from engine import config
+    if os.path.exists(os.path.join(OFFICIAL_STORE,
+                                   config.LAUNCH_MANIFEST_NAME)):
+        config.verify_integrity(config.load_launch_manifest(OFFICIAL_STORE))
+        config.verify_site_integrity(config.load_site_manifest(OFFICIAL_STORE))
+
+
 def main():
     from engine import config, official
     lock = official.acquire_runner_lock(LOCK_PATH)   # noqa: F841 (held open)
     verify_public_binding()          # Ruling 014.2: bound before ANYTHING
-    # DISARM SURVIVES STOP/REBOOT (Ruling 015.2): before anything else, an
-    # UNSTARTED schedule whose bound activation record is absent or changed
-    # is rolled back — the service comes up genuinely ARMED/OFF. A started
-    # schedule is immutable and takes the normal restart path.
+    # RESTART STATE MACHINE (Mentor Ruling 017.1):
+    #   no_schedule -> fresh activation + strict preflight attestation
+    #   unstarted   -> exact bound activation; disarm behavior retained
+    #   started     -> resume from persisted schedule + stored attestation;
+    #                  the external control file, the 24h freshness test and
+    #                  READY publication no longer apply
+    #   complete    -> COMPLETE health, clean exit, zero publications/calls
+    verify_store_integrity()         # integrity BEFORE any reconciliation
+    kind = official.classify_official_store(OFFICIAL_STORE)
+    if kind == "complete":
+        official.write_health(public_dir(), official.health_info(
+            OFFICIAL_STORE, "COMPLETE", time.time()))
+        print("OFFICIAL RUN ALREADY COMPLETE: all boundaries terminal. "
+              "Zero publications, zero model calls. Exiting cleanly.")
+        return
+    if kind == "started":
+        stored = os.path.join(OFFICIAL_STORE,
+                              official.ACCEPTED_ACTIVATION_NAME)
+        if os.path.exists(stored):
+            print(f"RESUMING started schedule from the durable accepted "
+                  f"activation ({stored}).")
+        else:
+            print("RESUMING started schedule (per contract the activation "
+                  "record is no longer consulted after boundary 1).")
+        cfg = config.load_config()
+        publish = direct_publisher()
+        sched = official.run_official(
+            OFFICIAL_STORE, cfg, live_caller_factory(cfg), fetch_market,
+            publish, time.time, time.sleep, health_dir=public_dir(),
+            mirror=mirror_factory(), snapshot_dir=SNAPSHOT_DIR)
+        print(f"OFFICIAL RUN COMPLETE: {len(sched['completed'])}/"
+              f"{sched['total']} boundaries terminal. "
+              "Now run scripts/archive_official.py")
+        return
+    # DISARM SURVIVES STOP/REBOOT (Ruling 015.2): an UNSTARTED schedule whose
+    # bound activation record is absent or changed is rolled back — the
+    # service comes up genuinely ARMED/OFF.
     status = official.reconcile_unstarted_schedule(OFFICIAL_STORE, ACTIVATION)
     if status == "rolled_back":
         print("STALE UNSTARTED SCHEDULE ROLLED BACK (activation record "
@@ -292,6 +337,11 @@ def main():
         sched = official.provision_official(
             OFFICIAL_STORE, act["engine_digest"], act["site_digest"],
             act["start_utc"], total=act["total"], activation_sha=act_sha)
+        # DURABLE ATTESTATION ARCHIVE (Ruling 017.1): the accepted activation
+        # record and verified preflight report are copied into the store so a
+        # started run resumes without the external control file or the
+        # scratch report.
+        official.archive_activation(OFFICIAL_STORE, act, act_sha)
         cfg = config.load_config()
         publish = direct_publisher()
         print(f"OFFICIAL RUN ARMED — {sched['total']} boundaries from "

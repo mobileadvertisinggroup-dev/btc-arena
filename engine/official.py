@@ -174,59 +174,154 @@ def verify_pristine_official_state(store):
 
 
 PREFLIGHT_VALIDITY_S = 24 * HOUR      # documented attestation freshness
+CLOCK_TOLERANCE_S = 300               # documented future-timestamp tolerance
 
 
 class PreflightAttestationError(Exception):
     """Activation attempted without a valid, fresh, matching, PASSING server
-    preflight attestation (Mentor Ruling 016.7)."""
+    preflight attestation (Mentor Rulings 016.7 + 017.3)."""
 
 
 def verify_preflight_attestation(act, engine_digest, site_digest, now):
-    """Mentor Ruling 016.7: activation is BOUND to a passing preflight. The
-    activation record must carry {'preflight': {'report_path',
-    'report_sha256'}}; the referenced report must exist, hash to exactly the
-    recorded SHA-256 (a modified report refuses), record overall_pass with
-    exactly 18/18 strict results, match the EXACT engine digest, site digest
-    and canonical endpoint being activated, and be fresh within
-    PREFLIGHT_VALIDITY_S. Any failure refuses activation."""
+    """STRICT attestation verification (Mentor Ruling 017.3). The activation
+    record must carry {'preflight': {'report_path', 'report_sha256'}}; the
+    referenced report must exist and hash to exactly the recorded SHA-256.
+
+    Summary requirements: overall_pass AND model_calls_pass true;
+    n == accepted == schema_valid == identity_ok ==
+    semantically_valid_first_try == 18; transport_failures exactly empty;
+    prompt_archive_durable, raw_ta_separation_ok, accounts_unmutated and
+    direct_endpoint_ok all true; engine digest, site digest and canonical
+    endpoint exactly the values being activated.
+
+    Results requirements: exactly the 18 expected account ids; every row
+    accepted, schema-valid, identity-valid, semantic_errors == [],
+    transport_error null, and requested == returned model id == the frozen
+    model assignment for that account.
+
+    Timestamp policy: not in the future beyond CLOCK_TOLERANCE_S; not older
+    than PREFLIGHT_VALIDITY_S at activation; and the selected T0
+    (act['start_utc']) must occur BEFORE the attestation expires."""
+    def fail(msg):
+        raise PreflightAttestationError(msg)
     p = act.get("preflight")
     if not isinstance(p, dict) or not p.get("report_path") \
             or not p.get("report_sha256"):
-        raise PreflightAttestationError("missing preflight attestation")
-    path = p["report_path"]
+        fail("missing preflight attestation")
     try:
-        blob = open(path, "rb").read()
+        blob = open(p["report_path"], "rb").read()
     except OSError as e:
-        raise PreflightAttestationError(f"preflight report unreadable: {e}")
+        fail(f"preflight report unreadable: {e}")
     if hashlib.sha256(blob).hexdigest() != p["report_sha256"]:
-        raise PreflightAttestationError("preflight report was modified "
-                                        "(SHA-256 mismatch)")
+        fail("preflight report was modified (SHA-256 mismatch)")
     try:
-        s = json.loads(blob)["summary"]
+        report = json.loads(blob)
+        s = report["summary"]
+        results = report["results"]
     except Exception as e:
-        raise PreflightAttestationError(f"preflight report malformed: {e}")
-    if s.get("overall_pass") is not True:
-        raise PreflightAttestationError("preflight did not PASS")
-    if s.get("n") != 18 or s.get("accepted") != 18:
-        raise PreflightAttestationError("preflight request/result counts "
-                                        "are not exactly 18/18")
+        fail(f"preflight report malformed: {e}")
+
+    for key in ("overall_pass", "model_calls_pass", "prompt_archive_durable",
+                "raw_ta_separation_ok", "accounts_unmutated",
+                "direct_endpoint_ok"):
+        if s.get(key) is not True:
+            fail(f"preflight summary field {key} is not true")
+    for key in ("n", "accepted", "schema_valid", "identity_ok",
+                "semantically_valid_first_try"):
+        if s.get(key) != 18:
+            fail(f"preflight summary count {key} != 18")
+    if s.get("transport_failures") != []:
+        fail("preflight transport_failures is not exactly empty")
     if s.get("engine_digest") != engine_digest:
-        raise PreflightAttestationError("preflight ran against a different "
-                                        "engine digest")
+        fail("preflight ran against a different engine digest")
     if s.get("site_digest") != site_digest:
-        raise PreflightAttestationError("preflight ran against a different "
-                                        "site digest")
+        fail("preflight ran against a different site digest")
     if s.get("canonical_endpoint") != OFFICIAL_PAYLOAD_URL:
-        raise PreflightAttestationError("preflight verified a different "
-                                        "endpoint")
+        fail("preflight verified a different endpoint")
+
+    from . import state as state_mod
+    expected_ids = {state_mod.account_id(c, m, a) for c in state_mod.COINS
+                    for m in state_mod.MODELS for a in state_mod.ARMS}
+    if not isinstance(results, dict) or set(results) != expected_ids:
+        fail("preflight results do not cover exactly the 18 expected "
+             "account ids")
+    frozen = {k: v["model"]
+              for k, v in config_mod.load_config()["models"].items()}
+    for aid, row in results.items():
+        want = frozen[aid.split("_")[1]]
+        if row.get("accepted") is not True:
+            fail(f"preflight result {aid} not accepted")
+        if row.get("schema_valid") is not True:
+            fail(f"preflight result {aid} not schema-valid")
+        if row.get("identity_ok") is not True:
+            fail(f"preflight result {aid} identity not valid")
+        if row.get("semantic_errors") != []:
+            fail(f"preflight result {aid} has semantic errors")
+        if row.get("transport_error") is not None:
+            fail(f"preflight result {aid} has a transport error")
+        if row.get("requested_model") != want \
+                or row.get("response_model") != want:
+            fail(f"preflight result {aid} model ids do not match the frozen "
+                 f"assignment {want}")
+
     ts = s.get("timestamp")
-    if not isinstance(ts, (int, float)) or now - ts > PREFLIGHT_VALIDITY_S:
-        raise PreflightAttestationError(
-            f"preflight report stale (validity {PREFLIGHT_VALIDITY_S}s)")
+    if not isinstance(ts, (int, float)):
+        fail("preflight timestamp missing")
+    if ts > now + CLOCK_TOLERANCE_S:
+        fail(f"preflight timestamp is in the future beyond the "
+             f"{CLOCK_TOLERANCE_S}s clock tolerance")
+    if now - ts > PREFLIGHT_VALIDITY_S:
+        fail(f"preflight report stale (validity {PREFLIGHT_VALIDITY_S}s)")
+    t0 = act.get("start_utc")
+    if isinstance(t0, (int, float)) and t0 >= ts + PREFLIGHT_VALIDITY_S:
+        fail("selected T0 occurs after the preflight attestation expires")
     return True
 
 
 BINDING_NAME = "activation_binding.json"
+ACCEPTED_ACTIVATION_NAME = "activation_accepted.json"
+ACCEPTED_PREFLIGHT_NAME = "preflight_attestation.json"
+
+
+def classify_official_store(store):
+    """Mentor Ruling 017.1 restart state machine input. Returns one of
+    'no_schedule' | 'unstarted' | 'started' | 'complete' from PERSISTED
+    state only (read-only; safe before any integrity-gated mutation)."""
+    try:
+        sched = pilot.load_schedule(store)
+    except pilot.ScheduleError:
+        return "no_schedule"
+    if all(T in sched["completed"] for T in sched["boundaries"]):
+        return "complete"
+    _, meta = persistence.load_state(os.path.join(store, "state.json"),
+                                     expect_full_roster=True)
+    if sched["completed"] or meta.get("boundary") is not None:
+        return "started"
+    return "unstarted"
+
+
+def archive_activation(store, act, act_sha):
+    """Mentor Ruling 017.1: durably archive the ACCEPTED activation record
+    and its verified preflight report inside the store BEFORE the first
+    boundary — a started run resumes from these immutable copies and never
+    depends on the external control file or the scratch report again."""
+    path = os.path.join(store, ACCEPTED_ACTIVATION_NAME)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump({"record": act, "activation_sha": act_sha}, f, indent=1)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+    report_src = (act.get("preflight") or {}).get("report_path")
+    if report_src and os.path.exists(report_src):
+        dst = os.path.join(store, ACCEPTED_PREFLIGHT_NAME)
+        tmp = dst + ".tmp"
+        with open(report_src, "rb") as src, open(tmp, "wb") as f:
+            f.write(src.read())
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, dst)
+    return path
 
 
 def write_activation_binding(store, activation_sha, engine_digest,
@@ -315,7 +410,8 @@ def rollback_unstarted(store, public_dir=None):
                                      expect_full_roster=True)
     if meta.get("boundary") is not None:
         raise RuntimeError("boundary state exists — not an unstarted run")
-    for name in (pilot.SCHEDULE_NAME, publisher_mod.PUB_LOG, BINDING_NAME):
+    for name in (pilot.SCHEDULE_NAME, publisher_mod.PUB_LOG, BINDING_NAME,
+                 ACCEPTED_ACTIVATION_NAME, ACCEPTED_PREFLIGHT_NAME):
         try:
             os.remove(os.path.join(store, name))
         except FileNotFoundError:
@@ -566,23 +662,36 @@ def run_official(store, cfg, caller, fetch_market, publish, clock, sleep,
         except Exception:
             pass                        # health can never affect trading
 
-    def _pre_start_disarmed():
-        return (disarm_check is not None and not sched["completed"]
-                and not disarm_check())
-
     # CLEAN COMPLETION (Mentor Ruling 014.3): a finished experiment stays
     # finished — no READY republication, no publications, no model calls.
     if all(T in sched["completed"] for T in sched["boundaries"]):
         health("COMPLETE")
         return sched
 
+    spath = os.path.join(store, "state.json")
+    _, meta0 = persistence.load_state(spath, expect_full_roster=True)
+    # STARTED = any boundary completed OR boundary work persisted (a crash
+    # inside boundary 1 counts — Ruling 017.1: after the run starts, the
+    # activation record is never consulted again).
+    run_started = bool(sched["completed"]) or meta0.get("boundary") is not None
+
+    def _pre_start_disarmed():
+        return (disarm_check is not None and not run_started
+                and not sched["completed"] and not disarm_check())
+
     if _pre_start_disarmed():
         raise Disarmed("activation record gone/changed before READY")
     health("STARTING")
-    _set_deadline(publish, clock() + READY_TIMEOUT_S)
-    publisher_mod.reconcile(store, cfg, publish, branding=BRANDING)
-    publisher_mod.publish_ready(store, cfg, publish, branding=BRANDING)
-    spath = os.path.join(store, "state.json")
+    if not run_started:
+        # READY gate: only ever BEFORE the first boundary's work. A mid-run
+        # restart never republishes READY (Mentor Ruling 017.1); it only
+        # reconciles failed committed payloads (publication-only).
+        _set_deadline(publish, clock() + READY_TIMEOUT_S)
+        publisher_mod.reconcile(store, cfg, publish, branding=BRANDING)
+        publisher_mod.publish_ready(store, cfg, publish, branding=BRANDING)
+    else:
+        _set_deadline(publish, clock() + RECONCILE_TIMEOUT_S)
+        publisher_mod.reconcile(store, cfg, publish, branding=BRANDING)
     for T in sched["boundaries"]:
         if T in sched["completed"]:
             continue
@@ -608,16 +717,24 @@ def run_official(store, cfg, caller, fetch_market, publish, clock, sleep,
                            "boundary gate")
         health("BOUNDARY_ACTIVE", T)
         # ---- freeze boundary data: budget ends at T+00:30 ----
+        # A TOTAL 1m fetch failure still produces an EXPLICIT empty replay
+        # interval (Mentor Ruling 017.2): the coordinator's persisted
+        # replay_next_required pointer then latches CATCHUP_REQUIRED at the
+        # exact missing minute — a missing hour is never silently skipped.
         snaps, spec = {}, {}
         first = not sched["completed"]
         for coin in COINS:
+            empty = {"start": (T if first else T - HOUR), "end": T,
+                     "candles": []}
             if clock() >= T + THINKING_DURABLE_S:
                 snaps[coin] = None      # honest: budget exhausted
+                spec[coin] = empty
                 continue
             try:
                 snaps[coin], spec[coin] = fetch_market(coin, T, first)
             except Exception:
                 snaps[coin] = None
+                spec[coin] = empty
         # ---- THINKING durable + DIRECT public verification by T+01:00 ----
         done, total = len(sched["completed"]), sched["total"]
         _set_deadline(publish, T + THINKING_VERIFIED_S)
@@ -630,10 +747,12 @@ def run_official(store, cfg, caller, fetch_market, publish, clock, sleep,
         # [T-3600, T) are applied BEFORE prompts/model calls, so stops, TPs,
         # invalidation latches and liquidations from before T are visible in
         # the T prompts and no candle < T can touch an action taken at T.
+        # EVERY coin's interval is passed — including empty ones from fetch
+        # failures (017.2): 1m replay availability is independent of the
+        # hourly/daily prompt-snapshot availability in `snaps`.
         recovery.run_checkpointed(
             T, snaps, caller, cfg, store,
-            pre_replay_spec={c: s for c, s in spec.items()
-                             if snaps.get(c) is not None},
+            pre_replay_spec=spec,
             crash_at=crash_at, clock=clock,
             deadline=T + COLLECTION_DEADLINE_S,
             abort_all_reason=abort_reason,

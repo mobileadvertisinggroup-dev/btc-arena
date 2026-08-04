@@ -118,7 +118,14 @@
   "global_collection_deadline": "T+12 minutes, hard; transport retries must complete inside it",
   "concurrency_lock": "preflight verifies 6-way concurrency against rate limits; the final value is locked before launch and cannot change during V1",
   "collection_deadline_seconds": 720,
-  "deadline_note": "hard monotonic wall-clock deadline for the whole collection stage, anchored at collection start; results arriving after it never execute; retries may not begin unless their full budget fits inside it (Ruling 008.9)"
+  "deadline_note": "hard monotonic wall-clock deadline for the whole collection stage, anchored at collection start; results arriving after it never execute; retries may not begin unless their full budget fits inside it (Ruling 008.9)",
+  "model_collection_deadline_seconds_after_T": 510,
+  "resolution_replay_deadline_seconds_after_T": 630,
+  "final_publication_target_seconds_after_T": 690,
+  "hard_terminal_deadline_seconds_after_T": 720,
+  "deadline_anchor": "every deadline is anchored at the SCHEDULED boundary T \u2014 never at process entry; restarts never reset any budget",
+  "official_live_replay": "COMPLETE pre-decision replay of all required 1m candles strictly before T runs BEFORE prompt/account snapshots freeze and before any model call; the official live runner performs NO post-decision replay",
+  "fetch_failure_catchup": "a total 1m fetch failure persists CATCHUP_REQUIRED at the coin's exact persisted replay_next_required minute (tracked per coin even when flat); the next successful fetch must supply every candle from that minute through the current T; data starting later than the required minute is refused as a gap and never advances the pointer; hourly/daily prompt-snapshot failure with complete 1m data still replays resting position events (prompts blocked, replay intact); no new model calls for the coin until its state is exactly caught up to T; unresolved history beyond the frozen 10-hour limit => COIN_TERMINATED"
  },
  "arms": [
   "raw",

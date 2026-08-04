@@ -114,6 +114,7 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
         meta = {"boundary": T, "finalized_pairs": {},
                 "phase": ("pre_replay" if pre_replay_spec else "decision"),
                 "replay_watermark": meta.get("replay_watermark", {}),
+                "replay_next_required": meta.get("replay_next_required", {}),
                 "boundary_complete": False,
                 "coin_terminated": meta.get("coin_terminated", {}),
                 "replay_state": meta.get("replay_state", {}),
@@ -144,10 +145,19 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
         for coin, spec in (spec_map or {}).items():
             if meta["coin_terminated"].get(coin):
                 continue
-            rs = meta["replay_state"].get(coin, {})
-            wm = meta["replay_watermark"].get(coin)
-            eff_start = (wm + 60) if wm is not None else spec["start"]
-            eff_start = max(eff_start, rs.get("gap_since", eff_start))
+            # EXACT REQUIRED-MINUTE TRACKING (Mentor Ruling 017.2): every
+            # coin carries a persisted replay_next_required pointer —
+            # maintained even when all accounts are flat — and replay ALWAYS
+            # resumes exactly there. Supplied data that starts later than the
+            # required minute is refused as a gap; the pointer NEVER advances
+            # to a newer spec.start, so a missing hour can never be silently
+            # skipped and REPLAY_COMPLETE can never be reached over a gap.
+            req_map = meta.setdefault("replay_next_required", {})
+            required = req_map.get(coin)
+            if required is None:
+                required = spec["start"]
+                req_map[coin] = required
+            eff_start = required
             end = spec["end"]
             if eff_start >= end:
                 continue
@@ -171,6 +181,7 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                         return c["t"]                # discard prepared
                     cand_meta = copy.deepcopy(meta)
                     cand_meta["replay_watermark"][coin] = c["t"]
+                    cand_meta["replay_next_required"][coin] = c["t"] + 60
                     for i, rc in enumerate(recs):
                         persistence.outbox_add(
                             cand_meta, f"{coin}:{c['t']}:{i}:{rc['e']}",
