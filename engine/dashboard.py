@@ -30,6 +30,12 @@ def _account_detail(a, mark):
         notional = str(abs(a["qty"]) * mark)
     return {
         "side": state.side(a),
+        # Position entry boundary (Mentor Ruling 5): the ACTIVE lifecycle's
+        # start_t — set once when the position opened (a reversal starts a new
+        # lifecycle; averaging keeps the original). Derived from existing
+        # persisted state; never inferred from the most recent decision.
+        "entry_t": (a["lifecycle"]["start_t"]
+                    if a["qty"] and a.get("lifecycle") else None),
         "qty": str(abs(a["qty"])),
         "notional": notional,
         "entry": str(a["entry"]) if a["entry"] is not None else None,

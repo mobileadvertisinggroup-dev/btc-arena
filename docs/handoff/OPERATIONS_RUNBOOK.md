@@ -2,6 +2,21 @@
 
 All commands from repo root: ~/trading-research-machine/btc-arena-v1
 
+## OFFICIAL 14-DAY RUN (built 2026-08-04, branch build-batch-cloud-ui —
+## NOT AUDITED, NOT DEPLOYABLE until mentor PASS + owner approval)
+- Full deployment/activation procedure: deploy/DEPLOYMENT.md
+- Service (VPS): deploy/arena-official.service runs
+  scripts/run_official_14d.py — starts ARMED/OFF (zero model calls) until
+  the owner runs on the server:
+    python3 scripts/arm_official.py --confirm \
+      --engine-digest <externally issued> --site-digest <externally issued> \
+      --start-utc next-hour
+- Disarm before start: delete control/official_activation.json.
+  Halt a live run: systemctl stop arena-official (restart-safe; same
+  schedule resumes; missed boundaries abort honestly).
+- Monitoring: https://<vps-host>/health.json; daily sealed snapshots in
+  evidence-official/daily/; final: scripts/archive_official.py --confirm
+
 ## Everyday (safe, offline)
 - Full hermetic suite:        python3 -m pytest tests/ -q        (258 tests)
 - Lint gate:                  ~/Library/Python/3.13/bin/ruff check engine tests scripts --select F

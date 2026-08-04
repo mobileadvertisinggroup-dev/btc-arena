@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AKRA ARENA — RAW vs FEATURE</title>
+<title>AKRA ARENA — RAW vs TA</title>
 <style>
 :root{
   --paper:#f2f2f0; --panel:#fcfcfb; --ink:#141414; --mut:#66665f;
@@ -13,8 +13,8 @@
   --chrome:#e9e8e2; --tint-haiku:#eef4fc; --tint-sonnet:#edf7f1; --tint-opus:#fdf4e7;
 }
 *{box-sizing:border-box;margin:0}
-html{scroll-behavior:smooth}
-body{background:var(--paper);color:var(--ink);
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--paper);color:var(--ink);overflow-x:hidden;
   font:14.5px/1.55 ui-monospace,"SF Mono",Menlo,Consolas,"Courier New",monospace}
 a{color:var(--ink)}
 .wrap{max-width:1360px;margin:0 auto;padding:0 22px}
@@ -37,21 +37,20 @@ body.demo .demoflag{display:block}
 nav{display:flex;gap:4px;flex-wrap:wrap}
 nav a{font-size:12px;letter-spacing:1px;text-decoration:none;padding:6px 11px}
 nav a:hover{background:var(--ink);color:var(--paper)}
-/* DISPLAY-ONLY MARKET TICKER — NON-AUTHORITATIVE (styles) */
-.strip{display:grid;grid-template-columns:repeat(3,1.35fr) repeat(3,1fr);
-  border:1px solid var(--hair);border-top:none;background:var(--panel)}
-.cell{padding:13px 18px;border-right:1px solid var(--hair)}
-.cell:last-child{border-right:none}
-.cell .l{font-size:10.5px;letter-spacing:1.5px;color:var(--mut)}
-.cell .v{font-weight:700;font-size:15px;margin-top:3px}
-.cell.mkt .v{font-size:24px;font-weight:800;letter-spacing:.5px}
-.cell.mkt .sub{font-size:10.5px;color:var(--mut);margin-top:2px}
-.cell.mkt .dot{display:inline-block;width:7px;height:7px;border-radius:50%;
-  background:#3fa34d;margin-right:7px;vertical-align:2px}
-.cell.mkt.stale .dot{background:var(--stale)}
-.cell.mkt.dead .dot{background:#999}
-.ticker-note{grid-column:1/-1;color:var(--mut);font-size:10.5px;padding:6px 18px;
-  border-top:1px solid var(--hair);background:var(--paper)}
+/* DISPLAY-ONLY MARKET TICKER — NON-AUTHORITATIVE (compact, wishlist #11) */
+.tickerline{display:flex;flex-wrap:wrap;gap:2px 18px;align-items:baseline;
+  border:1px solid var(--hair);border-top:none;background:var(--panel);
+  padding:5px 14px;font-size:12px}
+.tickerline .tk{white-space:nowrap}
+.tickerline .tk b{font-size:12.5px}
+.tickerline .dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:#3fa34d;margin-right:5px;vertical-align:1px}
+.tickerline .tk.stale .dot{background:var(--stale)}
+.tickerline .tk.dead .dot{background:#999}
+.tickerline .stamp{color:var(--mut);font-size:10px}
+.statusline{display:flex;flex-wrap:wrap;gap:2px 22px;border:1px solid var(--hair);
+  border-top:none;background:var(--panel);padding:6px 14px;font-size:12px}
+.statusline .l{color:var(--mut);font-size:10px;letter-spacing:1px;margin-right:5px}
 /* layout */
 .main{display:grid;grid-template-columns:1.72fr 1fr;gap:22px;margin:22px 0;
   align-items:start}
@@ -63,18 +62,17 @@ nav a:hover{background:var(--ink);color:var(--paper)}
 .stagebar .title{font-weight:800;letter-spacing:1.5px;font-size:15px}
 .stagebar .tf{font-size:11px;color:var(--mut);letter-spacing:1px}
 .metrics{display:flex;gap:4px;flex-wrap:wrap}
-.metrics button,.demo-btn{font:inherit;font-size:11.5px;letter-spacing:1px;
+.metrics button{font:inherit;font-size:11.5px;letter-spacing:1px;
   background:var(--panel);color:var(--mut);border:1px solid var(--hair);
   padding:5px 12px;cursor:pointer;border-radius:3px}
 .metrics button.active{background:var(--ink);color:var(--paper);
   border-color:var(--ink);font-weight:700}
-.demo-btn{color:var(--mut)}
-body.demo .demo-btn{background:var(--demo);border-color:var(--demo);color:#fff}
 .coin-tabs{display:flex;border-bottom:1px solid var(--hair);background:var(--chrome)}
 .coin-tabs .tab{padding:10px 22px;cursor:pointer;font-weight:700;font-size:12.5px;
   letter-spacing:1.5px;color:var(--mut);border-bottom:3px solid transparent}
-.coin-tabs .tab.active{background:var(--panel);color:var(--ink);
-  border-bottom-color:var(--ink)}
+/* wishlist #9: the selected coin tab must be unmistakable */
+.coin-tabs .tab.active{background:var(--ink);color:var(--paper);
+  border-bottom-color:var(--ink);font-weight:800}
 .chart-inner{padding:16px}
 #chartwrap{position:relative}
 #chartmsg{position:absolute;inset:0;display:flex;align-items:center;
@@ -149,6 +147,12 @@ body.demo .demo-btn{background:var(--demo);border-color:var(--demo);color:#fff}
   font-size:12.5px;color:var(--mut);margin-top:6px}
 .tcard .grid b{color:var(--ink)}
 .pnl.up{color:var(--up)} .pnl.down{color:var(--down)} .pnl.zero{color:var(--mut)}
+.tcard.open .xtra{display:block}      /* wishlist #4: expandable thesis */
+/* wishlist #10: Raw-vs-TA comparison table */
+.cmp td{white-space:normal;vertical-align:top;min-width:250px}
+.cmp .item{margin-bottom:9px}
+.cmp .item:last-child{margin-bottom:0}
+.cmp .snip{color:var(--mut);font-size:12px}
 /* sections below */
 section{margin-top:26px}
 .rulehead{border-bottom:3px solid var(--rule);display:flex;
@@ -171,30 +175,43 @@ footer{border-top:3px solid var(--rule);margin-top:30px;padding:16px 0 34px;
 @media (max-width:1020px){
   .main{grid-template-columns:1fr}
   .panel{position:static;max-height:560px}
-  .strip{grid-template-columns:repeat(3,1fr)}
   .brand .t1{font-size:24px}
-  .cell.mkt .v{font-size:17px}
+}
+/* wishlist #1: 100% mobile fit — no horizontal scroll anywhere; wide tables
+   scroll INSIDE .twrap only */
+@media (max-width:640px){
+  .wrap{padding:0 12px}
+  .brand .t1{font-size:19px;letter-spacing:2px}
+  .brand .t2{font-size:10px;letter-spacing:1.5px}
+  nav a{padding:5px 7px;font-size:10.5px}
+  .chart-inner{padding:10px}
+  .plist{padding:10px}
+  .stagebar{padding:8px 10px}
+  .coin-tabs .tab{padding:9px 14px}
 }
 </style>
 </head>
 <body>
-<div class="demoflag">DEMONSTRATION SCENARIO — NOT REAL ACTIVITY</div>
-<div class="prep">AKRA ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED</div>
+<div class="demoflag">DEMONSTRATION SCENARIO — NOT REAL ACTIVITY — <a href="?" style="color:#fff">EXIT</a></div>
+<div class="prep" id="prepbanner">AKRA ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED</div>
 <div class="notice">No model has been called. No paper-trading pilot or official experiment has started. Ticker prices are live display data only — trading accounts are inactive.</div>
 <div class="top"><div class="wrap mast">
   <div class="brand"><div class="t1">AKRA ARENA</div>
-    <div class="t2">RAW <b>vs</b> FEATURE · 3 MODELS · 3 COINS · 18 ACCOUNTS</div></div>
+    <div class="t2">RAW <b>vs</b> TA · 3 MODELS · 3 COINS · 18 ACCOUNTS</div></div>
   <nav>
-    <a href="#stage">LIVE</a><a href="#leaderboard">LEADERBOARD</a>
-    <a href="#pairs-note" onclick="setPanel('PAIR DETAILS')">RAW vs FEATURE</a>
+    <a href="#stage">LIVE</a>
+    <a href="#leaderboard" onclick="toggleSection('leaderboard');return false">LEADERBOARD</a>
+    <a href="#comparison">RAW vs TA</a>
     <a href="#panel" onclick="setPanel('MODEL CHAT')">MODELS</a>
     <a href="design/DESIGN_PACK_V1_1.md">METHODOLOGY</a>
-    <a href="pilot-archive/">PILOT ARCHIVE</a><a href="#about">ABOUT</a>
+    <a href="pilot-archive/">PILOT ARCHIVE</a>
+    <a href="#about" onclick="toggleSection('about');return false">ABOUT</a>
   </nav>
 </div></div>
 
 <div class="wrap">
-<div class="strip" id="strip"></div>
+<div class="tickerline" id="strip" title="Display-only market ticker (Coinbase spot, 30s refresh) — non-authoritative. Official experiment execution uses Kraken data."></div>
+<div class="statusline" id="statusstrip"></div>
 
 <div class="main">
 <div class="stage" id="stage">
@@ -203,8 +220,7 @@ footer{border-top:3px solid var(--rule);margin-top:30px;padding:16px 0 34px;
       <span class="tf" id="charttf"></span></span>
     <span style="display:flex;gap:6px;flex-wrap:wrap">
       <span class="metrics" id="metricbtns"></span>
-      <button class="demo-btn" id="demobtn" onclick="toggleDemo()">View demo scenario</button>
-    </span>
+    </span><!-- demo era over (wishlist #8): demo reachable only via ?demo=1 -->
   </div>
   <div class="coin-tabs" id="cointabs"></div>
   <div class="chart-inner">
@@ -224,15 +240,17 @@ footer{border-top:3px solid var(--rule);margin-top:30px;padding:16px 0 34px;
       <option value="opus">Opus</option></select>
     <select id="f_coin"><option value="">All coins</option>
       <option>BTC</option><option>ETH</option><option>SOL</option></select>
-    <select id="f_arm"><option value="">Raw + Feature</option>
-      <option value="raw">Raw</option><option value="ta">Feature</option></select>
+    <select id="f_arm"><option value="">Raw + TA</option>
+      <option value="raw">Raw</option><option value="ta">TA</option></select>
   </div>
   <div class="plist" id="plist"></div>
 </aside>
 </div>
 
-<section id="leaderboard"></section>
-<section id="about">
+<section id="comparison"></section>
+<!-- wishlist #2: leaderboard + about live OFF the landing flow, click-to-open -->
+<section id="leaderboard" hidden></section>
+<section id="about" hidden>
 <div class="rulehead"><h2>ABOUT</h2><span class="sub">the experiment in one paragraph</span></div>
 <p style="max-width:920px;font-size:14.5px" id="abouttext"></p>
 </section>
@@ -262,7 +280,35 @@ function data(){ return demo ? window.ARENA_DEMO : (window.ARENA_LIVE || window.
 let D = data();
 function allAccounts(){ return COINS.flatMap(c => D.coins[c].accounts); }
 function icon(m){ return `<span class="icon ${m}">${MODEL[m].mono}</span>`; }
-function toggleDemo(){ demo = !demo; boot(); }
+/* live modes: the pilot's and the official run's payloads (Mentor Ruling 3) */
+const LIVE_MODES = {PILOT_12H: '12-HOUR PILOT', OFFICIAL_14D: 'OFFICIAL 14-DAY EXPERIMENT'};
+function isLive(){ return Boolean(LIVE_MODES[D.mode]); }
+/* wishlist #3: display language only — internal ids/payload keys stay raw/ta */
+function armLabel(a){ return a.arm === 'raw' ? 'Raw' : 'TA'; }
+/* wishlist #2: leaderboard + about open on click only */
+window.toggleSection = id => {
+  const el = document.getElementById(id);
+  el.hidden = !el.hidden;
+  if (!el.hidden && el.scrollIntoView) el.scrollIntoView({behavior: 'smooth'});
+};
+/* wishlist #5: deterministic position age from the payload's entry boundary
+   and the last PUBLISHED boundary — never the viewer's wall clock */
+function ageText(a){
+  if (a.entry_t == null || !D.published_boundary) return '—';
+  const s = D.published_boundary - a.entry_t;
+  if (s < 0) return '—';
+  if (s < 3600) return '<1h';
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600);
+  return (d ? d + 'd ' : '') + h + 'h';
+}
+/* wishlist #6: render the EXACT submitted invalidation condition */
+function invText(a){
+  const inv = a.invalidation;
+  if (!inv) return '—';
+  const op = inv.operator === 'price_at_or_below' ? '≤' : '≥';
+  const tf = String(inv.timeframe || '').replace(/_/g, ' ');
+  return `${inv.status} — invalidates if price ${op} ${px(inv.level)} (${tf})`;
+}
 
 /* ================= DISPLAY-ONLY MARKET TICKER — NON-AUTHORITATIVE =========
    Read-only website display feed. Source: Coinbase public spot price API
@@ -287,28 +333,26 @@ setInterval(pollTicker, 30000);
 setInterval(strip, 5000);
 
 function strip(){
+  /* wishlist #11: tiny inline ticker row; disclaimer lives in the row's
+     tooltip (title attribute) and the footer footnote */
   const now = Date.now();
   const mkt = COINS.map(c => {
     const t = ticker[c];
-    if (!t.price) return `<div class="cell mkt dead"><div class="l"><span class="dot"></span>${c}/USD</div>
-      <div class="v" style="font-size:15px">Price feed unavailable</div></div>`;
-    const age = (now - t.at) / 1000;
-    const stale = age > 90;
-    return `<div class="cell mkt ${stale ? 'stale' : ''}"><div class="l"><span class="dot"></span>${c}/USD</div>
-      <div class="v">${money(t.price)}</div>
-      <div class="sub">updated ${new Date(t.at).toLocaleTimeString()}${stale ? ' · STALE' : ''}</div></div>`;
+    if (!t.price) return `<span class="tk dead"><span class="dot"></span>${c}/USD — feed unavailable</span>`;
+    const stale = (now - t.at) / 1000 > 90;
+    return `<span class="tk ${stale ? 'stale' : ''}"><span class="dot"></span>${c}/USD <b>${money(t.price)}</b>
+      <span class="stamp">updated ${new Date(t.at).toLocaleTimeString()}${stale ? ' · STALE' : ''}</span></span>`;
   });
-  const live = D.mode === 'PILOT_12H';
+  $('strip').innerHTML = mkt.join('');
   const lc = {THINKING: 'THINKING — AWAITING RESPONSES', READY: 'READY',
               ROUND_COMMITTED: 'ROUND COMMITTED'}[D.round_lifecycle] || '—';
-  const info = [
-    ['MODE', live ? '12-HOUR PILOT' : 'Preparation'],
+  const prog = D.pilot_progress || {done: 0, total: null};
+  $('statusstrip').innerHTML = [
+    ['MODE', isLive() ? LIVE_MODES[D.mode] : 'Preparation'],
     ['ROUND STATUS', lc],
-    ['PILOT PROGRESS', `${(D.pilot_progress || {done:0}).done} / ${(D.pilot_progress || {total:12}).total || 12}`],
-    ['ACCOUNTS', live ? 'live paper accounts' : (demo ? 'demo scenario' : 'inactive — waiting')],
-  ].map(([l, v]) => `<div class="cell"><div class="l">${l}</div><div class="v">${v}</div></div>`);
-  $('strip').innerHTML = mkt.join('') + info.join('')
-    + `<div class="ticker-note">Display-only market ticker (Coinbase spot, 30s refresh). Official experiment execution uses Kraken data.</div>`;
+    ['PROGRESS', `${prog.done} / ${prog.total || '—'}`],
+    ['ACCOUNTS', isLive() ? 'live paper accounts' : (demo ? 'demo scenario' : 'inactive — waiting')],
+  ].map(([l, v]) => `<span><span class="l">${l}</span><b>${v}</b></span>`).join('');
 }
 
 /* ---------------- chart ---------------- */
@@ -339,14 +383,14 @@ function chart(){
                              if (m == null) ok = false; else v += m; });
         pts.push(ok ? v / accts.length : null);
       }
-      series.push({label: arm === 'raw' ? 'RAW' : 'FEATURE', color: 'var(--ink)',
+      series.push({label: arm === 'raw' ? 'RAW' : 'TA', color: 'var(--ink)',
                    dash: arm === 'ta', pts});
     }
   } else {
     for (const m of ['haiku','sonnet','opus'])
       for (const arm of ['raw','ta']){
         const a = D.coins[coinTab].accounts.find(x => x.model === m && x.arm === arm);
-        series.push({label: `${MODEL[m].name.split(' ')[0]} ${arm === 'raw' ? 'Raw' : 'Feat'}`,
+        series.push({label: `${MODEL[m].name.split(' ')[0]} ${arm === 'raw' ? 'Raw' : 'TA'}`,
                      color: MODEL[m].c, dash: arm === 'ta', pts: seriesMetric(a)});
       }
   }
@@ -397,10 +441,10 @@ function chart(){
           fill="${e.s.color}" font-family="inherit">${e.s.label}${e.s.dash ? ' ┄' : ''}</text>`;
   });
   svg.innerHTML = g;
-  $('chartmsg').textContent = (demo || D.mode === 'PILOT_12H') ? '' : 'WAITING FOR PILOT ACTIVITY';
+  $('chartmsg').textContent = (demo || isLive()) ? '' : 'WAITING FOR ACTIVITY';
   $('charttitle').textContent = metric.toUpperCase();
-  $('charttf').textContent = (coinTab === 'AGGREGATE' ? ' · Raw vs Feature aggregate' : ` · ${coinTab} arena`)
-    + (demo ? ' · demo timeframe' : (D.mode === 'PILOT_12H' ? ' · live pilot boundaries' : ' · timeframe: pre-start'));
+  $('charttf').textContent = (coinTab === 'AGGREGATE' ? ' · Raw vs TA aggregate' : ` · ${coinTab} arena`)
+    + (demo ? ' · demo timeframe' : (isLive() ? ' · live boundaries (UTC)' : ' · timeframe: pre-start'));
   $('legend').innerHTML = series.map(s =>
     `<span><span class="sw ${s.dash?'dash':''}" style="border-color:${s.color}"></span>${s.label}</span>`).join('');
   svg.onmousemove = ev => {
@@ -420,9 +464,9 @@ function chart(){
 
 /* ---------------- right panel ---------------- */
 /* Explicit UI mode (Ruling 012.1): PREP (preparation, nothing started),
-   DEMO (opt-in labeled demonstration scenario), PILOT (genuine live data
-   from the published pilot payload). Never keyed off `demo` alone. */
-function uiMode(){ return demo ? 'DEMO' : (D.mode === 'PILOT_12H' ? 'PILOT' : 'PREP'); }
+   DEMO (opt-in labeled demonstration scenario), LIVE (genuine published
+   pilot/official payload). Never keyed off `demo` alone. */
+function uiMode(){ return demo ? 'DEMO' : (isLive() ? 'LIVE' : 'PREP'); }
 function boundaryLabel(){
   return D.published_boundary ? new Date(D.published_boundary * 1000).toUTCString() : '';
 }
@@ -441,29 +485,29 @@ function chatCards(){
     return Object.keys(MODEL).filter(m => !$('f_model').value || m === $('f_model').value)
       .map(m => `<div class="chatrow">${icon(m)}<div class="mcard tint-${m}">
         <div class="mhead"><div><div class="who">${MODEL[m].name}</div>
-          <div class="sub">all coins · Raw + Feature · pre-start</div></div>
+          <div class="sub">all coins · Raw + TA · pre-start</div></div>
         <span class="stpill waiting" style="margin-left:auto">WAITING</span></div>
         <div class="thesis" style="color:var(--mut)">No decisions yet — the paper-trading pilot has not started.</div>
       </div></div>`).join('');
-  if (mode === 'PILOT' && D.round_lifecycle === 'THINKING')
+  if (mode === 'LIVE' && D.round_lifecycle === 'THINKING')
     // live pre-request state: model/coin/arm + status ONLY — no invented
     // theses or decisions before receipt
     return allAccounts().filter(filt).map(a =>
       `<div class="chatrow">${icon(a.model)}<div class="mcard tint-${a.model} ${a.arm === 'ta' ? 'arm-ta' : ''}">
         <div class="mhead"><div><div class="who">${MODEL[a.model].name}</div>
-          <div class="sub">${a.coin} · ${a.arm === 'raw' ? 'Raw' : 'Feature'} · boundary ${boundaryLabel()}</div></div>
+          <div class="sub">${a.coin} · ${armLabel(a)} · boundary ${boundaryLabel()}</div></div>
         <span class="stpill thinking" style="margin-left:auto">THINKING / AWAITING RESPONSE</span></div>
         <div class="thesis" style="color:var(--mut)">Model request processing — no decision received yet. The submitted decision appears when the round commits.</div>
       </div></div>`).join('') || '<div class="sub">No entries match the filters.</div>';
   // DEMO or live committed rounds: actual submitted theses/decisions only
   return allAccounts().filter(a => filt(a) && a.thesis).map(a => {
-    const ps = mode === 'PILOT' ? pairStatus(a.coin, a.model) : null;
+    const ps = mode === 'LIVE' ? pairStatus(a.coin, a.model) : null;
     const stamp = mode === 'DEMO' ? 'DEMONSTRATION' : boundaryLabel();
     return `<div class="chatrow">${icon(a.model)}<div class="mcard tint-${a.model} ${a.arm === 'ta' ? 'arm-ta' : ''}"
       onclick="this.classList.toggle('open')">
       <div class="mhead">
         <div><div class="who">${MODEL[a.model].name}</div>
-          <div class="sub">${a.coin} · ${a.arm === 'raw' ? 'Raw' : 'Feature'} · ${stamp}</div></div>
+          <div class="sub">${a.coin} · ${armLabel(a)} · ${stamp}</div></div>
         <span class="stpill decision" style="margin-left:auto">DECISION RECEIVED</span></div>
       <div class="thesis">“${a.thesis.replace(/</g,'&lt;')}”</div>
       <div class="dstrip"><span class="dir ${a.side}">${a.side.toUpperCase()}</span>
@@ -484,14 +528,14 @@ function tradeCards(){
     (a.trades || []).map(t => ({...t, a})));
   if (!trades.length)
     return `<div class="mcard" style="border-left-color:var(--mut)">
-      <div class="thesis" style="color:var(--mut)">No completed trades${demo ? ' in this demo scenario view' : uiMode() === 'PILOT' ? ' yet in this pilot' : ' — waiting for pilot'}.</div></div>`;
+      <div class="thesis" style="color:var(--mut)">No completed trades${demo ? ' in this demo scenario view' : uiMode() === 'LIVE' ? ' yet' : ' — waiting for activity'}.</div></div>`;
   return trades.map(t => {
     const pnl = N(t.pnl);
     const cls = pnl > 0 ? 'up' : pnl < 0 ? 'down' : 'zero';
     return `<div class="tcard" style="border-left-color:${MODEL[t.a.model].c}">
       <div class="row1">${icon(t.a.model)}
         <div><div class="who" style="font-size:14.5px;font-weight:800">${MODEL[t.a.model].name}</div>
-        <div class="sub">${t.a.coin} · ${t.a.arm === 'raw' ? 'Raw' : 'Feature'} · ${t.side.toUpperCase()}</div></div>
+        <div class="sub">${t.a.coin} · ${armLabel(t.a)} · ${t.side.toUpperCase()}</div></div>
         <div class="pnl ${cls}">${pnl >= 0 ? '+' : ''}${money(pnl)}</div></div>
       <div class="route">${px(t.entry)} → ${px(t.exit)}</div>
       <div class="grid">
@@ -508,16 +552,17 @@ function openCards(){
   const open = allAccounts().filter(a => filt(a) && a.side !== 'flat');
   if (!open.length)
     return `<div class="mcard" style="border-left-color:var(--mut)">
-      <div class="thesis" style="color:var(--mut)">No open positions — ${demo ? 'demo scenario' : uiMode() === 'PILOT' ? 'all accounts currently flat' : 'waiting for pilot'}.</div></div>`;
+      <div class="thesis" style="color:var(--mut)">No open positions — ${demo ? 'demo scenario' : uiMode() === 'LIVE' ? 'all accounts currently flat' : 'waiting for activity'}.</div></div>`;
   return open.map(a => {
     // null market values stay null (Ruling 013): the payload's explicit
     // a.mark is authoritative — never derived from notional/qty, never 0
     const na = a.mark == null || a.unrealized_pnl == null;
     const u = na ? null : N(a.unrealized_pnl);
-    return `<div class="tcard" style="border-left-color:${MODEL[a.model].c}">
+    return `<div class="tcard" style="border-left-color:${MODEL[a.model].c};cursor:pointer"
+      onclick="this.classList.toggle('open')">
       <div class="row1">${icon(a.model)}
         <div><div class="who" style="font-size:14.5px;font-weight:800">${MODEL[a.model].name}</div>
-        <div class="sub">${a.coin} · ${a.arm === 'raw' ? 'Raw' : 'Feature'}</div></div>
+        <div class="sub">${a.coin} · ${armLabel(a)}</div></div>
         <div class="pnl ${u == null ? '' : u > 0 ? 'up' : u < 0 ? 'down' : 'zero'}">${u == null ? 'MARK N/A' : (u >= 0 ? '+' : '') + money(u)}</div></div>
       <div class="route"><span class="dir ${a.side}" style="font-size:12px;padding:2px 9px;color:#fff">${a.side.toUpperCase()}</span>
         &nbsp;entry ${px(a.entry)} · mark ${a.mark == null ? 'MARK N/A' : px(a.mark)}</div>
@@ -525,10 +570,41 @@ function openCards(){
         <span>size</span><b>${money(a.notional)}</b>
         <span>stop</span><b>${px(a.stop)}</b>
         <span>target</span><b>${px(a.tp)}</b>
-        <span>age</span><b>${demo ? 'intra-demo' : '—'}</b>
-        <span>invalidation</span><b>${a.invalidation ? a.invalidation.status : '—'}</b>
-      </div></div>`;
+        <span>age</span><b>${demo ? 'intra-demo' : ageText(a)}</b>
+        <span>invalidation</span><b>${invText(a)}</b>
+      </div>
+      <div class="expand-hint" style="padding:6px 0 0">click for full thought process ▾</div>
+      <div class="xtra">${a.thesis ? `opening thesis: “${String(a.thesis).replace(/</g,'&lt;')}”` : 'No submitted thesis recorded for this position.'}</div>
+      </div>`;
   }).join('');
+}
+/* wishlist #10: Raw-vs-TA side-by-side comparison (ongoing AND closed) */
+function cmpItems(a){
+  const items = [];
+  if (a.side !== 'flat')
+    items.push(`<div class="item"><b>ONGOING ${a.side.toUpperCase()}</b>
+      · entry ${px(a.entry)} · stop ${px(a.stop)} · target ${px(a.tp)}
+      · size ${money(a.notional)} · age ${demo ? 'intra-demo' : ageText(a)}
+      ${a.thesis ? `<div class="snip">“${String(a.thesis).slice(0,140).replace(/</g,'&lt;')}${a.thesis.length > 140 ? '…' : ''}”</div>` : ''}</div>`);
+  (a.trades || []).slice(-3).reverse().forEach(t => {
+    items.push(`<div class="item"><b>CLOSED ${t.side.toUpperCase()}</b>
+      · ${px(t.entry)} → ${px(t.exit)} · ${N(t.pnl) >= 0 ? '+' : ''}${money(t.pnl)}
+      · ${String(t.reason).replace(/_/g,' ')}</div>`);
+  });
+  return items.join('') || '<div class="item" style="color:var(--mut)">no trades yet</div>';
+}
+function comparison(){
+  let rows = '';
+  for (const coin of COINS)
+    for (const m of Object.keys(MODEL)){
+      const raw = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'raw');
+      const ta = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'ta');
+      rows += `<tr><td style="white-space:nowrap"><span class="mdot" style="background:${MODEL[m].c}"></span><b>${MODEL[m].name}</b><br>${coin}</td>
+        <td>${cmpItems(raw)}</td><td>${cmpItems(ta)}</td></tr>`;
+    }
+  $('comparison').innerHTML = `<div class="rulehead"><h2>RAW vs TA</h2>
+    <span class="sub">what did TA do vs what did Raw do — ongoing and closed trades</span></div>
+    <div class="twrap"><table class="cmp"><tr><th>Model · Coin</th><th>RAW</th><th>TA</th></tr>${rows}</table></div>`;
 }
 function pairCards(){
   const fm = $('f_model').value, fc = $('f_coin').value;
@@ -541,25 +617,25 @@ function pairCards(){
       const ta = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'ta');
       // genuine live/demo data decides "started" — never the demo Boolean
       const started = raw.n_decisions + ta.n_decisions > 0;
-      const ps = uiMode() === 'PILOT' ? pairStatus(coin, m) : null;
+      const ps = uiMode() === 'LIVE' ? pairStatus(coin, m) : null;
       const sub = started ? (raw.side === ta.side ? 'direction AGREE' : 'direction DISAGREE')
-        : (uiMode() === 'PILOT' && D.round_lifecycle === 'THINKING'
+        : (uiMode() === 'LIVE' && D.round_lifecycle === 'THINKING'
            ? 'THINKING / AWAITING RESPONSE' : 'Awaiting first paired decision.');
       out += `<div class="tcard" style="border-left-color:${MODEL[m].c}">
         <div class="row1">${icon(m)}<div><div class="who" style="font-size:14.5px;font-weight:800">${MODEL[m].name} · ${coin}</div>
           <div class="sub">${sub}${ps ? ` · last round: ${ps.status}${ps.reason ? ' — ' + ps.reason : ''}` : ''}</div></div></div>
         <div class="grid" style="margin-top:8px">
           <span>Raw equity</span><b>${money(raw.equity)}</b>
-          <span>Feature equity</span><b>${money(ta.equity)}</b>
+          <span>TA equity</span><b>${money(ta.equity)}</b>
           <span>Raw direction</span><b>${raw.side}</b>
-          <span>Feature direction</span><b>${ta.side}</b>
+          <span>TA direction</span><b>${ta.side}</b>
           <span>size gap</span><b>${money(raw.notional == null || ta.notional == null ? null : Math.abs(N(raw.notional) - N(ta.notional)))}</b>
           <span>equity gap</span><b>${money(raw.equity == null || ta.equity == null ? null : N(raw.equity) - N(ta.equity))}</b>
           <span>fee gap</span><b>${money(Math.abs(N(raw.fees) - N(ta.fees)))}</b>
           <span>trades</span><b>${raw.n_trades} / ${ta.n_trades}</b>
         </div>
         ${started && raw.thesis ? `<div class="sub" style="margin-top:7px">RAW: “${raw.thesis.slice(0,90)}…”</div>` : ''}
-        ${started && ta.thesis ? `<div class="sub">FEAT: “${ta.thesis.slice(0,90)}…”</div>` : ''}
+        ${started && ta.thesis ? `<div class="sub">TA: “${ta.thesis.slice(0,90)}…”</div>` : ''}
       </div>`;
     }
   }
@@ -588,44 +664,57 @@ function leaderboard(){
     <th>Equity</th><th>Return</th><th>Drawdown</th><th>Fees</th><th>Status</th></tr>
     ${rows.map((a, i) => `<tr><td>${tied || a.ret == null ? '—' : i + 1}</td><td>${a.coin}</td>
       <td><span class="mdot" style="background:${MODEL[a.model].c}"></span>${MODEL[a.model].name}</td>
-      <td>${a.arm === 'raw' ? 'Raw' : 'Feature'}</td><td>${money(a.equity)}</td>
+      <td>${armLabel(a)}</td><td>${money(a.equity)}</td>
       <td class="${a.ret == null ? '' : a.ret >= 0 ? 'up' : 'down'}">${a.ret == null ? 'MARK N/A' : (a.ret >= 0 ? '+' : '') + a.ret.toFixed(2) + '%'}</td>
       <td>${a.ret == null ? 'MARK N/A' : a.ret < 0 ? a.ret.toFixed(2) + '%' : '0.00%'}</td><td>${money(a.fees)}</td>
-      <td>${a.terminal ? 'CLOSED' : a.equity == null ? 'MARK UNAVAILABLE' : (a.status_text || (D.mode === 'PILOT_12H' ? 'live' : demo ? 'demo' : 'Waiting for pilot'))}</td></tr>`).join('')}
+      <td>${a.terminal ? 'CLOSED' : a.equity == null ? 'MARK UNAVAILABLE' : (a.status_text || (isLive() ? 'live' : demo ? 'demo' : 'Waiting for pilot'))}</td></tr>`).join('')}
     </table></div>`;
 }
 function boot(){
   D = data();
   document.body.classList.toggle('demo', demo);
-  $('demobtn').textContent = demo ? 'Exit demo scenario' : 'View demo scenario';
+  // the top banner always states the PUBLISHED payload's own mode/banner
+  if (isLive()) $('prepbanner').textContent = D.banner;
   $('cointabs').innerHTML = ['AGGREGATE', ...COINS].map(t =>
     `<div class="tab ${t === coinTab ? 'active' : ''}" onclick="setCoin('${t}')">${t}</div>`).join('');
   $('metricbtns').innerHTML = METRICS.map(m =>
     `<button class="${m === metric ? 'active' : ''}" onclick="setMetric('${m}')">${m}</button>`).join('');
-  strip(); chart(); panel(); leaderboard();
-  $('abouttext').textContent = D.question + ' Three Claude models (Haiku 4.5, Sonnet 5, Opus 4.8) each run two isolated $10,000 paper accounts per coin: RAW sees only candles; FEATURE sees the same candles plus a fixed neutral numerical feature summary. Same rules, same prices, hourly decisions, machine-checked invalidations. Paper money only.';
-  $('foot').innerHTML = `${D.banner} · integrity ${D.combined_hash.slice(0,12)}… · <a href="pilot-archive/">old pilot archive</a> (OLD PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE) · <a href="design/DESIGN_PACK_V1_1.md">methodology</a>`;
+  strip(); chart(); panel(); comparison(); leaderboard();
+  $('abouttext').textContent = D.question + ' Three Claude models (Haiku 4.5, Sonnet 5, Opus 4.8) each run two isolated $10,000 paper accounts per coin: RAW sees only candles; TA sees the same candles plus a fixed neutral numerical feature summary (technical analysis). Same rules, same prices, hourly decisions, machine-checked invalidations. Paper money only.';
+  $('foot').innerHTML = `${D.banner} · integrity ${D.combined_hash.slice(0,12)}… · <a href="pilot-archive/">old pilot archive</a> (OLD PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE) · <a href="design/DESIGN_PACK_V1_1.md">methodology</a><br>
+    <span style="font-size:11px">Ticker prices are display-only (Coinbase spot, 30s refresh) and non-authoritative; official experiment execution uses Kraken data.</span>`;
 }
 window.setCoin = t => { coinTab = t; chart(); };
 window.setMetric = m => { metric = m; chart(); };
 ['f_model','f_coin','f_arm'].forEach(id => $(id).addEventListener('change', panel));
 
-/* ---- live payload auto-refresh (Ruling 011.3): an already-open browser
-   receives each newly published state without a manual reload. Cache-busted
-   fetch; on any error the page keeps the last good payload. ---- */
+/* ---- live payload auto-refresh (Ruling 011.3 + Mentor Ruling 1.4): an
+   already-open browser receives each newly published state without a manual
+   reload. The DIRECT VPS endpoint is authoritative; the page's own origin
+   (the asynchronous GitHub mirror, possibly lagging) is only a fallback.
+   Cache-busted; on any error the page keeps the last good payload.
+   OWNER INPUT: LIVE_ORIGIN must be set to the VPS origin (with trailing
+   slash, e.g. 'https://arena.example.com/') before the site digest is
+   sealed; '' means same-origin (VPS-hosted page, local preview, tests). */
+const LIVE_ORIGIN = '';
 let lastPub = window.ARENA_LIVE ? window.ARENA_LIVE.publication_id : null;
 async function pollLive(){
-  try {
-    const r = await fetch('live_payload.js?cb=' + Date.now(), {cache: 'no-store'});
-    if (!r.ok) return;
-    const t = await r.text();
-    const pl = JSON.parse(t.slice(t.indexOf('=') + 1).trim().replace(/;$/, ''));
-    if (pl && pl.publication_id && pl.publication_id !== lastPub){
-      lastPub = pl.publication_id;
-      window.ARENA_LIVE = pl;
-      if (!demo) boot();
-    }
-  } catch (e) { /* keep last good payload */ }
+  const sources = LIVE_ORIGIN ? [LIVE_ORIGIN + 'live_payload.js', 'live_payload.js']
+                              : ['live_payload.js'];
+  for (const src of sources){
+    try {
+      const r = await fetch(src + '?cb=' + Date.now(), {cache: 'no-store'});
+      if (!r.ok) continue;
+      const t = await r.text();
+      const pl = JSON.parse(t.slice(t.indexOf('=') + 1).trim().replace(/;$/, ''));
+      if (pl && pl.publication_id && pl.publication_id !== lastPub){
+        lastPub = pl.publication_id;
+        window.ARENA_LIVE = pl;
+        if (!demo) boot();
+      }
+      return;                         // first reachable source wins
+    } catch (e) { /* try next source; keep last good payload */ }
+  }
 }
 setInterval(pollLive, 60000);
 

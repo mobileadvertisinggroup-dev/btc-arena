@@ -238,10 +238,11 @@ def test_dom_thinking_renders_live_status_not_prestart(cfg, pilot_payloads):
     assert "pilot has not started" not in chat
     assert "DECISION RECEIVED" not in chat           # nothing invented
     assert "t=demo" not in chat and "(demo)" not in chat
+    # display language is Raw/TA (wishlist #3); internal ids stay raw/ta
     for label in ("Haiku 4.5", "Sonnet 5", "Opus 4.8", "BTC", "SOL",
-                  "Raw", "Feature"):
+                  "Raw", "TA"):
         assert label in chat
-    assert "THINKING" in res["dom"]["strip"]         # round status visible
+    assert "THINKING" in res["dom"]["statusstrip"]   # round status visible
     pairs = res["dom"]["panel:PAIR DETAILS"]
     assert "THINKING / AWAITING RESPONSE" in pairs
 
@@ -261,7 +262,7 @@ def test_dom_committed_renders_actual_thesis_and_pair_status(cfg,
     assert "Awaiting first paired decision" not in pairs
     assert "last round: PAIR_COMMITTED" in pairs
     assert "direction" in pairs                      # AGREE/DISAGREE computed
-    assert "ROUND COMMITTED" in res["dom"]["strip"]
+    assert "ROUND COMMITTED" in res["dom"]["statusstrip"]
     opens = res["dom"]["panel:OPEN POSITIONS"]
     assert "LONG" in opens                           # the live SOL position
 

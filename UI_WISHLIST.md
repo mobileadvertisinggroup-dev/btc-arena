@@ -4,6 +4,18 @@ Implementation window: AFTER the 12h pilot completes, bundled with the
 always-on cloud runner. Both ship in ONE audit round → mentor issues new
 engine + site digests together. The UI is integrity-locked until then.
 
+IMPLEMENTATION STATUS (2026-08-04, branch build-batch-cloud-ui): all 12
+items implemented — #1 overflow audit + ≤640px media query; #2 leaderboard
+and about hidden + click-to-open; #3 every visible label is TA (ids stay
+raw/ta); #4 position cards expand to the full submitted thesis; #5 age from
+the new entry_t payload field vs the published boundary; #6 the exact
+submitted invalidation condition rendered; #7 Model Chat untouched; #8 demo
+button removed (?demo=1 kept, labeled); #9 active coin tab inverted
+ink-on-paper; #10 RAW vs TA comparison table on the landing flow; #11 tiny
+inline ticker with tooltip/footnote disclaimer; #12 official cloud runner
+(engine/official.py + scripts/run_official_14d.py + deploy/). DOM contract
+tests: tests/test_official_dom.py. Awaiting new audit round; not deployed.
+
 ## 1. Mobile fit (bug)
 Page is slightly wider than the phone viewport — wiggles left/right when
 swiping. Must be 100% mobile-friendly: no horizontal scroll anywhere

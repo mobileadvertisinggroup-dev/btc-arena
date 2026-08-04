@@ -38,6 +38,10 @@ from . import config as config_mod, dashboard, persistence
 PUB_LOG = "publications.json"
 BANNER = ("12-HOUR PILOT — REAL AI DECISIONS — PAPER MONEY — "
           "NOT OFFICIAL EXPERIMENTAL EVIDENCE")
+# Default branding (the pilot's); the official runner passes its own.
+# `branding` never changes WHAT is published (state, marks, progress,
+# publication ids) — only the mode string and human banner text.
+PILOT_BRANDING = {"mode": "PILOT_12H", "banner": BANNER}
 THINKING_NOTICE = ("Model requests are processing for this boundary. This "
                    "status never exposes hidden reasoning; final submitted "
                    "decisions appear after the round commits.")
@@ -75,7 +79,7 @@ def _schedule(store):
     return pilot_mod.load_schedule(store)
 
 
-def build_live_payload(store, T, done, total, cfg, lifecycle):
+def build_live_payload(store, T, done, total, cfg, lifecycle, branding=None):
     """Build the live payload purely from PERSISTED post-commit engine state:
     persisted boundary marks (never live/snapshot data, never cash-as-price),
     persisted equity history, persisted ledger."""
@@ -107,9 +111,10 @@ def build_live_payload(store, T, done, total, cfg, lifecycle):
                 [{"t": start_t, "equity": "10000.00", "fees": "0"}] +
                 [{"t": p["T"], "equity": p["equity"], "fees": p["fees"]}
                  for p in hist.get(row["id"], [])])
-    pl["mode"] = "PILOT_12H"
-    pl["banner"] = BANNER
-    pl["data_notice"] = BANNER
+    branding = branding or PILOT_BRANDING
+    pl["mode"] = branding["mode"]
+    pl["banner"] = branding["banner"]
+    pl["data_notice"] = branding["banner"]
     pl["round_lifecycle"] = lifecycle
     if lifecycle == "THINKING":
         pl["lifecycle_notice"] = THINKING_NOTICE
@@ -172,7 +177,7 @@ def _expected(T, done, total, lifecycle):
             "publication_id": f"{T}:{lifecycle}:{done}"}
 
 
-def publish_ready(store, cfg, publish):
+def publish_ready(store, cfg, publish, branding=None):
     """Pre-activation gate (Ruling 011.3): publish and verify a READY state
     BEFORE the first model call. Raises PublicationError unless the public
     dashboard verifiably received it — the caller must then refuse to trade."""
@@ -180,7 +185,8 @@ def publish_ready(store, cfg, publish):
     done, total = len(sched["completed"]), sched["total"]
     T = sched["start"]
     expected = _expected(T, done, total, "READY")
-    text = _text(build_live_payload(store, T, done, total, cfg, "READY"))
+    text = _text(build_live_payload(store, T, done, total, cfg, "READY",
+                                    branding))
     entry = _attempt(store, read_log(store), "ready", expected, text, publish)
     if entry["status"] != "PUBLISHED":
         raise PublicationError(
@@ -189,7 +195,7 @@ def publish_ready(store, cfg, publish):
     return entry
 
 
-def publish_thinking(store, T, done, total, cfg, publish):
+def publish_thinking(store, T, done, total, cfg, publish, branding=None):
     """Lifecycle state A — before any model request for boundary T. Progress
     unchanged; payload is previous persisted state + status only. Failure is
     recorded and never blocks or re-executes trading."""
@@ -198,11 +204,12 @@ def publish_thinking(store, T, done, total, cfg, publish):
     if log.get(key, {}).get("status") == "PUBLISHED":
         return log[key]
     expected = _expected(T, done, total, "THINKING")
-    text = _text(build_live_payload(store, T, done, total, cfg, "THINKING"))
+    text = _text(build_live_payload(store, T, done, total, cfg, "THINKING",
+                                    branding))
     return _attempt(store, log, key, expected, text, publish)
 
 
-def publish_boundary(store, T, done, total, cfg, publish):
+def publish_boundary(store, T, done, total, cfg, publish, branding=None):
     """Lifecycle state B — after the atomic engine commit: exactly once per
     committed boundary. The payload text is made durable BEFORE the transport
     attempt so a crash or failure can be retried from disk without touching
@@ -213,7 +220,7 @@ def publish_boundary(store, T, done, total, cfg, publish):
         return log[key]                       # exactly-once per boundary
     expected = _expected(T, done, total, "ROUND_COMMITTED")
     text = _text(build_live_payload(store, T, done, total, cfg,
-                                    "ROUND_COMMITTED"))
+                                    "ROUND_COMMITTED", branding))
     pdir = os.path.join(store, "publish")
     os.makedirs(pdir, exist_ok=True)
     ppath = os.path.join(pdir, f"{T}.js")
@@ -226,7 +233,7 @@ def publish_boundary(store, T, done, total, cfg, publish):
     return _attempt(store, log, key, expected, text, publish)
 
 
-def reconcile(store, cfg, publish):
+def reconcile(store, cfg, publish, branding=None):
     """Startup/retry path: PUBLICATION ONLY. For completed boundaries whose
     committed publication is missing or FAILED: the latest one is
     (re)published from its durable payload file (rebuilt from persisted state
@@ -260,7 +267,7 @@ def reconcile(store, cfg, publish):
             text = open(ppath).read()
         else:
             text = _text(build_live_payload(store, T, done, total, cfg,
-                                            "ROUND_COMMITTED"))
+                                            "ROUND_COMMITTED", branding))
         entry = _attempt(store, log, key, expected, text, publish)
         results.append((T, entry["status"]))
     return results

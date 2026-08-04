@@ -91,10 +91,10 @@ pre["mode"] = "PREPARATION"
 pre["banner"] = "AKRA ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED"
 pre["data_notice"] = ("No model has been called. No paper-trading pilot or "
                       "official experiment has started.")
-pre["pilot_progress"] = {"done": 0, "total": 12}
+pre["pilot_progress"] = {"done": 0, "total": None}
 for coin in ("BTC", "ETH", "SOL"):
     for a in pre["coins"][coin]["accounts"]:
-        a["status_text"] = "Waiting for pilot"
+        a["status_text"] = "Waiting for start"
         a["series"] = [{"t": 0, "equity": "10000.00", "fees": "0"},
                        {"t": 1, "equity": "10000.00", "fees": "0"}]
 out2 = os.path.join(ROOT, "docs", "prestart_payload.js")

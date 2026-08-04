@@ -52,7 +52,8 @@ def _seed(T):
 
 
 def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
-                     replay_spec=None, clock=None, deadline=None):
+                     replay_spec=None, clock=None, deadline=None,
+                     abort_all_reason=None):
     """Returns (ledger_entries, attempt_records, archived_user_prompts).
 
     `deadline` (Ruling 012.3): the authoritative ABSOLUTE collection deadline
@@ -61,7 +62,12 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
     retrieval, grace waits, and restarts all consume the same T..T+12min
     budget — entering this coordinator late never grants new time, and a
     restart never resets the deadline. When omitted (offline tooling/tests),
-    the legacy anchor `clock() + collection_deadline_seconds` applies."""
+    the legacy anchor `clock() + collection_deadline_seconds` applies.
+
+    `abort_all_reason` (official-run Mentor Ruling 2): when set, the caller
+    is NEVER invoked — every non-finalized pair aborts with exactly this
+    reason and the prompt archive records not_called markers. Boundary marks
+    still freeze and the boundary still becomes terminal."""
     # RUNTIME INTEGRITY GATE (Ruling 009.1): load the immutable APPROVED
     # launch manifest (never rebuilt from the working tree) and verify every
     # engine/script/config/prompt/schema byte BEFORE touching state, prompts,
@@ -114,6 +120,12 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
             if "user" in e:
                 pregen[aid] = (e["system"], e["user"])   # bytes reused verbatim
             continue
+        if abort_all_reason is not None:
+            entries.append({"account_id": aid,
+                            "pair_id": state.pair_id(acct["coin"], acct["model"]),
+                            "round_id": prompts.round_id(acct["coin"], T),
+                            "not_called": abort_all_reason})
+            continue
         if blocked:
             entries.append({"account_id": aid,
                             "pair_id": state.pair_id(acct["coin"], acct["model"]),
@@ -165,7 +177,9 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                 continue
             a_raw = accounts[state.account_id(coin, model, "raw")]
             a_ta = accounts[state.account_id(coin, model, "ta")]
-            if meta.get("_recovering"):
+            if abort_all_reason is not None:
+                pair_meta[pid] = ("abort", rid, abort_all_reason, None)
+            elif meta.get("_recovering"):
                 pair_meta[pid] = ("abort", rid, "crash_recovery", None)
             elif meta["coin_terminated"].get(coin):
                 pair_meta[pid] = ("abort", rid, "COIN_TERMINATED", None)

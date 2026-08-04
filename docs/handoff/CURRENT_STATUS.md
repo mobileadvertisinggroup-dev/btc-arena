@@ -1,5 +1,15 @@
 # CURRENT STATUS — frozen facts as of 2026-08-04
 
+## Build batch (added 2026-08-04, AFTER the facts below)
+Mentor Rulings 1–10 (post-pilot) authorized implementation. Branch
+build-batch-cloud-ui now carries the complete cloud-runner + UI-wishlist
+build (see docs/handoff/BUILD_BATCH_DESIGN.md). This CHANGES the engine and
+site digests on that branch — the digests below remain the approved ones for
+the FROZEN v1-clean-experiment tree only. New digests await the next audit
+round. Nothing is deployed, pushed, preflighted, or activated; data-v1 is
+untouched. OWNER INPUT still needed: the VPS domain for LIVE_ORIGIN in
+docs/index.html before the audit archive is sealed.
+
 ## Formal standing
 - Offline audit: **PASSED** (Mentor Final Ruling, 2026-08-03) for engine +
   static site. Engine tree frozen at the approved digest.
