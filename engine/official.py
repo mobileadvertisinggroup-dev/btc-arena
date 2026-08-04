@@ -82,6 +82,12 @@ class LockError(Exception):
     """A second runner instance tried to start (Ruling 6)."""
 
 
+class PristineError(Exception):
+    """The official store's state is not exactly pristine at first-schedule
+    creation (Mentor Ruling 015.1): refuse before any schedule, publication,
+    network access, or model call."""
+
+
 class Disarmed(Exception):
     """The owner's activation record was deleted/replaced/modified BEFORE the
     first scheduled boundary (Mentor Ruling 014.1): the run must stop with
@@ -108,6 +114,114 @@ def make_disarm_check(path, expected_sha):
     return still_armed
 
 
+def verify_pristine_official_state(store):
+    """Mentor Ruling 015.1: before the FIRST official schedule may exist, the
+    complete official state must be exactly pristine — byte-normalized equal
+    to a freshly initialized 18-account roster (exact ids, $10,000.00 each,
+    zero qty/entry/fees/trades/lifecycles/theses/decisions) with a null
+    boundary and no history of any kind. A correctly checksummed but DIRTY
+    state refuses loudly; a missing state file is fine (standard pristine
+    state gets created by provisioning)."""
+    import json as _json
+    from . import state as state_mod
+    spath = os.path.join(store, "state.json")
+    if not os.path.exists(spath):
+        return True
+    accounts, meta = persistence.load_state(spath, expect_full_roster=True)
+    expected = state_mod.init_accounts()
+    got = _json.dumps(persistence._enc_all(accounts), sort_keys=True,
+                      default=str)
+    want = _json.dumps(persistence._enc_all(expected), sort_keys=True,
+                       default=str)
+    if got != want:
+        diff = [aid for aid in expected
+                if _json.dumps(persistence._enc_all(
+                    {aid: accounts.get(aid)}), sort_keys=True, default=str)
+                != _json.dumps(persistence._enc_all(
+                    {aid: expected[aid]}), sort_keys=True, default=str)]
+        raise PristineError(
+            f"official state is not pristine (accounts differ: {diff[:6]})")
+    if meta.get("boundary") is not None:
+        raise PristineError("official meta carries a boundary")
+    for key in ("equity_history", "equity_history_last", "marks", "marks_T",
+                "finalized_pairs", "outbox", "flushed_ids",
+                "replay_watermark", "replay_state", "coin_terminated",
+                "boundary_complete", "_recovering"):
+        if meta.get(key):
+            raise PristineError(f"official meta carries prior-run {key}")
+    return True
+
+
+BINDING_NAME = "activation_binding.json"
+
+
+def write_activation_binding(store, activation_sha, engine_digest,
+                             site_digest, start, total):
+    """Mentor Ruling 015.2: an UNSTARTED schedule is bound to the exact
+    activation record (its SHA-256) plus the digests, start, and total it
+    was provisioned from. The binding travels with the store so a service
+    stop or reboot cannot orphan a stale schedule."""
+    path = os.path.join(store, BINDING_NAME)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump({"activation_sha": activation_sha,
+                   "engine_digest": engine_digest,
+                   "site_digest": site_digest,
+                   "start": start, "total": total}, f, indent=1)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+    return path
+
+
+def reconcile_unstarted_schedule(store, activation_path):
+    """Mentor Ruling 015.2 startup reconciliation. Returns one of:
+      'no_schedule'  — nothing provisioned; nothing to do.
+      'started'      — a boundary has started or completed: the schedule is
+                       IMMUTABLE; normal restart recovery applies.
+      'match'        — unstarted schedule and the current activation record
+                       is byte-identical (SHA) to the bound one with the
+                       same digests/start/total: resume waiting.
+      'rolled_back'  — unstarted schedule whose activation is absent,
+                       changed, or unbound: schedule/publication artifacts
+                       safely removed; the service is back to ARMED/OFF and
+                       a later re-arm provisions the newly requested
+                       schedule."""
+    try:
+        sched = pilot.load_schedule(store)
+    except pilot.ScheduleError:
+        return "no_schedule"
+    _, meta = persistence.load_state(os.path.join(store, "state.json"),
+                                     expect_full_roster=True)
+    if sched["completed"] or meta.get("boundary") is not None:
+        return "started"                 # replacement forbidden forever
+    binding = None
+    try:
+        with open(os.path.join(store, BINDING_NAME)) as f:
+            binding = json.load(f)
+    except Exception:
+        binding = None
+    cur_sha = activation_sha(activation_path)
+    ok = (binding is not None and cur_sha is not None
+          and binding.get("activation_sha") == cur_sha
+          and binding.get("start") == sched["start"]
+          and binding.get("total") == sched["total"])
+    if ok:
+        try:
+            with open(activation_path) as f:
+                act = json.load(f)
+        except Exception:
+            act = {}
+        ok = (act.get("engine_digest") == binding.get("engine_digest")
+              and act.get("site_digest") == binding.get("site_digest")
+              and act.get("start_utc") == binding.get("start")
+              and act.get("total") == binding.get("total"))
+    if ok:
+        return "match"
+    rollback_unstarted(store)
+    return "rolled_back"
+
+
 def rollback_unstarted(store):
     """Undo provisioning artifacts after a valid PRE-START disarm: allowed
     ONLY while zero boundaries are completed and account state carries no
@@ -125,7 +239,7 @@ def rollback_unstarted(store):
                                      expect_full_roster=True)
     if meta.get("boundary") is not None:
         raise RuntimeError("boundary state exists — not an unstarted run")
-    for name in (pilot.SCHEDULE_NAME, publisher_mod.PUB_LOG):
+    for name in (pilot.SCHEDULE_NAME, publisher_mod.PUB_LOG, BINDING_NAME):
         try:
             os.remove(os.path.join(store, name))
         except FileNotFoundError:
@@ -154,16 +268,31 @@ def acquire_runner_lock(path):
 
 
 def provision_official(store, approved_digest, approved_site_digest, start,
-                       total=TOTAL_BOUNDARIES):
+                       total=TOTAL_BOUNDARIES, activation_sha=None):
     """Digest-gated provisioning of the official schedule (Ruling 3): the
     start must be an exact UTC hour; the full boundary list is persisted
     (sealed) before any model call. Idempotent: an existing schedule/state is
-    preserved verbatim — a restart can never mint new boundaries."""
+    preserved verbatim — a restart can never mint new boundaries.
+
+    Mentor Ruling 015.1: when this call would create the FIRST schedule, an
+    existing state file must be exactly pristine (PristineError otherwise —
+    refused before schedule/publication/network/model work; a missing state
+    file is created pristine by provisioning).
+    Mentor Ruling 015.2: a newly created schedule is bound to the exact
+    activation record SHA + digests + start + total via the store binding."""
     if start % HOUR:
         raise pilot.ScheduleError(
             f"official start {start} is not an exact UTC hour")
-    return pilot.provision(store, approved_digest, approved_site_digest,
-                           start, total=total)
+    creating = not os.path.exists(os.path.join(store, pilot.SCHEDULE_NAME))
+    if creating:
+        verify_pristine_official_state(store)   # raises BEFORE any write
+    sched = pilot.provision(store, approved_digest, approved_site_digest,
+                            start, total=total)
+    if creating:
+        write_activation_binding(store, activation_sha, approved_digest,
+                                 approved_site_digest, sched["start"],
+                                 sched["total"])
+    return sched
 
 
 class DirectPublisher:

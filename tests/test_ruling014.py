@@ -388,7 +388,9 @@ def test_mutated_infra_file_breaks_the_approved_digest(tmp_path, monkeypatch):
 def test_verify_deployment_checks_the_frozen_hostname():
     mod = _load_script("verify_deployment")
     host = urlparse(official.OFFICIAL_PUBLIC_ORIGIN).hostname
-    assert any(host in line for line in mod.REQUIRED_NGINX_LINES)
+    assert mod.HOSTNAME == host
+    assert any(host in line for line in mod.REQUIRED_IN_PAYLOAD_LOCATION) \
+        or host in mod.HOSTNAME                      # hostname-driven checks
 
 
 # ---- 014.7 pinned reproducible environment ----

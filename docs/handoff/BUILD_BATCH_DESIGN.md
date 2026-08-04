@@ -69,7 +69,9 @@ Positions panel now renders the exact submitted condition, e.g.
 invented when no invalidation exists.
 
 ### R6 — process control
-- systemd unit with Restart=always + WantedBy=multi-user.target (auto-start
+- systemd unit with Restart=on-failure (per Mentor Ruling 014.3: crash and
+  reboot recovery without restarting a completed experiment)
+  + WantedBy=multi-user.target (auto-start
   after reboot); state lives in the repo checkout + /var/www/arena (never
   tmpfs/container-ephemeral).
 - One-runner-only: exclusive non-blocking fcntl flock on control/runner.lock;

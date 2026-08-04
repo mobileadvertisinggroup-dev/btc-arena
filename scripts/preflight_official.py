@@ -61,8 +61,23 @@ def run_preflight(store, cfg, snaps, call_fn, T):
     """Core preflight, transport-injected and fully offline-testable.
     call_fn(account_id, system, user) -> (decision|None, response_model,
     stop_reason, latency_s, requested_model) or raises. Returns (summary,
-    results); writes only the durable prompt archive + report into `store`."""
-    from engine import decisions, persistence, prompts, state
+    results); writes only the durable prompt archive + report into `store`.
+
+    Requests run through the PRODUCTION wave structure (rounds.wave_order,
+    3 pairs = 6 requests per wave) under the production concurrency limit,
+    still making exactly 18 requests and creating no trades or schedule.
+
+    Identity rule (Mentor Ruling 015.4, documented): the response's model id
+    must EXACTLY equal the requested model id — no prefix or fuzzy matching.
+
+    PASS requires ALL of: exactly 18 requests/responses, 18 schema-valid,
+    18 semantically valid under production decisions.validate(), 18 exact
+    model identities, Raw/TA separation, accounts + store unmodified, zero
+    transport failures (the direct endpoint probe is verified separately by
+    main() into overall_pass)."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from engine import decisions, persistence, prompts, rounds, state
     os.makedirs(store, exist_ok=True)
     accounts = state.init_accounts()             # in-memory only
     assert all(str(a["E"]) == "10000.00" for a in accounts.values())
@@ -98,7 +113,8 @@ def run_preflight(store, cfg, snaps, call_fn, T):
     results = {}
     before = json.dumps(persistence._enc_all(accounts), sort_keys=True,
                         default=str)
-    for aid in sorted(accounts):                 # exactly the 18 accounts
+
+    def one(aid):
         system, user = rendered[aid]
         row = {"requested_model": None, "response_model": None,
                "stop_reason": None, "latency_s": None, "accepted": False,
@@ -117,11 +133,19 @@ def run_preflight(store, cfg, snaps, call_fn, T):
                 row["semantic_errors"] = decisions.validate(
                     acct, dec, snaps[acct["coin"]]["P_T"])
                 row["decision_position"] = dec.get("position")
-                row["identity_ok"] = bool(rmodel) and (
-                    rmodel.startswith(want) or want.startswith(rmodel))
+                # EXACT identity rule (documented above)
+                row["identity_ok"] = rmodel == want
         except Exception as e:
             row["transport_error"] = str(e)[:200]
-        results[aid] = row
+        return aid, row
+
+    concurrency = cfg["collection"]["concurrency_max_simultaneous_requests"]
+    for wave in rounds.wave_order(seed):         # production wave structure
+        aids = sorted(state.account_id(coin, model, arm)
+                      for coin, model in wave for arm in state.ARMS)
+        with ThreadPoolExecutor(max_workers=concurrency) as ex:
+            for aid, row in ex.map(one, aids):
+                results[aid] = row
 
     after = json.dumps(persistence._enc_all(accounts), sort_keys=True,
                        default=str)
@@ -144,9 +168,15 @@ def run_preflight(store, cfg, snaps, call_fn, T):
         "accounts_unmutated": unmutated,
         "marks": {c: str(s["P_T"]) for c, s in snaps.items()},
     }
+    summary["identity_rule"] = ("response model id must EXACTLY equal the "
+                                "requested model id")
+    # STRICT PASS (Mentor Ruling 015.4): semantic validity is REQUIRED —
+    # 18 accepted, 18 schema-valid, 18 semantically valid, 18 exact
+    # identities, zero transport failures, separation + isolation proven.
     summary["model_calls_pass"] = (
         summary["accepted"] == n == 18 and summary["schema_valid"] == 18
         and summary["identity_ok"] == 18
+        and summary["semantically_valid_first_try"] == 18
         and not summary["transport_failures"] and archive_ok and sep_ok
         and unmutated)
     out = os.path.join(store, f"preflight_report_{T}.json")

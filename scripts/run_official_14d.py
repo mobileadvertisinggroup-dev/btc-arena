@@ -219,6 +219,14 @@ def main():
     from engine import config, official
     lock = official.acquire_runner_lock(LOCK_PATH)   # noqa: F841 (held open)
     verify_public_binding()          # Ruling 014.2: bound before ANYTHING
+    # DISARM SURVIVES STOP/REBOOT (Ruling 015.2): before anything else, an
+    # UNSTARTED schedule whose bound activation record is absent or changed
+    # is rolled back — the service comes up genuinely ARMED/OFF. A started
+    # schedule is immutable and takes the normal restart path.
+    status = official.reconcile_unstarted_schedule(OFFICIAL_STORE, ACTIVATION)
+    if status == "rolled_back":
+        print("STALE UNSTARTED SCHEDULE ROLLED BACK (activation record "
+              "absent or changed while the service was down). ARMED/OFF.")
     while True:
         act = armed_off_loop()
         # INTEGRITY GATES (Rulings 010.1/011.1): the EXTERNALLY issued
@@ -231,11 +239,15 @@ def main():
                   "made.")
             sys.exit(2)
         act_sha = official.activation_sha(ACTIVATION)
+        # re-reconcile with the CURRENT record: a leftover unstarted
+        # schedule bound to a different activation rolls back so the newly
+        # requested start can provision (Ruling 015.2)
+        official.reconcile_unstarted_schedule(OFFICIAL_STORE, ACTIVATION)
         print(f"ACTIVATION ACCEPTED sha256={act_sha} "
               f"start={act['start_utc']} total={act['total']}")
         sched = official.provision_official(
             OFFICIAL_STORE, act["engine_digest"], act["site_digest"],
-            act["start_utc"], total=act["total"])
+            act["start_utc"], total=act["total"], activation_sha=act_sha)
         cfg = config.load_config()
         publish = direct_publisher()
         print(f"OFFICIAL RUN ARMED — {sched['total']} boundaries from "

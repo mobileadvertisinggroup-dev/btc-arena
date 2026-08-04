@@ -3,7 +3,8 @@
 ## 1. Build batch: cloud runner + UI wishlist (ONE audit round)
 Owner requirements already standing:
 - OFFICIAL 14-DAY RUNNER on an always-on cloud VPS (~$5/mo class) under
-  systemd Restart=always. The official experiment must not depend on the
+  systemd (Restart=on-failure per Ruling 014.3). The official experiment
+  must not depend on the
   owner's Mac being open/powered/connected or on Claude Code running.
   Needs a NEW runner entry (run_pilot_12h.py is pilot-specific: 12
   boundaries/pilot store/pilot banner) => engine digest WILL change =>

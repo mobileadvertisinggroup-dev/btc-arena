@@ -29,7 +29,8 @@ tree deployed from the approved branch — never manually edited on the server.
 
 ## 3. Web endpoint (Ruling 1)
 - mkdir -p /var/www/arena, owner arena:arena.
-- Install deploy/nginx-arena.conf (replace ARENA_VPS_HOST), then TLS via
+- Install deploy/nginx-arena.conf verbatim (hostname is frozen and
+  integrity-locked — never edit it), then TLS via
   certbot. Endpoint serves ONLY live_payload.js, live_payload.sha256,
   health.json; GET/HEAD only; CORS open; no-store.
 

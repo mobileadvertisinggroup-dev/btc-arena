@@ -23,6 +23,7 @@ PREDECLARED RECOVERY RULE: on restart of an incomplete boundary, any pair not
 finalized in the checkpoint is PAIR_ABORTED("crash_recovery"); finalized pairs
 stand; replay resumes strictly after the persisted watermark.
 """
+import copy
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -241,32 +242,60 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
             a_ta = accounts[state.account_id(coin, model, "ta")]
             snap = snapshots.get(coin)
             exec_links = []
+            # TRANSACTIONAL RESOLUTION (Ruling 015.3): all validation and
+            # accounting run against DEEP COPIES; the authoritative clock is
+            # read AFTER every piece of resolution work is prepared and only
+            # a fully prepared PRE-DEADLINE result is swapped in and made
+            # durable. A late preparation is discarded whole: zero account
+            # mutation, zero trades, PAIR_ABORTED/deadline_exceeded.
+            def _too_late():
+                return (resolution_deadline is not None
+                        and clock() >= resolution_deadline)
+
+            def _late_abort():
+                return {"round_id": rid, "pair": pid,
+                        "status": rounds.PAIR_ABORTED,
+                        "reason": "deadline_exceeded"}
             if kind == "abort":
                 entry = {"round_id": rid, "pair": pid,
                          "status": rounds.PAIR_ABORTED, "reason": reason}
             elif kind == "terminal_split":
                 live = [a for a in (a_raw, a_ta) if not a["terminal"]]
                 outs = [results.get(a["id"], (None, "missing", None)) for a in live]
-                if all(o[0] is not None for o in outs):
-                    _crash(crash_at, "after_validate")
-                    for a, o in zip(live, outs):
-                        rounds._commit_account(a, o[0], snap, T)
-                        exec_links.append(o[2])
-                    _crash(crash_at, "after_execute")
                 entry = {"round_id": rid, "pair": pid,
                          "status": rounds.PAIR_TERMINAL_SPLIT,
                          "terminal": terminal_ids, "reason": None}
+                if all(o[0] is not None for o in outs):
+                    _crash(crash_at, "after_validate")
+                    prepared = [copy.deepcopy(a) for a in live]
+                    for p, o in zip(prepared, outs):
+                        rounds._commit_account(p, o[0], snap, T)
+                    if _too_late():
+                        entry = _late_abort()            # discard prepared
+                    else:
+                        for p, o in zip(prepared, outs):
+                            accounts[p["id"]] = p
+                            exec_links.append(o[2])
+                        _crash(crash_at, "after_execute")
             else:
                 o_raw = results.get(a_raw["id"], (None, "missing", None))
                 o_ta = results.get(a_ta["id"], (None, "missing", None))
                 if o_raw[0] is not None and o_ta[0] is not None:
                     _crash(crash_at, "after_validate")
-                    rounds._commit_account(a_raw, o_raw[0], snap, T)
-                    rounds._commit_account(a_ta, o_ta[0], snap, T)
-                    exec_links = [o_raw[2], o_ta[2]]
-                    _crash(crash_at, "after_execute")
-                    entry = {"round_id": rid, "pair": pid,
-                             "status": rounds.PAIR_COMMITTED, "reason": None}
+                    prep_raw = copy.deepcopy(a_raw)
+                    prep_ta = copy.deepcopy(a_ta)
+                    rounds._commit_account(prep_raw, o_raw[0], snap, T)
+                    rounds._commit_account(prep_ta, o_ta[0], snap, T)
+                    if _too_late():
+                        entry = _late_abort()            # discard prepared
+                    else:
+                        accounts[a_raw["id"]] = prep_raw
+                        accounts[a_ta["id"]] = prep_ta
+                        exec_links = [o_raw[2], o_ta[2]]
+                        _crash(crash_at, "after_execute")
+                        entry = {"round_id": rid, "pair": pid,
+                                 "status": rounds.PAIR_COMMITTED,
+                                 "reason": None}
                 else:
                     entry = {"round_id": rid, "pair": pid,
                              "status": rounds.PAIR_ABORTED,
@@ -316,18 +345,28 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                 prefix.append(have[want])
                 want += 60
             if prefix:
-                coin_accounts = [a for a in accounts.values()
-                                 if a["coin"] == coin]
+                pids_ = [a["id"] for a in accounts.values()
+                         if a["coin"] == coin]
                 truncated = None
                 for c in prefix:
-                    # REPLAY DEADLINE (Ruling 014.5): stop cleanly; the
-                    # unprocessed remainder becomes the coin's gap
+                    # REPLAY DEADLINE (Rulings 014.5/015.3, transactional):
+                    # a late candle is discarded whole; the unprocessed
+                    # remainder becomes the coin's gap
                     if replay_deadline is not None \
                             and clock() >= replay_deadline:
                         truncated = c["t"]
                         break
                     recs = []
-                    replay_mod.replay(coin_accounts, [c], recs)
+                    prepared = {a2: copy.deepcopy(accounts[a2])
+                                for a2 in pids_}
+                    replay_mod.replay([prepared[a2] for a2 in pids_], [c],
+                                      recs)
+                    if replay_deadline is not None \
+                            and clock() >= replay_deadline:
+                        truncated = c["t"]               # discard prepared
+                        break
+                    for a2 in pids_:
+                        accounts[a2] = prepared[a2]
                     meta["replay_watermark"][coin] = c["t"]
                     for i, rc in enumerate(recs):
                         persistence.outbox_add(
@@ -359,27 +398,39 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
             ledger.append(ev)
             continue
         meta["replay_state"][coin] = {"status": "REPLAY_COMPLETE"}
-        coin_accounts = [a for a in accounts.values() if a["coin"] == coin]
+        ids = [a["id"] for a in accounts.values() if a["coin"] == coin]
+
+        def _latch_catchup(t_gap):
+            # REPLAY DEADLINE (Rulings 014.5/015.3): replay past the bound
+            # stops with the watermark preserved and latches the standard
+            # CATCHUP_REQUIRED path — never a silent deadline crossing,
+            # never lost candles, never a half-applied candle.
+            meta["replay_state"][coin] = {
+                "status": "CATCHUP_REQUIRED", "gap_since": t_gap,
+                "detail": "replay_deadline_reached"}
+            ev = {"round_id": prompts.round_id(coin, T),
+                  "replay": [{"e": "CATCHUP_REQUIRED", "gap_since": t_gap}]}
+            persistence.outbox_add(meta, f"{coin}:{t_gap}:CATCHUP_REQUIRED",
+                                   ev)
+            persistence.save_state(spath, accounts, meta)
+            persistence.flush_outbox(store, accounts, meta)
+            ledger.append(ev)
         for c in candles:
-            # REPLAY DEADLINE (Ruling 014.5): a boundary must be terminal by
-            # T+720; replay past the bound stops with the watermark preserved
-            # and latches the standard CATCHUP_REQUIRED path — never a silent
-            # deadline crossing, never lost candles.
             if replay_deadline is not None and clock() >= replay_deadline:
-                meta["replay_state"][coin] = {
-                    "status": "CATCHUP_REQUIRED", "gap_since": c["t"],
-                    "detail": "replay_deadline_reached"}
-                ev = {"round_id": prompts.round_id(coin, T),
-                      "replay": [{"e": "CATCHUP_REQUIRED",
-                                  "gap_since": c["t"]}]}
-                persistence.outbox_add(
-                    meta, f"{coin}:{c['t']}:CATCHUP_REQUIRED", ev)
-                persistence.save_state(spath, accounts, meta)
-                persistence.flush_outbox(store, accounts, meta)
-                ledger.append(ev)
+                _latch_catchup(c["t"])
                 break
+            # TRANSACTIONAL CANDLE (Ruling 015.3): replay runs on deep
+            # copies; the clock is re-read AFTER the candle's work and a
+            # late result is discarded whole — no partial candle ever
+            # becomes durable.
             recs = []
-            replay_mod.replay(coin_accounts, [c], recs)
+            prepared = {aid2: copy.deepcopy(accounts[aid2]) for aid2 in ids}
+            replay_mod.replay([prepared[aid2] for aid2 in ids], [c], recs)
+            if replay_deadline is not None and clock() >= replay_deadline:
+                _latch_catchup(c["t"])                   # discard prepared
+                break
+            for aid2 in ids:
+                accounts[aid2] = prepared[aid2]
             meta["replay_watermark"][coin] = c["t"]
             for i, rc in enumerate(recs):
                 persistence.outbox_add(meta, f"{coin}:{c['t']}:{i}:{rc['e']}",
