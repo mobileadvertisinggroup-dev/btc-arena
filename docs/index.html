@@ -83,9 +83,9 @@ nav a:hover{background:var(--ink);color:var(--paper)}
 /* UI-rev: status badges */
 .badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:1px;
   padding:2px 9px;border-radius:3px;color:#fff;white-space:nowrap}
-.badge.long,.badge.exit-tp{background:var(--up)}
+.badge.long{background:var(--up)}
 .badge.short,.badge.exit-sl{background:var(--down)}
-.badge.flat,.badge.exit-model{background:var(--mut)}
+.badge.flat,.badge.exit-how{background:var(--mut)}
 /* UI-rev: labeled key/value layout for cards */
 .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 16px;
   font-size:13px;margin-top:8px;align-items:baseline}
@@ -173,6 +173,10 @@ nav a:hover{background:var(--ink);color:var(--paper)}
   font-size:12.5px;color:var(--mut);margin-top:6px}
 .tcard .grid b{color:var(--ink)}
 .pnl.up{color:var(--up)} .pnl.down{color:var(--down)} .pnl.zero{color:var(--mut)}
+.tcard .tres{font-size:17px;font-weight:900;margin-top:8px}
+.tcard .tres.up{color:var(--up)} .tcard .tres.down{color:var(--down)} .tcard .tres.zero{color:var(--mut)}
+.tcard .howrow{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
+.tcard .howrow .k{color:var(--mut);font-size:10px;letter-spacing:1.2px;white-space:nowrap}
 .tcard.open .xtra{display:block}      /* wishlist #4: expandable thesis */
 /* wishlist #10 + UI-rev items 6-8: RAW vs TA comparison table */
 /* sticky needs NO overflow ancestor: the cmp table is fixed-layout and
@@ -380,15 +384,43 @@ function pnlSpan(v, na){
          `${u >= 0 ? '+' : ''}${price(u)}</b>`;
 }
 function exitBadge(reason){
-  const map = {take_profit: ['CLOSED — TAKE PROFIT', 'exit-tp'],
-               stop_loss: ['CLOSED — STOP LOSS', 'exit-sl'],
-               decision_close: ['CLOSED — MODEL EXIT', 'exit-model'],
-               decision_flip: ['CLOSED — MODEL EXIT', 'exit-model'],
-               liquidation: ['CLOSED — LIQUIDATED', 'exit-sl']};
+  /* Exit MECHANISM is neutral: profit/loss is shown separately, so a
+     protective stop must never read as a loss by itself. Only a genuine
+     forced liquidation keeps the red error styling. */
+  const map = {take_profit: ['TAKE-PROFIT TARGET REACHED', 'exit-how'],
+               stop_loss: ['PROTECTIVE STOP TRIGGERED', 'exit-how'],
+               decision_close: ['MODEL CHOSE TO CLOSE', 'exit-how'],
+               decision_flip: ['MODEL REVERSED DIRECTION', 'exit-how'],
+               liquidation: ['LIQUIDATED', 'exit-sl']};
   const [t, cls] = map[reason] ||
-    [`CLOSED — ${String(reason).replace(/_/g, ' ').toUpperCase()}`,
-     'exit-model'];
+    [String(reason).replace(/_/g, ' ').toUpperCase(), 'exit-how'];
   return `<span class="badge ${cls}">${t}</span>`;
+}
+function exitExplain(t){
+  /* One-line beginner explanation built only from verified payload facts.
+     A profitable stop exit mathematically implies the stop had been moved
+     past entry (the engine validates the original stop on the losing side
+     of entry, and no automatic trailing mechanism exists). */
+  const won = N(t.pnl) > 0;
+  if (t.reason === 'stop_loss')
+    return won
+      ? 'The model had moved its protective stop into profit territory to '
+        + 'lock in gains; the price came back to that level and the trade '
+        + 'closed automatically — with a profit, not a loss.'
+      : 'The price moved against the position and hit the model’s '
+        + 'protective stop, closing the trade automatically to limit the loss.';
+  if (t.reason === 'take_profit')
+    return 'The price reached the profit target the model had set, so the '
+      + 'trade closed automatically at that target.';
+  if (t.reason === 'decision_close')
+    return 'The model reviewed the market and chose to close this trade.';
+  if (t.reason === 'decision_flip')
+    return 'The model closed this trade to open a new one in the opposite '
+      + 'direction.';
+  if (t.reason === 'liquidation')
+    return 'Losses reached the account’s safety limit and the engine '
+      + 'force-closed the position.';
+  return '';
 }
 function invHtml(a){
   const inv = a.invalidation;
@@ -671,12 +703,17 @@ function tradeCards(){
   return trades.map(t => {
     const pnl = N(t.pnl);
     const cls = pnl > 0 ? 'up' : pnl < 0 ? 'down' : 'zero';
+    const res = pnl > 0 ? `PROFIT +${price(pnl)}`
+      : pnl < 0 ? `LOSS −${price(Math.abs(pnl))}` : `BREAK-EVEN ${price(0)}`;
     return `<div class="tcard" style="border-left-color:${MODEL[t.a.model].c}">
       <div class="row1">${icon(t.a.model)}
         <div><div class="who" style="font-size:14.5px;font-weight:800">${MODEL[t.a.model].name}</div>
-        <div class="sub">${t.a.coin} · ${armLabel(t.a)} · was ${t.side.toUpperCase()}</div></div>
+        <div class="sub">${t.a.coin} · ${armLabel(t.a)} · was ${t.side.toUpperCase()} · CLOSED</div></div></div>
+      <div class="tres ${cls}">TRADE RESULT — ${res}</div>
+      <div class="howrow"><span class="k">HOW THE TRADE CLOSED</span>
         ${exitBadge(t.reason)}</div>
-      <div class="kv">
+      <div class="sub" style="margin-top:4px">${exitExplain(t)}</div>
+      <div class="kv" style="margin-top:7px">
         <span class="k">ENTRY PRICE</span><b>${price(t.entry)}</b>
         <span class="k">EXIT PRICE</span><b>${price(t.exit)}</b>
         <span class="k">CURRENT PRICE</span><b>${t.a.mark == null ? 'unavailable' : price(t.a.mark)}</b>
