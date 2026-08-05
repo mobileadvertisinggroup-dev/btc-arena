@@ -1,5 +1,19 @@
 # AUDIT AND DIGESTS
 
+## CURRENTLY APPROVED — Mentor Ruling 022 (2026-08-05), build-batch tree
+- ENGINE: 4336a0f83eb23071d8b19b58e3ee7ee120741ff9b6402d35e48e54215d5b68e8
+- SITE:   773395854dd0e1b99f3f8cd168fcda5dc5dfc976c60b397883d913c3ef2ac4ed
+- Approved archive: offline_audit_bundle_v10.tar.gz SHA-256
+  ff602c73614b7a0bba930a3aff47eecf2753fd70d7eb1521bde8163c438eb388
+  (157 manifest entries; independently verified by the mentor; audit rounds
+  v2–v10 = Mentor Rulings 014–021 remediations, all archives preserved)
+- DEPLOYED to the VPS 2026-08-05 in ARMED/OFF mode with a full
+  verify_deployment.py PASS — see DEPLOYMENT_EVIDENCE_2026-08-05.md.
+- Still gated: server preflight (owner/mentor authorization + key), Pages
+  UI publication (owner token), activation (owner command with attestation).
+
+## HISTORICAL — pilot-era approval (superseded for the official run)
+
 ## The two-digest activation model
 1. ENGINE combined manifest = SHA-256 over: 8 canonical files
    (config/v1/experiment.json, both schemas, 5 prompt files) + every .py in
