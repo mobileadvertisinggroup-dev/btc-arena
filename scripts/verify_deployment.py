@@ -151,6 +151,23 @@ def analyze_nginx(effective_text):
     return out
 
 
+def check_time_sync(run=None):
+    """Mentor Ruling 019.5: every official deadline anchors to the VPS UTC
+    clock — NTP synchronization must be active. `run` is injectable for
+    tests; default queries systemd-timedated."""
+    if run is None:
+        def run():
+            return subprocess.run(
+                ["timedatectl", "show", "-p", "NTPSynchronized", "--value"],
+                capture_output=True, text=True, timeout=10).stdout.strip()
+    try:
+        out = run()
+    except Exception as e:
+        out = f"error: {e}"
+    return [("system clock is NTP-synchronized", out == "yes",
+             f"NTPSynchronized={out!r}")]
+
+
 def check_https(fetch=None):
     """(name, ok, detail) checks for effective HTTPS + redirect. `fetch` is
     injectable for tests; default uses urllib against the live host."""
@@ -238,6 +255,10 @@ def main():
                 check(name, ok, detail)
         except Exception as e:
             check("effective https reachable", False, str(e)[:80])
+
+    # 4b. NTP synchronization (Ruling 019.5) — deadline anchor integrity
+    for name, ok, detail in check_time_sync():
+        check(name, ok, detail)
 
     # 5. audited venv python + pinned packages
     venv_py = os.path.join(ROOT, "venv", "bin", "python")

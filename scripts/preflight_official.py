@@ -214,13 +214,15 @@ def endpoint_probe(public_dir, fetch, fetch_sha, clock, sleep, timeout=60):
 
 
 def kraken_ohlc(pair, interval_min):
+    """Source-precision preserving (Ruling 019.3): Kraken strings carried
+    verbatim into Decimal conversion — never through Python float."""
     url = (f"https://api.kraken.com/0/public/OHLC?pair={pair}"
            f"&interval={interval_min}")
     with urllib.request.urlopen(url, timeout=20) as r:
         raw = json.loads(r.read().decode())
     key = [k for k in raw["result"] if k != "last"][0]
-    return [{"t": int(x[0]), "o": float(x[1]), "h": float(x[2]),
-             "l": float(x[3]), "c": float(x[4]), "v": float(x[6])}
+    return [{"t": int(x[0]), "o": x[1], "h": x[2],
+             "l": x[3], "c": x[4], "v": x[6]}
             for x in raw["result"][key]]
 
 

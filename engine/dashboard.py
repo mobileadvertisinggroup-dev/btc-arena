@@ -85,7 +85,7 @@ def payload(accounts, ledger, snapshots, heartbeat, manifest, cfg, marks=None):
             "accounts": [_account_row(a, mark) for a in coin_accounts],
             "pairs": [{"model": m,
                        "raw": state.account_id(coin, m, "raw"),
-                       "feature": state.account_id(coin, m, "ta")}
+                       "ta": state.account_id(coin, m, "ta")}
                       for m in state.MODELS],
             "rounds": [e for e in ledger if e["round_id"].startswith(f"v1-{coin}-")],
         }

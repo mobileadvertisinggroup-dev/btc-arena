@@ -140,7 +140,7 @@ def test_runner_script_state_machine_and_integrity_order():
     i_rec = src.index("official.reconcile_unstarted_schedule")
     assert i_int < i_cls < i_rec                     # integrity FIRST
     assert 'kind == "complete"' in src and 'kind == "started"' in src
-    assert "archive_activation" in src               # durable before start
+    assert "official.arm_store(" in src              # durable before start
     # the started-resume path never consults armed_off_loop
     started_block = src[src.index('kind == "started"'):i_rec]
     assert "armed_off_loop" not in started_block

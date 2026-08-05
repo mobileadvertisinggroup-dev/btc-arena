@@ -378,28 +378,81 @@ def classify_official_store(store):
     return "unstarted"
 
 
-def archive_activation(store, act, act_sha):
-    """Mentor Ruling 017.1: durably archive the ACCEPTED activation record
-    and its verified preflight report inside the store BEFORE the first
-    boundary — a started run resumes from these immutable copies and never
-    depends on the external control file or the scratch report again."""
-    path = os.path.join(store, ACCEPTED_ACTIVATION_NAME)
+def archive_activation(store, act, act_sha, report_blob=None, crash_at=None):
+    """Mentor Rulings 017.1 + 019.2: durably archive the verified preflight
+    bytes FIRST (from the already-verified in-memory blob when supplied —
+    never re-reading an untrusted/changing source later — and always checked
+    against the accepted SHA-256), THEN write the accepted activation record
+    LAST as the ATOMIC COMMIT MARKER of the provisioning transaction. A
+    started run resumes from these immutable copies and never depends on the
+    external control file or the scratch report again."""
+    pf = act.get("preflight") or {}
+    want_sha = pf.get("report_sha256")
+    if report_blob is None and pf.get("report_path") \
+            and os.path.exists(pf["report_path"]):
+        report_blob = open(pf["report_path"], "rb").read()
+    if report_blob is not None:
+        if want_sha and hashlib.sha256(report_blob).hexdigest() != want_sha:
+            raise TrustRecordError(
+                "preflight bytes do not match the accepted SHA-256")
+        dst = os.path.join(store, ACCEPTED_PREFLIGHT_NAME)
+        tmp = dst + ".tmp"
+        with open(tmp, "wb") as f:
+            f.write(report_blob)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, dst)
+    if crash_at == "after_preflight_copy":
+        raise recovery.CrashError("after_preflight_copy")
+    path = os.path.join(store, ACCEPTED_ACTIVATION_NAME)   # COMMIT MARKER
     tmp = path + ".tmp"
     with open(tmp, "w") as f:
         json.dump({"record": act, "activation_sha": act_sha}, f, indent=1)
         f.flush()
         os.fsync(f.fileno())
     os.replace(tmp, path)
-    report_src = (act.get("preflight") or {}).get("report_path")
-    if report_src and os.path.exists(report_src):
-        dst = os.path.join(store, ACCEPTED_PREFLIGHT_NAME)
-        tmp = dst + ".tmp"
-        with open(report_src, "rb") as src, open(tmp, "wb") as f:
-            f.write(src.read())
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, dst)
     return path
+
+
+def arm_store(store, act, act_sha, approved_digest, approved_site_digest,
+              report_blob=None, crash_at=None):
+    """THE INITIAL ACTIVATION TRANSACTION (Mentor Ruling 019.2), recoverable
+    across every write point: manifests + pristine state + schedule +
+    binding (provision_official) -> archived preflight bytes -> accepted
+    activation record (the atomic commit marker). A crash anywhere leaves a
+    store that reconcile_incomplete_provisioning() safely rolls back to
+    ARMED/OFF with provably pristine accounts; a completed transaction
+    passes verify_durable_trust()."""
+    sched = provision_official(store, approved_digest, approved_site_digest,
+                               act["start_utc"], total=act["total"],
+                               activation_sha=act_sha)
+    if crash_at == "after_provision":
+        raise recovery.CrashError("after_provision")
+    archive_activation(store, act, act_sha, report_blob=report_blob,
+                       crash_at=crash_at)
+    return sched
+
+
+def reconcile_incomplete_provisioning(store):
+    """Mentor Ruling 019.2: a crash mid-transaction leaves a schedule
+    WITHOUT the accepted-activation commit marker. Allowed ONLY while zero
+    boundaries have started: the partial artifacts are rolled back, the
+    accounts are proven pristine, and the service returns to ARMED/OFF for
+    clean rearming. Returns 'no_schedule' | 'started' | 'committed' |
+    'rolled_back_incomplete'. NEVER rolls back once any boundary started."""
+    try:
+        sched = pilot.load_schedule(store)
+    except pilot.ScheduleError:
+        return "no_schedule"
+    _, meta = persistence.load_state(os.path.join(store, "state.json"),
+                                     expect_full_roster=True)
+    if sched["completed"] or meta.get("boundary") is not None:
+        return "started"
+    if os.path.exists(os.path.join(store, ACCEPTED_ACTIVATION_NAME)):
+        return "committed"
+    rollback_unstarted(store)
+    verify_pristine_official_state(store)   # PROOF: pristine, zero boundary
+    return "rolled_back_incomplete"
 
 
 def write_activation_binding(store, activation_sha, engine_digest,
@@ -814,10 +867,19 @@ def run_official(store, cfg, caller, fetch_market, publish, clock, sleep,
                 spec[coin] = empty
                 continue
             try:
-                snaps[coin], spec[coin] = fetch_market(coin, T, first)
+                snap_i, spec_i = fetch_market(coin, T, first)
             except Exception:
                 snaps[coin] = None
                 spec[coin] = empty
+                continue
+            # POST-FETCH BUDGET CHECK (Mentor Ruling 019.4): a prompt
+            # snapshot COMPLETING at/after T+30 is never used for a model
+            # call — but the valid 1m replay data (and its P_T mark) already
+            # obtained is retained for replay and marking.
+            if clock() >= T + THINKING_DURABLE_S:
+                snap_i = None
+            snaps[coin] = snap_i
+            spec[coin] = spec_i
         # ---- THINKING durable + DIRECT public verification by T+01:00 ----
         done, total = len(sched["completed"]), sched["total"]
         _set_deadline(publish, T + THINKING_VERIFIED_S)

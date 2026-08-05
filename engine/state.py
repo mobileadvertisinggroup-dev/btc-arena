@@ -11,7 +11,7 @@ _CFG_PARAMS = _config.load_config()["parameters"]
 
 COINS = ["BTC", "ETH", "SOL"]
 MODELS = ["haiku", "sonnet", "opus"]
-ARMS = ["raw", "ta"]  # internal ids; 'ta' is the Feature arm in public language
+ARMS = ["raw", "ta"]  # internal ids; 'ta' is the TA arm in public language
 START_CASH = Decimal(_CFG_PARAMS["start_cash_usd"])
 FEE_RATE = Decimal(_CFG_PARAMS["fee_rate"])
 MAINT_MARGIN = Decimal(_CFG_PARAMS["maintenance_margin"])

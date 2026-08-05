@@ -25,6 +25,7 @@ Environment (systemd EnvironmentFile=/etc/arena/arena.env, never in repo):
                              (or be unset; any other value refuses)
   ARENA_DEPLOY_TOKEN         optional, mirror only
 """
+import hashlib
 import json
 import os
 import sys
@@ -73,13 +74,16 @@ def read_activation():
 
 
 def kraken_ohlc(pair, interval_min):
+    """SOURCE-PRECISION PRESERVING (Mentor Ruling 019.3): Kraken's OHLC
+    strings are carried verbatim into Decimal conversion — never through
+    Python float."""
     url = (f"https://api.kraken.com/0/public/OHLC?pair={pair}"
            f"&interval={interval_min}")
     with urllib.request.urlopen(url, timeout=15) as r:
         raw = json.loads(r.read().decode())
     key = [k for k in raw["result"] if k != "last"][0]
-    return [{"t": int(x[0]), "o": float(x[1]), "h": float(x[2]),
-             "l": float(x[3]), "c": float(x[4]), "v": float(x[6])}
+    return [{"t": int(x[0]), "o": x[1], "h": x[2],
+             "l": x[3], "c": x[4], "v": x[6]}
             for x in raw["result"][key]]
 
 
@@ -307,6 +311,15 @@ def main():
     #   complete    -> COMPLETE health, clean exit, zero publications/calls
     verify_store_integrity()         # integrity BEFORE any reconciliation
     kind = official.classify_official_store(OFFICIAL_STORE)
+    if kind == "unstarted":
+        # CRASH-RECOVERABLE PROVISIONING (Ruling 019.2): a transaction that
+        # never reached its accepted-activation commit marker rolls back to
+        # ARMED/OFF with pristine accounts instead of bricking the service.
+        if official.reconcile_incomplete_provisioning(OFFICIAL_STORE) \
+                == "rolled_back_incomplete":
+            print("INCOMPLETE PROVISIONING TRANSACTION ROLLED BACK "
+                  "(pristine accounts verified). ARMED/OFF; rearm cleanly.")
+            kind = "no_schedule"
     if kind != "no_schedule":
         # MANDATORY durable trust validation (Ruling 018.3) — before the
         # COMPLETE report, before resume, before unstarted reconciliation
@@ -319,6 +332,14 @@ def main():
               "Exiting cleanly.")
         return
     if kind == "started":
+        # CREDENTIAL HALT (Ruling 019.5): the key is required BEFORE any
+        # reconciliation or publication — never an uncaught KeyError inside
+        # a model thread.
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            print("CREDENTIAL HALT: ANTHROPIC_API_KEY not set — cannot "
+                  "resume the started official run. No reconciliation, no "
+                  "publication, no model call was attempted.")
+            sys.exit(2)
         print("RESUMING started schedule from the validated durable trust "
               "record (external activation file and freshness rule no "
               "longer apply).")
@@ -371,14 +392,22 @@ def main():
         official.reconcile_unstarted_schedule(OFFICIAL_STORE, ACTIVATION)
         print(f"ACTIVATION ACCEPTED sha256={act_sha} "
               f"start={act['start_utc']} total={act['total']}")
-        sched = official.provision_official(
-            OFFICIAL_STORE, act["engine_digest"], act["site_digest"],
-            act["start_utc"], total=act["total"], activation_sha=act_sha)
-        # DURABLE ATTESTATION ARCHIVE (Ruling 017.1): the accepted activation
-        # record and verified preflight report are copied into the store so a
-        # started run resumes without the external control file or the
-        # scratch report.
-        official.archive_activation(OFFICIAL_STORE, act, act_sha)
+        # RECOVERABLE ACTIVATION TRANSACTION (Rulings 017.1 + 019.2): read
+        # the just-verified report bytes ONCE, guard against a swap since
+        # verification, and run the whole provision+archive transaction with
+        # the accepted record as its atomic commit marker.
+        blob = open(act["preflight"]["report_path"], "rb").read()
+        if hashlib.sha256(blob).hexdigest() \
+                != act["preflight"]["report_sha256"]:
+            print("REFUSED: preflight report changed since verification. "
+                  "No model call was made; ARMED/OFF.")
+            time.sleep(ARMED_POLL_S)
+            continue
+        sched = official.arm_store(
+            OFFICIAL_STORE, act, act_sha, act["engine_digest"],
+            act["site_digest"], report_blob=blob)
+        # durable trust must validate BEFORE the READY publication
+        validate_trust_or_halt("unstarted")
         cfg = config.load_config()
         publish = direct_publisher()
         print(f"OFFICIAL RUN ARMED — {sched['total']} boundaries from "

@@ -171,6 +171,12 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                     if replay_deadline is not None \
                             and clock() >= replay_deadline:
                         return c["t"]
+                    # STRICT VALUE VALIDATION (Ruling 019.3): a malformed
+                    # candle never executes anything — it becomes the gap
+                    try:
+                        marketdata.validate_candle_values(c)
+                    except marketdata.DataUnavailable:
+                        return c["t"]
                     recs = []
                     originals = {a2: accounts[a2] for a2 in ids}
                     prepared = {a2: copy.deepcopy(accounts[a2])
@@ -271,8 +277,31 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                 raise ValueError(
                     f"pre_replay_spec for {coin} ends at {spec['end']} > "
                     f"T={T} — pre-decision replay must be strictly pre-T")
+    def _adopt_1m_marks():
+        # AUTHORITATIVE 1m MARK (Mentor Ruling 019.1): when the prompt
+        # snapshot is unavailable but the coin's 1m stream is COMPLETE
+        # through T (replay_next_required == T), the strictly validated
+        # close of the exact T-60 candle is the boundary mark — marked
+        # equity, equity history and dashboard P&L never go null merely
+        # because 1h/1d prompt data failed. A true 1m failure fabricates
+        # nothing (the mark stays None and CATCHUP applies).
+        for coin, spec in (pre_replay_spec or {}).items():
+            if meta.get("marks", {}).get(coin) is not None:
+                continue
+            if meta.get("replay_next_required", {}).get(coin) != T:
+                continue                 # 1m stream not proven complete
+            last = [c for c in spec["candles"] if c["t"] == T - 60]
+            if not last:
+                continue
+            try:
+                marketdata.validate_candle_values(last[0])
+            except marketdata.DataUnavailable:
+                continue
+            meta["marks"][coin] = str(last[0]["c"])
+
     if pre_replay_spec and meta.get("phase") == "pre_replay":
         _replay_pass(pre_replay_spec, "during_pre_replay")
+        _adopt_1m_marks()
         meta["phase"] = "decision"
         persistence.save_state(spath, accounts, meta)
 

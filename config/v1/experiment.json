@@ -328,7 +328,7 @@
  "data_namespace": "data-v1/",
  "prompt_archive": "data-v1/prompts/v1-ALL-{T}/{account_id}.json",
  "round_id_format": "v1-{COIN}-{ISO8601_BOUNDARY}",
- "arm_naming": "scientific/public name for the treatment arm: 'Feature arm'; internal account-ID suffix remains _ta (legacy, permitted) to avoid migration churn",
+ "arm_naming": "public/visible name for the treatment arm: 'TA arm' (approved UI language); scientific description: the fixed neutral numerical feature summary; internal account-ID suffix remains _ta",
  "feature_pack": {
   "principle": "the Feature arm may receive precomputed mathematical summaries, but never semantic judgments, trading guidance, recommended thresholds, or suggested actions",
   "outputs": {

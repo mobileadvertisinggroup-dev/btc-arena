@@ -199,7 +199,8 @@ def test_runner_script_reconciles_at_startup():
     src = open(os.path.join(config.ROOT, "scripts",
                             "run_official_14d.py")).read()
     assert src.count("reconcile_unstarted_schedule") >= 2   # boot + per-arm
-    assert "activation_sha=act_sha" in src           # binding is written
+    # binding + durable archive happen inside the arm_store transaction
+    assert "official.arm_store(" in src and "act_sha" in src
 
 
 # ---- 015.3 transactional resolution: nothing commits after T+630 ----

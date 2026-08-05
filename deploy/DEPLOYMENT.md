@@ -57,20 +57,32 @@ tree deployed from the approved branch — never manually edited on the server.
   only the three approved files, one HTTP block doing nothing but the exact
   redirect — no proxying, rewrites, extra locations, returns or if-blocks);
   live HTTPS + redirect work; the audited venv python and exact pinned
-  package versions are in use. Any FAIL blocks activation.
+  package versions are in use; the system clock is NTP-synchronized
+  (every official deadline anchors to the VPS UTC clock — Ruling 019.5).
+  Any FAIL blocks activation.
 
 ## 5. Server preflight (owner/mentor authorized; real model calls)
-- ARENA_PREFLIGHT_APPROVED=YES-OWNER-MENTOR-AUTHORIZED \
-  ARENA_APPROVED_MANIFEST_SHA256=<issued> ARENA_APPROVED_SITE_SHA256=<issued> \
-  venv/bin/python scripts/preflight_official.py /home/arena/preflight-scratch
+- Load the secrets WITHOUT printing them (Ruling 019.5): source the env file
+  inside a subshell so nothing is echoed or persisted in history:
+    ( set -a && . /etc/arena/arena.env && set +a && \
+      ARENA_PREFLIGHT_APPROVED=YES-OWNER-MENTOR-AUTHORIZED \
+      ARENA_APPROVED_MANIFEST_SHA256=<issued> \
+      ARENA_APPROVED_SITE_SHA256=<issued> \
+      venv/bin/python scripts/preflight_official.py \
+          /home/arena/preflight-scratch )
+  Never cat/echo the env file; never paste secret values into a terminal.
   (audited script, hashed in the engine digest; SCRATCH store only — it
   refuses any path overlapping data-v1). 18/18 must pass AND the direct
   HTTPS endpoint probe must verify before activation is even proposed.
+  On PASS it prints the report path and its SHA-256 — both are REQUIRED for
+  activation.
 
 ## 6. Activation (owner only)
 - venv/bin/python scripts/arm_official.py --confirm \
     --engine-digest <externally issued> --site-digest <externally issued> \
-    --start-utc next-hour
+    --start-utc next-hour \
+    --preflight-report <report path printed by the preflight> \
+    --preflight-sha <report SHA-256 printed by the preflight>
 - The ARMED service validates the record + digests and starts the sealed
   336-boundary UTC schedule.
 - REAL PRE-START DISARM (Ruling 014.1): deleting/replacing/modifying

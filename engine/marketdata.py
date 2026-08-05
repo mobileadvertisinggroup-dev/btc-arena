@@ -54,14 +54,39 @@ def _check_sane(candles, step, label):
             raise DataUnavailable(f"{label}: OHLC sanity violation at {c['t']}")
 
 
+def validate_candle_values(c, label="1m"):
+    """STRICT single-candle value validation (Mentor Ruling 019.3): aligned
+    timestamp; finite positive O/H/L/C; H >= O,C,L; L <= O,C,H; finite
+    non-negative volume. A malformed candle must never execute a stop,
+    target, liquidation or invalidation — callers turn this into
+    DATA_UNAVAILABLE / CATCHUP_REQUIRED."""
+    if c["t"] % MIN != 0:
+        raise DataUnavailable(f"{label}: timestamp {c['t']} not aligned")
+    for k in "ohlc":
+        if not c[k].is_finite() or c[k] <= 0:
+            raise DataUnavailable(
+                f"{label}: non-finite/non-positive price at {c['t']}")
+    if not c["v"].is_finite() or c["v"] < 0:
+        raise DataUnavailable(f"{label}: bad volume at {c['t']}")
+    if c["h"] < max(c["o"], c["c"], c["l"]) \
+            or c["l"] > min(c["o"], c["c"], c["h"]):
+        raise DataUnavailable(f"{label}: OHLC sanity violation at {c['t']}")
+    return True
+
+
 def validate_1m_coverage(candles, start_t, end_t):
-    """Complete contiguous 1m coverage for [start_t, end_t); raises on any gap."""
+    """Complete contiguous 1m coverage for [start_t, end_t) PLUS strict
+    per-candle value validation (Ruling 019.3); raises on any gap, duplicate,
+    misalignment or malformed value."""
     want = list(range(start_t, end_t, MIN))
     have = [c["t"] for c in candles if start_t <= c["t"] < end_t]
     if have != want:
         missing = sorted(set(want) - set(have))[:3]
         raise DataUnavailable(f"1m gap: missing {len(set(want)-set(have))} candles, first {missing}")
-    return [c for c in candles if start_t <= c["t"] < end_t]
+    out = [c for c in candles if start_t <= c["t"] < end_t]
+    for c in out:
+        validate_candle_values(c)
+    return out
 
 
 def build_snapshot(coin, k1m, k1h, k1d, T):
