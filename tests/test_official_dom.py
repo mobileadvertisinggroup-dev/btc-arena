@@ -53,10 +53,14 @@ def test_official_mode_banner_and_status(official_payload):
     res = _harness(official_payload)
     assert res["mode"] == "OFFICIAL_14D"
     assert official.BANNER in res["dom"]["prepbanner"]     # top banner updates
-    status = res["dom"]["statusstrip"]
-    assert "OFFICIAL 14-DAY EXPERIMENT" in status
-    assert "ROUND COMMITTED" in status
-    assert "live paper accounts" in status
+    # v12 cleanup: the live banner + notice are the SINGLE status summary
+    notice = res["dom"]["notice"]
+    # the 1-round fixture is a completed run — the notice states it honestly
+    assert "experiment is complete" in notice and "1 / 1" in notice
+    assert "statusstrip" not in res["dom"]                 # strip removed
+    src = open(os.path.join(config.ROOT, "docs", "index.html")).read()
+    assert "18 ACCOUNTS" not in src                        # subtitle removed
+    assert 'id="about"' not in src and ">ABOUT<" not in src  # About removed
 
 
 def test_open_positions_age_invalidation_and_thought_process(official_payload):

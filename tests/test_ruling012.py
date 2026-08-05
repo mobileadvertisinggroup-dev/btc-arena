@@ -242,7 +242,7 @@ def test_dom_thinking_renders_live_status_not_prestart(cfg, pilot_payloads):
     for label in ("Haiku 4.5", "Sonnet 5", "Opus 4.8", "BTC", "SOL",
                   "Raw", "TA"):
         assert label in chat
-    assert "THINKING" in res["dom"]["statusstrip"]   # round status visible
+    assert "processing the current hourly round" in res["dom"]["notice"]
     pairs = res["dom"]["panel:PAIR DETAILS"]
     assert "THINKING / AWAITING RESPONSE" in pairs
 
@@ -262,7 +262,7 @@ def test_dom_committed_renders_actual_thesis_and_pair_status(cfg,
     assert "Awaiting first paired decision" not in pairs
     assert "last round: PAIR_COMMITTED" in pairs
     assert "direction" in pairs                      # AGREE/DISAGREE computed
-    assert "ROUND COMMITTED" in res["dom"]["statusstrip"]
+    assert "experiment is complete" in res["dom"]["notice"]
     opens = res["dom"]["panel:OPEN POSITIONS"]
     assert "LONG" in opens                           # the live SOL position
 
