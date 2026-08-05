@@ -26,24 +26,29 @@ class ScheduleError(Exception):
     pass
 
 
-def provision(store, approved_digest, approved_site_digest, start, total=12):
+def provision(store, approved_digest, approved_site_digest, start, total=12,
+              crash_at=None):
     """Create (or resume) a store ONLY if the current tree matches the
     EXTERNALLY supplied mentor-approved combined digest (Ruling 010.1) AND
     the static production UI matches the externally approved site digest
     (Ruling 011.1). On any mismatch nothing is written: no manifests, no
     state, no schedule. Idempotent on restart: existing state/schedule are
-    preserved verbatim."""
+    preserved verbatim. `crash_at` is crash-injection for the recoverable
+    provisioning transaction tests (Ruling 020.2)."""
     config_mod.check_approved_digest(approved_digest)   # halt BEFORE any write
     config_mod.check_approved_site_digest(approved_site_digest)
-    config_mod.provision_store(store, approved_digest, approved_site_digest)
+    config_mod.provision_store(store, approved_digest, approved_site_digest,
+                               crash_at=crash_at)
     spath = os.path.join(store, "state.json")
     if not os.path.exists(spath):
         persistence.save_state(spath, state.init_accounts(), {"boundary": None})
+    config_mod._crash(crash_at, "after_state")
     if not os.path.exists(os.path.join(store, SCHEDULE_NAME)):
         _write_schedule(store, {
             "start": start, "total": total,
             "boundaries": [start + i * HOUR for i in range(total)],
             "completed": []})
+    config_mod._crash(crash_at, "after_schedule")
     return load_schedule(store)
 
 

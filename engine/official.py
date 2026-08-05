@@ -121,7 +121,10 @@ def make_disarm_check(path, expected_sha):
 # refuses the launch.
 PRISTINE_STORE_ALLOWLIST = frozenset({
     "state.json", config_mod.LAUNCH_MANIFEST_NAME,
-    config_mod.SITE_MANIFEST_NAME})
+    config_mod.SITE_MANIFEST_NAME,
+    # the live provisioning-transaction marker (Ruling 020.2) — a STALE
+    # marker is reconciled/rolled back before provisioning ever re-runs
+    "provisioning_tx.json"})
 
 
 def verify_pristine_official_state(store):
@@ -359,6 +362,71 @@ def verify_durable_trust(store, now, waive_freshness=False):
 BINDING_NAME = "activation_binding.json"
 ACCEPTED_ACTIVATION_NAME = "activation_accepted.json"
 ACCEPTED_PREFLIGHT_NAME = "preflight_attestation.json"
+PROVISIONING_TX_NAME = "provisioning_tx.json"
+
+
+def _begin_provisioning_tx(store, act_sha):
+    """Mentor Ruling 020.2: the provisioning transaction is identifiable
+    BEFORE its first official-store write. The marker is written atomically
+    and journals a byte-exact backup of any pre-existing manifests plus
+    whether state.json pre-existed, so an aborted transaction can restore
+    the store to exactly its pre-transaction shape."""
+    os.makedirs(store, exist_ok=True)
+    backup = {}
+    for name in (config_mod.LAUNCH_MANIFEST_NAME,
+                 config_mod.SITE_MANIFEST_NAME):
+        p = os.path.join(store, name)
+        backup[name] = open(p).read() if os.path.exists(p) else None
+    backup["state_preexisting"] = os.path.exists(
+        os.path.join(store, "state.json"))
+    config_mod.atomic_write_json(os.path.join(store, PROVISIONING_TX_NAME),
+                                 {"activation_sha": act_sha,
+                                  "backup": backup})
+
+
+def _commit_provisioning_tx(store):
+    try:
+        os.remove(os.path.join(store, PROVISIONING_TX_NAME))
+    except FileNotFoundError:
+        pass
+
+
+def _rollback_provisioning_tx(store):
+    """Restore the pre-transaction store shape from the journal, remove
+    every transaction artifact, and delete the marker LAST."""
+    with open(os.path.join(store, PROVISIONING_TX_NAME)) as f:
+        tx = json.load(f)
+    backup = tx.get("backup", {})
+    for name in (pilot.SCHEDULE_NAME, BINDING_NAME, ACCEPTED_ACTIVATION_NAME,
+                 ACCEPTED_PREFLIGHT_NAME, publisher_mod.PUB_LOG):
+        try:
+            os.remove(os.path.join(store, name))
+        except FileNotFoundError:
+            pass
+    import shutil
+    shutil.rmtree(os.path.join(store, "publish"), ignore_errors=True)
+    for name in (config_mod.LAUNCH_MANIFEST_NAME,
+                 config_mod.SITE_MANIFEST_NAME):
+        p = os.path.join(store, name)
+        prior = backup.get(name)
+        if prior is None:
+            try:
+                os.remove(p)
+            except FileNotFoundError:
+                pass
+        else:
+            tmp = p + ".tmp"
+            with open(tmp, "w") as f:
+                f.write(prior)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, p)
+    if not backup.get("state_preexisting"):
+        try:
+            os.remove(os.path.join(store, "state.json"))
+        except FileNotFoundError:
+            pass
+    _commit_provisioning_tx(store)       # marker removed LAST
 
 
 def classify_official_store(store):
@@ -416,40 +484,64 @@ def archive_activation(store, act, act_sha, report_blob=None, crash_at=None):
 
 def arm_store(store, act, act_sha, approved_digest, approved_site_digest,
               report_blob=None, crash_at=None):
-    """THE INITIAL ACTIVATION TRANSACTION (Mentor Ruling 019.2), recoverable
-    across every write point: manifests + pristine state + schedule +
-    binding (provision_official) -> archived preflight bytes -> accepted
-    activation record (the atomic commit marker). A crash anywhere leaves a
-    store that reconcile_incomplete_provisioning() safely rolls back to
-    ARMED/OFF with provably pristine accounts; a completed transaction
-    passes verify_durable_trust()."""
+    """THE INITIAL ACTIVATION TRANSACTION (Mentor Rulings 019.2 + 020.2),
+    identifiable BEFORE its first store write and recoverable across EVERY
+    durable step: tx marker (with pre-state journal) -> launch manifest ->
+    site manifest -> pristine state -> schedule -> activation binding ->
+    archived preflight bytes -> accepted activation record (the atomic
+    commit marker) -> tx marker removal. A crash anywhere leaves a store
+    that reconcile_incomplete_provisioning() restores to its exact
+    pre-transaction ARMED/OFF shape with provably pristine accounts; a
+    completed transaction passes verify_durable_trust()."""
+    _begin_provisioning_tx(store, act_sha)
+    if crash_at == "after_tx_marker":
+        raise recovery.CrashError("after_tx_marker")
     sched = provision_official(store, approved_digest, approved_site_digest,
                                act["start_utc"], total=act["total"],
-                               activation_sha=act_sha)
+                               activation_sha=act_sha, crash_at=crash_at)
     if crash_at == "after_provision":
         raise recovery.CrashError("after_provision")
     archive_activation(store, act, act_sha, report_blob=report_blob,
                        crash_at=crash_at)
+    _commit_provisioning_tx(store)
     return sched
 
 
 def reconcile_incomplete_provisioning(store):
-    """Mentor Ruling 019.2: a crash mid-transaction leaves a schedule
-    WITHOUT the accepted-activation commit marker. Allowed ONLY while zero
-    boundaries have started: the partial artifacts are rolled back, the
-    accounts are proven pristine, and the service returns to ARMED/OFF for
-    clean rearming. Returns 'no_schedule' | 'started' | 'committed' |
-    'rolled_back_incomplete'. NEVER rolls back once any boundary started."""
+    """Mentor Rulings 019.2 + 020.2: detect and recover a provisioning
+    transaction that never reached its accepted-activation commit — INCLUDING
+    crashes BEFORE any schedule exists (marker-only, partial manifests,
+    state-without-schedule). Allowed ONLY while zero boundaries have
+    started: every partial artifact is rolled back / restored from the
+    transaction journal, the accounts are proven pristine (or the store is
+    returned to its exact pre-transaction shape), and the service returns to
+    ARMED/OFF for clean rearming. Returns 'no_schedule' | 'started' |
+    'committed' | 'rolled_back_incomplete'. NEVER rolls back once any
+    boundary started."""
+    marker = os.path.exists(os.path.join(store, PROVISIONING_TX_NAME))
+    committed = os.path.exists(os.path.join(store, ACCEPTED_ACTIVATION_NAME))
+    # started? (only possible when schedule + state exist)
+    started = False
     try:
         sched = pilot.load_schedule(store)
-    except pilot.ScheduleError:
-        return "no_schedule"
-    _, meta = persistence.load_state(os.path.join(store, "state.json"),
-                                     expect_full_roster=True)
-    if sched["completed"] or meta.get("boundary") is not None:
-        return "started"
-    if os.path.exists(os.path.join(store, ACCEPTED_ACTIVATION_NAME)):
+        _, meta = persistence.load_state(os.path.join(store, "state.json"),
+                                         expect_full_roster=True)
+        started = bool(sched["completed"]) or meta.get("boundary") is not None
+    except (pilot.ScheduleError, persistence.StateCorruption, OSError):
+        sched = None
+    if started:
+        return "started"                 # NEVER rolled back
+    if committed:
+        _commit_provisioning_tx(store)   # clear any stale marker
         return "committed"
+    if marker:
+        _rollback_provisioning_tx(store)     # journal-based full restore
+        if os.path.exists(os.path.join(store, "state.json")):
+            verify_pristine_official_state(store)
+        return "rolled_back_incomplete"
+    if sched is None:
+        return "no_schedule"
+    # legacy shape: schedule without commit marker and without a tx journal
     rollback_unstarted(store)
     verify_pristine_official_state(store)   # PROOF: pristine, zero boundary
     return "rolled_back_incomplete"
@@ -577,7 +669,8 @@ def acquire_runner_lock(path):
 
 
 def provision_official(store, approved_digest, approved_site_digest, start,
-                       total=TOTAL_BOUNDARIES, activation_sha=None):
+                       total=TOTAL_BOUNDARIES, activation_sha=None,
+                       crash_at=None):
     """Digest-gated provisioning of the official schedule (Ruling 3): the
     start must be an exact UTC hour; the full boundary list is persisted
     (sealed) before any model call. Idempotent: an existing schedule/state is
@@ -596,11 +689,13 @@ def provision_official(store, approved_digest, approved_site_digest, start,
     if creating:
         verify_pristine_official_state(store)   # raises BEFORE any write
     sched = pilot.provision(store, approved_digest, approved_site_digest,
-                            start, total=total)
+                            start, total=total, crash_at=crash_at)
     if creating:
         write_activation_binding(store, activation_sha, approved_digest,
                                  approved_site_digest, sched["start"],
                                  sched["total"])
+        if crash_at == "after_binding":
+            raise recovery.CrashError("after_binding")
     return sched
 
 

@@ -51,11 +51,14 @@ def public_dir():
 
 
 def read_activation():
-    """The owner's activation record, or None while ARMED/OFF. Malformed or
-    incomplete records are treated as absent (and reported via health)."""
+    """The owner's activation record as (record, sha256) — BOTH derived from
+    the SAME single byte read (Mentor Ruling 020.2: no TOCTOU window between
+    parsing one version and hashing another). Returns None while ARMED/OFF;
+    malformed or incomplete records are treated as absent."""
     try:
-        with open(ACTIVATION) as f:
-            a = json.load(f)
+        with open(ACTIVATION, "rb") as f:
+            raw = f.read()
+        a = json.loads(raw)
     except Exception:
         return None
     ok = (a.get("approved") == APPROVAL_LITERAL
@@ -70,7 +73,7 @@ def read_activation():
           and isinstance(a.get("preflight"), dict)
           and a["preflight"].get("report_path")
           and a["preflight"].get("report_sha256"))
-    return a if ok else None
+    return (a, hashlib.sha256(raw).hexdigest()) if ok else None
 
 
 def kraken_ohlc(pair, interval_min):
@@ -250,12 +253,13 @@ def mirror_factory():
 
 def armed_off_loop():
     """Idle until a valid activation record exists. Health shows ARMED_OFF;
-    zero model calls, zero scheduling, zero writes to data-v1."""
+    zero model calls, zero scheduling, zero writes to data-v1. Returns
+    (record, sha) from a single byte read (no TOCTOU)."""
     from engine import official
     while True:
-        act = read_activation()
-        if act is not None:
-            return act
+        got = read_activation()
+        if got is not None:
+            return got
         official.write_health(public_dir(), {
             "state": "ARMED_OFF", "pid": os.getpid(), "mode": official.MODE,
             "updated": time.time(),
@@ -309,17 +313,17 @@ def main():
     #                  the external control file, the 24h freshness test and
     #                  READY publication no longer apply
     #   complete    -> COMPLETE health, clean exit, zero publications/calls
+    # CRASH-RECOVERABLE PROVISIONING (Rulings 019.2 + 020.2): BEFORE normal
+    # integrity verification — a transaction that never reached its commit
+    # marker (including pre-schedule crashes with partial manifests) is
+    # restored to the exact pre-transaction ARMED/OFF shape.
+    if official.reconcile_incomplete_provisioning(OFFICIAL_STORE) \
+            == "rolled_back_incomplete":
+        print("INCOMPLETE PROVISIONING TRANSACTION ROLLED BACK "
+              "(pre-transaction shape restored; pristine accounts). "
+              "ARMED/OFF; rearm cleanly.")
     verify_store_integrity()         # integrity BEFORE any reconciliation
     kind = official.classify_official_store(OFFICIAL_STORE)
-    if kind == "unstarted":
-        # CRASH-RECOVERABLE PROVISIONING (Ruling 019.2): a transaction that
-        # never reached its accepted-activation commit marker rolls back to
-        # ARMED/OFF with pristine accounts instead of bricking the service.
-        if official.reconcile_incomplete_provisioning(OFFICIAL_STORE) \
-                == "rolled_back_incomplete":
-            print("INCOMPLETE PROVISIONING TRANSACTION ROLLED BACK "
-                  "(pristine accounts verified). ARMED/OFF; rearm cleanly.")
-            kind = "no_schedule"
     if kind != "no_schedule":
         # MANDATORY durable trust validation (Ruling 018.3) — before the
         # COMPLETE report, before resume, before unstarted reconciliation
@@ -361,7 +365,7 @@ def main():
         print("STALE UNSTARTED SCHEDULE ROLLED BACK (activation record "
               "absent or changed while the service was down). ARMED/OFF.")
     while True:
-        act = armed_off_loop()
+        act, act_sha = armed_off_loop()   # single-read record + SHA (020.2)
         # INTEGRITY GATES (Rulings 010.1/011.1): the EXTERNALLY issued
         # digests in the owner's activation record must match the current
         # tree BEFORE any state initialization or network use.
@@ -385,7 +389,8 @@ def main():
             print("REFUSED: ANTHROPIC_API_KEY not set. No model call was "
                   "made.")
             sys.exit(2)
-        act_sha = official.activation_sha(ACTIVATION)
+        # act_sha comes from the SAME bytes the record was parsed from
+        # (Ruling 020.2) — the file is never re-read for hashing.
         # re-reconcile with the CURRENT record: a leftover unstarted
         # schedule bound to a different activation rolls back so the newly
         # requested start can provision (Ruling 015.2)

@@ -301,7 +301,10 @@ def test_activation_record_validation(tmp_path, monkeypatch):
         act.write_text(json.dumps({**good, **corrupt}))
         assert mod.read_activation() is None         # every field enforced
     act.write_text(json.dumps(good))
-    assert mod.read_activation() == good             # only the exact record
+    got = mod.read_activation()                      # (record, sha) from the
+    assert got[0] == good                            # SAME bytes (020.2)
+    import hashlib
+    assert got[1] == hashlib.sha256(act.read_bytes()).hexdigest()
 
 
 # ---- Ruling 1.5: the mirror can never gate or break trading ----

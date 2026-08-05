@@ -227,17 +227,45 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                 candles = marketdata.validate_1m_coverage(spec["candles"],
                                                           eff_start, end)
             except marketdata.DataUnavailable as e:
-                # process the contiguous prefix before the gap, preserving
-                # the last trustworthy watermark; never past the gap (008.6)
-                prefix = []
+                # FIRST-ANOMALY SCAN over the ORIGINAL ORDERED series
+                # (Rulings 008.6 + 020.1): ambiguous input is NEVER collapsed
+                # into a timestamp map. A duplicate timestamp creates a gap
+                # AT that minute — neither conflicting copy may execute;
+                # out-of-order and misaligned data follow the same
+                # no-execution rule; only the clean contiguous prefix
+                # STRICTLY BEFORE the first anomaly replays, preserving the
+                # last trustworthy watermark.
+                in_range = [c for c in spec["candles"]
+                            if eff_start <= c["t"] < end]
+                anomaly = None
                 want = eff_start
-                have = {c["t"]: c for c in spec["candles"]}
-                while want in have:
-                    prefix.append(have[want])
+                seen = set()
+                accepted = []
+                for i, c in enumerate(in_range):
+                    if c["t"] in seen:               # duplicate ANYWHERE
+                        anomaly = c["t"]
+                        break
+                    if c["t"] != want:               # gap/misorder/misalign
+                        anomaly = min(c["t"], want)
+                        break
+                    try:
+                        marketdata.validate_candle_values(c)
+                    except marketdata.DataUnavailable:
+                        anomaly = c["t"]
+                        break
+                    seen.add(c["t"])
+                    accepted.append(c)
                     want += 60
+                prefix = ([c for c in accepted if c["t"] < anomaly]
+                          if anomaly is not None else accepted)
                 truncated = _apply_candles(prefix, append=False) \
                     if prefix else None
-                eff_start = truncated if truncated is not None else want
+                if truncated is not None:
+                    eff_start = truncated
+                elif anomaly is not None:
+                    eff_start = anomaly
+                else:
+                    eff_start = want
                 unresolved = end - eff_start
                 if unresolved > MAX_GAP_S:
                     meta["coin_terminated"][coin] = True

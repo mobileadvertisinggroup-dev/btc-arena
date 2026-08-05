@@ -165,18 +165,35 @@ def check_approved_site_digest(approved_site_digest):
     return current
 
 
-def provision_store(store, approved_digest, approved_site_digest):
+def atomic_write_json(path, obj):
+    """Ruling 020.2: every provisioning write is temp + fsync + atomic
+    replace — a crash can never leave a torn file."""
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(obj, f, indent=1)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
+
+def _crash(crash_at, point):
+    if crash_at == point:
+        raise RuntimeError(f"provisioning crash injection: {point}")
+
+
+def provision_store(store, approved_digest, approved_site_digest,
+                    crash_at=None):
     """The ONLY way production code installs a store's manifests: verify the
     current tree AND the static site against their external approved digests,
-    and only then copy the verified manifests in. Nothing is written on any
-    mismatch."""
+    and only then copy the verified manifests in (atomically). Nothing is
+    written on any mismatch."""
     current = check_approved_digest(approved_digest)
     site = check_approved_site_digest(approved_site_digest)
     os.makedirs(store, exist_ok=True)
-    with open(os.path.join(store, LAUNCH_MANIFEST_NAME), "w") as f:
-        json.dump(current, f, indent=1)
-    with open(os.path.join(store, SITE_MANIFEST_NAME), "w") as f:
-        json.dump(site, f, indent=1)
+    atomic_write_json(os.path.join(store, LAUNCH_MANIFEST_NAME), current)
+    _crash(crash_at, "after_launch_manifest")
+    atomic_write_json(os.path.join(store, SITE_MANIFEST_NAME), site)
+    _crash(crash_at, "after_site_manifest")
     return store
 
 

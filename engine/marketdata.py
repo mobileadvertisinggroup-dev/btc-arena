@@ -106,6 +106,15 @@ def build_snapshot(coin, k1m, k1h, k1d, T):
     _check_sane(daily, DAY, "daily")
     m1 = [c for c in k1m if c["t"] + MIN <= T]
     _check_fresh(m1, MIN, T - MIN, "1m")
-    p_t = m1[-1]["c"]
+    # STRICT P_T SOURCE VALIDATION (Mentor Ruling 020.1): the exact T-60
+    # candle must be unambiguous (no duplicate) and pass full value
+    # validation BEFORE its close may become P_T — a malformed price can
+    # never reach prompts, decisions, execution, equity or the dashboard.
+    finals = [c for c in m1 if c["t"] == T - MIN]
+    if len(finals) != 1:
+        raise DataUnavailable(
+            f"1m P_T: {len(finals)} candles at T-60 — ambiguous/absent")
+    validate_candle_values(finals[0], "1m P_T")
+    p_t = finals[0]["c"]
     return {"coin": coin, "T": T, "P_T": p_t, "hourly": hourly,
             "daily_closes": [c["c"] for c in daily], "source": "kraken"}
