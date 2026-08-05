@@ -1,7 +1,7 @@
 {
- "note": "CANDIDATE digests produced by the ruling-019-remediated tree. NOT approved. Activation requires the mentor to independently verify this archive and EXTERNALLY issue these values.",
- "candidate_engine_combined_digest": "0d8551f2b2514f65a9cba103ef1eb9184e74c8d3abafabb1fce085f43ea00d70",
- "candidate_site_combined_digest": "773395854dd0e1b99f3f8cd168fcda5dc5dfc976c60b397883d913c3ef2ac4ed",
+ "note": "CANDIDATE ENGINE digest produced by the ruling-020-remediated tree. NOT approved. The SITE digest is the FORMALLY APPROVED, externally issued value (Mentor Ruling 020) and is reproduced exactly \u2014 static site files are frozen.",
+ "candidate_engine_combined_digest": "a26db259ad702b19d0c61e708e3c99b8e79a8b1792c2a85e0e5ef910175c4e2b",
+ "approved_site_combined_digest": "773395854dd0e1b99f3f8cd168fcda5dc5dfc976c60b397883d913c3ef2ac4ed",
  "site_manifest": {
   "files": {
    "docs/demo_payload.js": "7a5fbb6d822fdf3ad3f2e78a726bec2172769d714c3e0f7f750d184640aa21b0",
@@ -10,12 +10,7 @@
   },
   "combined": "773395854dd0e1b99f3f8cd168fcda5dc5dfc976c60b397883d913c3ef2ac4ed"
  },
- "site_digest_changed_this_round": "prestart/demo payloads regenerated: dashboard pairs key renamed 'feature' -> 'ta' (Ruling 019.5 public-naming reconciliation)",
  "previous_approved_engine_digest": "c425200e1b840524bb444288d6725bc1f728f60d94d72ed725d0fc704ec5432c",
- "previous_approved_site_digest": "2bfff2cb28b970c09a76b5a9045c4ffee909d37ccd8f39ab69001a95c264b7fa",
- "superseded_v7_candidates": {
-  "engine": "a779ad12fb882a734b47537b7b72d799ba321a941d66e33248ee07507dc04f0d",
-  "site": "f867018b23ad6440cd391db38670f220297c692da71af698781558c303fd1e36"
- },
+ "superseded_v8_engine_candidate": "0d8551f2b2514f65a9cba103ef1eb9184e74c8d3abafabb1fce085f43ea00d70",
  "live_origin_frozen": "https://live.akraarena.online/"
 }

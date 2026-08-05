@@ -1,8 +1,8 @@
 diff --git a/.gitignore b/.gitignore
-index 7707535..448c3d6 100644
+index 7707535..3001d7e 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -9,3 +9,21 @@
+@@ -9,3 +9,24 @@
  MANIFEST.sha256.json
  .DS_Store
  offline_audit_bundle_v1/
@@ -24,6 +24,9 @@ index 7707535..448c3d6 100644
 +offline_audit_bundle_v7.tar.gz
 +offline_audit_bundle_v7.tar.gz.sha256
 +offline_audit_bundle_v7/
++offline_audit_bundle_v8.tar.gz
++offline_audit_bundle_v8.tar.gz.sha256
++offline_audit_bundle_v8/
 diff --git a/README.md b/README.md
 index 2484ab4..ddb112e 100644
 --- a/README.md
@@ -1998,7 +2001,7 @@ index 9574f8c..f75a842 100644
 -window.ARENA_PRESTART = {"experiment": "v1.3", "label": "V1 EXPERIMENT", "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?", "hashes": {"config/v1/experiment.json": "f7da51051a7031c26e5b5905979eeb33a4473739c901f766f25638472f39ef70", "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032", "engine/config.py": "8ed48d38192ada58f4facc9cc64855b091e94496fa30762e54e362a1f470342b", "engine/dashboard.py": "ac362386b28c407ed6e57f7fc2526cd27cf6261f04120413cc139d4394f1f8d0", "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5", "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc", "engine/features.py": "69ea768643b5b91c4abc7f202b72330204836ddf35020027ef66bdc687ff1da2", "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872", "engine/marketdata.py": "0b035211e44d0b3978dfbd56230c342dfb2bf77a9f3b310211748b8dede19a28", "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9", "engine/persistence.py": "0ea8013e46d855fdfca1446b27d44eebec94b0741fb606a3500840c7a9740005", "engine/pilot.py": "bb8af7eb4a4de5a1af17768234bed815363a69f9cc46d4f88dbd15da66823228", "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22", "engine/publisher.py": "642d79fc5dbcb211c118cef89e6dc5242d18e02dd319b881e1849a508edfb7c4", "engine/recovery.py": "1740449c7dc91483cc6b05838e25abce14616645092d4964aea17f2381afc8be", "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42", "engine/rounds.py": "e80db03a868260e9d1ee8361553452e0c5e8d434cbea0f27381338be2126e036", "engine/state.py": "ca395fb36b0f4a3798309e8f1d254c55d330ed2dabb9d219c3d18cfd2abf5b70", "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b", "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c", "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8", "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04", "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63", "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64", "schemas/v1/records.schema.json": "eaf34924cbbc1f9606f9e272c6df6acf337b5e39f0a467bea2751694c9c347e2", "scripts/archive_pilot_reset.py": "9a6bbbed3da4634317013fa6c19851218ddfb80dc8afb48cc25a998dbd5b9694", "scripts/gen_demo_dashboard.py": "99606d3fb2198cb4a89e32dc0ac37b366d6bd644028aadd8cc5da81d117282e1", "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02", "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752", "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d"}, "combined_hash": "c425200e1b840524bb444288d6725bc1f728f60d94d72ed725d0fc704ec5432c", "pilot_link": {"href": "pilot/index.html", "label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"}, "health": {"heartbeat": null, "stale": true}, "round_counts": {"PAIR_COMMITTED": 0, "PAIR_ABORTED": 0, "PAIR_TERMINAL_SPLIT": 0}, "coins": {"BTC": {"accounts": [{"id": "btc_haiku_raw", "coin": "BTC", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_haiku_ta", "coin": "BTC", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_raw", "coin": "BTC", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_ta", "coin": "BTC", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_raw", "coin": "BTC", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_ta", "coin": "BTC", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "btc_haiku_raw", "feature": "btc_haiku_ta"}, {"model": "sonnet", "raw": "btc_sonnet_raw", "feature": "btc_sonnet_ta"}, {"model": "opus", "raw": "btc_opus_raw", "feature": "btc_opus_ta"}], "rounds": []}, "ETH": {"accounts": [{"id": "eth_haiku_raw", "coin": "ETH", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_haiku_ta", "coin": "ETH", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_raw", "coin": "ETH", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_ta", "coin": "ETH", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_raw", "coin": "ETH", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_ta", "coin": "ETH", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "eth_haiku_raw", "feature": "eth_haiku_ta"}, {"model": "sonnet", "raw": "eth_sonnet_raw", "feature": "eth_sonnet_ta"}, {"model": "opus", "raw": "eth_opus_raw", "feature": "eth_opus_ta"}], "rounds": []}, "SOL": {"accounts": [{"id": "sol_haiku_raw", "coin": "SOL", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_haiku_ta", "coin": "SOL", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_raw", "coin": "SOL", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_ta", "coin": "SOL", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_raw", "coin": "SOL", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_ta", "coin": "SOL", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "sol_haiku_raw", "feature": "sol_haiku_ta"}, {"model": "sonnet", "raw": "sol_sonnet_raw", "feature": "sol_sonnet_ta"}, {"model": "opus", "raw": "sol_opus_raw", "feature": "sol_opus_ta"}], "rounds": []}}, "mode": "PREPARATION", "banner": "AKRA ARENA \u2014 PREPARATION MODE \u2014 EXPERIMENT NOT STARTED", "data_notice": "No model has been called. No paper-trading pilot or official experiment has started.", "pilot_progress": {"done": 0, "total": 12}};
 +window.ARENA_PRESTART = {"experiment": "v1.3", "label": "V1 EXPERIMENT", "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?", "hashes": {"config/v1/experiment.json": "09c99774c2fcc11e4f648bae3f4eaf61c98464b65c0aa9229535ca56c94e918c", "deploy/arena-official.service": "f918bd1dff679955acb054a2bf22fbba5902e63fc4176a5a2debbd84b287ca94", "deploy/nginx-arena.conf": "b2ead8442059cfc686d3c61c1b342c39f53696468e83b2b4c95a79d678a677ab", "deploy/requirements-official.txt": "4d802d7c1ca0eff85563b5e1aa5ae100dcc789a32049fcc0d65e710e3c551f31", "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032", "engine/config.py": "80fb10bb37db0ec9f031af8a0e38de2518cd76cc547efe8179dd099283e7232d", "engine/dashboard.py": "ab1226f94ee2c70bd982f6e2d4dddfdc958ebfcc591af8a2d11d7e59b6efe64b", "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5", "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc", "engine/features.py": "69ea768643b5b91c4abc7f202b72330204836ddf35020027ef66bdc687ff1da2", "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872", "engine/marketdata.py": "1055a51274154d46c3795181b8e9f24d6618d54056935b02b480ace985202481", "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9", "engine/official.py": "37ae831a3d2b006a5d7ee280d7b6c99d711b29b01a6e9e6e7944be68a8d88d7e", "engine/persistence.py": "08802532f7e3ad1023730f4d4c2a6c2092710bc356f2bff720766d1120d21c73", "engine/pilot.py": "51a0dd2f4efb9db780b77047366efbf941530b8108ca1cbd02cf934485950a59", "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22", "engine/publisher.py": "739560008fd90b0ebb492b58338034ee75c63dd459bb674852f6bc2c2511e30e", "engine/recovery.py": "67d9abfc76433185ace37d50a41303c7be9f6d5d03218a87d68bac62703cac21", "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42", "engine/rounds.py": "9faa51d6194c198ede7a842e274393c9d6eefe83d2e5e5c22f36c56c40a5c5fc", "engine/state.py": "7374f11611b016f83fb86ae7b94c5f7fd1732dbee4ad6e96652f13165bebf4f2", "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b", "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c", "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8", "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04", "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63", "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64", "schemas/v1/records.schema.json": "3ab57bedf3ae0696a1be93507b2fac7a37ee912fee25f805bd32257ccf8d75d0", "scripts/archive_official.py": "e6da95fe4cd1c8ede79d257d8f924d1bcb6b170f97b18dafd61ec540d5c85035", "scripts/archive_pilot_reset.py": "9a6bbbed3da4634317013fa6c19851218ddfb80dc8afb48cc25a998dbd5b9694", "scripts/arm_official.py": "c2960cba0fedd97e8e8f589c5f8b959ba17b54eec473f67e8105f3fcade5fa35", "scripts/gen_demo_dashboard.py": "fb4fbf46ee4ac21a38c37bab6d3db3b37fe0954dfba1d00ead532c56227bb394", "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02", "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752", "scripts/preflight_official.py": "448df79169f6ed05e526fcd8d59130fb7cd893c012fce57a2ee7d0d4c16bf843", "scripts/run_official_14d.py": "9bcaaa87c755c5e32b4ab9fd4ec16ee873061478b2030c2d54a52d51a5dd94f7", "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d", "scripts/verify_deployment.py": "70f9c770f25135d74d9123a74b4a236711062a8d24457e7f1bc0e2373d6a82f0"}, "combined_hash": "0d8551f2b2514f65a9cba103ef1eb9184e74c8d3abafabb1fce085f43ea00d70", "pilot_link": {"href": "pilot/index.html", "label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"}, "health": {"heartbeat": null, "stale": true}, "round_counts": {"PAIR_COMMITTED": 0, "PAIR_ABORTED": 0, "PAIR_TERMINAL_SPLIT": 0}, "coins": {"BTC": {"accounts": [{"id": "btc_haiku_raw", "coin": "BTC", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_haiku_ta", "coin": "BTC", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_raw", "coin": "BTC", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_ta", "coin": "BTC", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_raw", "coin": "BTC", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_ta", "coin": "BTC", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "btc_haiku_raw", "ta": "btc_haiku_ta"}, {"model": "sonnet", "raw": "btc_sonnet_raw", "ta": "btc_sonnet_ta"}, {"model": "opus", "raw": "btc_opus_raw", "ta": "btc_opus_ta"}], "rounds": []}, "ETH": {"accounts": [{"id": "eth_haiku_raw", "coin": "ETH", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_haiku_ta", "coin": "ETH", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_raw", "coin": "ETH", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_ta", "coin": "ETH", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_raw", "coin": "ETH", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_ta", "coin": "ETH", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "eth_haiku_raw", "ta": "eth_haiku_ta"}, {"model": "sonnet", "raw": "eth_sonnet_raw", "ta": "eth_sonnet_ta"}, {"model": "opus", "raw": "eth_opus_raw", "ta": "eth_opus_ta"}], "rounds": []}, "SOL": {"accounts": [{"id": "sol_haiku_raw", "coin": "SOL", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_haiku_ta", "coin": "SOL", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_raw", "coin": "SOL", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_ta", "coin": "SOL", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_raw", "coin": "SOL", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_ta", "coin": "SOL", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "sol_haiku_raw", "ta": "sol_haiku_ta"}, {"model": "sonnet", "raw": "sol_sonnet_raw", "ta": "sol_sonnet_ta"}, {"model": "opus", "raw": "sol_opus_raw", "ta": "sol_opus_ta"}], "rounds": []}}, "mode": "PREPARATION", "banner": "AKRA ARENA \u2014 PREPARATION MODE \u2014 EXPERIMENT NOT STARTED", "data_notice": "No model has been called. No paper-trading pilot or official experiment has started.", "pilot_progress": {"done": 0, "total": null}};
 diff --git a/engine/config.py b/engine/config.py
-index 9908d20..3056cf5 100644
+index 9908d20..bc7533c 100644
 --- a/engine/config.py
 +++ b/engine/config.py
 @@ -14,6 +14,13 @@
@@ -2015,6 +2018,49 @@ index 9908d20..3056cf5 100644
  ]
  
  # Static production UI, frozen by its own externally approved manifest
+@@ -158,18 +165,35 @@
+     return current
+ 
+ 
+-def provision_store(store, approved_digest, approved_site_digest):
++def atomic_write_json(path, obj):
++    """Ruling 020.2: every provisioning write is temp + fsync + atomic
++    replace — a crash can never leave a torn file."""
++    tmp = path + ".tmp"
++    with open(tmp, "w") as f:
++        json.dump(obj, f, indent=1)
++        f.flush()
++        os.fsync(f.fileno())
++    os.replace(tmp, path)
++
++
++def _crash(crash_at, point):
++    if crash_at == point:
++        raise RuntimeError(f"provisioning crash injection: {point}")
++
++
++def provision_store(store, approved_digest, approved_site_digest,
++                    crash_at=None):
+     """The ONLY way production code installs a store's manifests: verify the
+     current tree AND the static site against their external approved digests,
+-    and only then copy the verified manifests in. Nothing is written on any
+-    mismatch."""
++    and only then copy the verified manifests in (atomically). Nothing is
++    written on any mismatch."""
+     current = check_approved_digest(approved_digest)
+     site = check_approved_site_digest(approved_site_digest)
+     os.makedirs(store, exist_ok=True)
+-    with open(os.path.join(store, LAUNCH_MANIFEST_NAME), "w") as f:
+-        json.dump(current, f, indent=1)
+-    with open(os.path.join(store, SITE_MANIFEST_NAME), "w") as f:
+-        json.dump(site, f, indent=1)
++    atomic_write_json(os.path.join(store, LAUNCH_MANIFEST_NAME), current)
++    _crash(crash_at, "after_launch_manifest")
++    atomic_write_json(os.path.join(store, SITE_MANIFEST_NAME), site)
++    _crash(crash_at, "after_site_manifest")
+     return store
+ 
+ 
 diff --git a/engine/dashboard.py b/engine/dashboard.py
 index 145185a..59f26eb 100644
 --- a/engine/dashboard.py
@@ -2042,7 +2088,7 @@ index 145185a..59f26eb 100644
              "rounds": [e for e in ledger if e["round_id"].startswith(f"v1-{coin}-")],
          }
 diff --git a/engine/marketdata.py b/engine/marketdata.py
-index ba41c11..1139323 100644
+index ba41c11..950cb1a 100644
 --- a/engine/marketdata.py
 +++ b/engine/marketdata.py
 @@ -54,14 +54,39 @@
@@ -2087,12 +2133,29 @@ index ba41c11..1139323 100644
  
  
  def build_snapshot(coin, k1m, k1h, k1d, T):
+@@ -81,6 +106,15 @@
+     _check_sane(daily, DAY, "daily")
+     m1 = [c for c in k1m if c["t"] + MIN <= T]
+     _check_fresh(m1, MIN, T - MIN, "1m")
+-    p_t = m1[-1]["c"]
++    # STRICT P_T SOURCE VALIDATION (Mentor Ruling 020.1): the exact T-60
++    # candle must be unambiguous (no duplicate) and pass full value
++    # validation BEFORE its close may become P_T — a malformed price can
++    # never reach prompts, decisions, execution, equity or the dashboard.
++    finals = [c for c in m1 if c["t"] == T - MIN]
++    if len(finals) != 1:
++        raise DataUnavailable(
++            f"1m P_T: {len(finals)} candles at T-60 — ambiguous/absent")
++    validate_candle_values(finals[0], "1m P_T")
++    p_t = finals[0]["c"]
+     return {"coin": coin, "T": T, "P_T": p_t, "hourly": hourly,
+             "daily_closes": [c["c"] for c in daily], "source": "kraken"}
 diff --git a/engine/official.py b/engine/official.py
 new file mode 100644
-index 0000000..06dd3db
+index 0000000..c8dbd2e
 --- /dev/null
 +++ b/engine/official.py
-@@ -0,0 +1,923 @@
+@@ -0,0 +1,1018 @@
 +"""OFFICIAL 14-DAY RUN orchestration (Mentor Rulings 1, 2, 3, 6, 8).
 +
 +Differences from the pilot loop (engine.pilot), each mandated by a ruling:
@@ -2216,7 +2279,10 @@ index 0000000..06dd3db
 +# refuses the launch.
 +PRISTINE_STORE_ALLOWLIST = frozenset({
 +    "state.json", config_mod.LAUNCH_MANIFEST_NAME,
-+    config_mod.SITE_MANIFEST_NAME})
++    config_mod.SITE_MANIFEST_NAME,
++    # the live provisioning-transaction marker (Ruling 020.2) — a STALE
++    # marker is reconciled/rolled back before provisioning ever re-runs
++    "provisioning_tx.json"})
 +
 +
 +def verify_pristine_official_state(store):
@@ -2454,6 +2520,71 @@ index 0000000..06dd3db
 +BINDING_NAME = "activation_binding.json"
 +ACCEPTED_ACTIVATION_NAME = "activation_accepted.json"
 +ACCEPTED_PREFLIGHT_NAME = "preflight_attestation.json"
++PROVISIONING_TX_NAME = "provisioning_tx.json"
++
++
++def _begin_provisioning_tx(store, act_sha):
++    """Mentor Ruling 020.2: the provisioning transaction is identifiable
++    BEFORE its first official-store write. The marker is written atomically
++    and journals a byte-exact backup of any pre-existing manifests plus
++    whether state.json pre-existed, so an aborted transaction can restore
++    the store to exactly its pre-transaction shape."""
++    os.makedirs(store, exist_ok=True)
++    backup = {}
++    for name in (config_mod.LAUNCH_MANIFEST_NAME,
++                 config_mod.SITE_MANIFEST_NAME):
++        p = os.path.join(store, name)
++        backup[name] = open(p).read() if os.path.exists(p) else None
++    backup["state_preexisting"] = os.path.exists(
++        os.path.join(store, "state.json"))
++    config_mod.atomic_write_json(os.path.join(store, PROVISIONING_TX_NAME),
++                                 {"activation_sha": act_sha,
++                                  "backup": backup})
++
++
++def _commit_provisioning_tx(store):
++    try:
++        os.remove(os.path.join(store, PROVISIONING_TX_NAME))
++    except FileNotFoundError:
++        pass
++
++
++def _rollback_provisioning_tx(store):
++    """Restore the pre-transaction store shape from the journal, remove
++    every transaction artifact, and delete the marker LAST."""
++    with open(os.path.join(store, PROVISIONING_TX_NAME)) as f:
++        tx = json.load(f)
++    backup = tx.get("backup", {})
++    for name in (pilot.SCHEDULE_NAME, BINDING_NAME, ACCEPTED_ACTIVATION_NAME,
++                 ACCEPTED_PREFLIGHT_NAME, publisher_mod.PUB_LOG):
++        try:
++            os.remove(os.path.join(store, name))
++        except FileNotFoundError:
++            pass
++    import shutil
++    shutil.rmtree(os.path.join(store, "publish"), ignore_errors=True)
++    for name in (config_mod.LAUNCH_MANIFEST_NAME,
++                 config_mod.SITE_MANIFEST_NAME):
++        p = os.path.join(store, name)
++        prior = backup.get(name)
++        if prior is None:
++            try:
++                os.remove(p)
++            except FileNotFoundError:
++                pass
++        else:
++            tmp = p + ".tmp"
++            with open(tmp, "w") as f:
++                f.write(prior)
++                f.flush()
++                os.fsync(f.fileno())
++            os.replace(tmp, p)
++    if not backup.get("state_preexisting"):
++        try:
++            os.remove(os.path.join(store, "state.json"))
++        except FileNotFoundError:
++            pass
++    _commit_provisioning_tx(store)       # marker removed LAST
 +
 +
 +def classify_official_store(store):
@@ -2511,40 +2642,64 @@ index 0000000..06dd3db
 +
 +def arm_store(store, act, act_sha, approved_digest, approved_site_digest,
 +              report_blob=None, crash_at=None):
-+    """THE INITIAL ACTIVATION TRANSACTION (Mentor Ruling 019.2), recoverable
-+    across every write point: manifests + pristine state + schedule +
-+    binding (provision_official) -> archived preflight bytes -> accepted
-+    activation record (the atomic commit marker). A crash anywhere leaves a
-+    store that reconcile_incomplete_provisioning() safely rolls back to
-+    ARMED/OFF with provably pristine accounts; a completed transaction
-+    passes verify_durable_trust()."""
++    """THE INITIAL ACTIVATION TRANSACTION (Mentor Rulings 019.2 + 020.2),
++    identifiable BEFORE its first store write and recoverable across EVERY
++    durable step: tx marker (with pre-state journal) -> launch manifest ->
++    site manifest -> pristine state -> schedule -> activation binding ->
++    archived preflight bytes -> accepted activation record (the atomic
++    commit marker) -> tx marker removal. A crash anywhere leaves a store
++    that reconcile_incomplete_provisioning() restores to its exact
++    pre-transaction ARMED/OFF shape with provably pristine accounts; a
++    completed transaction passes verify_durable_trust()."""
++    _begin_provisioning_tx(store, act_sha)
++    if crash_at == "after_tx_marker":
++        raise recovery.CrashError("after_tx_marker")
 +    sched = provision_official(store, approved_digest, approved_site_digest,
 +                               act["start_utc"], total=act["total"],
-+                               activation_sha=act_sha)
++                               activation_sha=act_sha, crash_at=crash_at)
 +    if crash_at == "after_provision":
 +        raise recovery.CrashError("after_provision")
 +    archive_activation(store, act, act_sha, report_blob=report_blob,
 +                       crash_at=crash_at)
++    _commit_provisioning_tx(store)
 +    return sched
 +
 +
 +def reconcile_incomplete_provisioning(store):
-+    """Mentor Ruling 019.2: a crash mid-transaction leaves a schedule
-+    WITHOUT the accepted-activation commit marker. Allowed ONLY while zero
-+    boundaries have started: the partial artifacts are rolled back, the
-+    accounts are proven pristine, and the service returns to ARMED/OFF for
-+    clean rearming. Returns 'no_schedule' | 'started' | 'committed' |
-+    'rolled_back_incomplete'. NEVER rolls back once any boundary started."""
++    """Mentor Rulings 019.2 + 020.2: detect and recover a provisioning
++    transaction that never reached its accepted-activation commit — INCLUDING
++    crashes BEFORE any schedule exists (marker-only, partial manifests,
++    state-without-schedule). Allowed ONLY while zero boundaries have
++    started: every partial artifact is rolled back / restored from the
++    transaction journal, the accounts are proven pristine (or the store is
++    returned to its exact pre-transaction shape), and the service returns to
++    ARMED/OFF for clean rearming. Returns 'no_schedule' | 'started' |
++    'committed' | 'rolled_back_incomplete'. NEVER rolls back once any
++    boundary started."""
++    marker = os.path.exists(os.path.join(store, PROVISIONING_TX_NAME))
++    committed = os.path.exists(os.path.join(store, ACCEPTED_ACTIVATION_NAME))
++    # started? (only possible when schedule + state exist)
++    started = False
 +    try:
 +        sched = pilot.load_schedule(store)
-+    except pilot.ScheduleError:
-+        return "no_schedule"
-+    _, meta = persistence.load_state(os.path.join(store, "state.json"),
-+                                     expect_full_roster=True)
-+    if sched["completed"] or meta.get("boundary") is not None:
-+        return "started"
-+    if os.path.exists(os.path.join(store, ACCEPTED_ACTIVATION_NAME)):
++        _, meta = persistence.load_state(os.path.join(store, "state.json"),
++                                         expect_full_roster=True)
++        started = bool(sched["completed"]) or meta.get("boundary") is not None
++    except (pilot.ScheduleError, persistence.StateCorruption, OSError):
++        sched = None
++    if started:
++        return "started"                 # NEVER rolled back
++    if committed:
++        _commit_provisioning_tx(store)   # clear any stale marker
 +        return "committed"
++    if marker:
++        _rollback_provisioning_tx(store)     # journal-based full restore
++        if os.path.exists(os.path.join(store, "state.json")):
++            verify_pristine_official_state(store)
++        return "rolled_back_incomplete"
++    if sched is None:
++        return "no_schedule"
++    # legacy shape: schedule without commit marker and without a tx journal
 +    rollback_unstarted(store)
 +    verify_pristine_official_state(store)   # PROOF: pristine, zero boundary
 +    return "rolled_back_incomplete"
@@ -2672,7 +2827,8 @@ index 0000000..06dd3db
 +
 +
 +def provision_official(store, approved_digest, approved_site_digest, start,
-+                       total=TOTAL_BOUNDARIES, activation_sha=None):
++                       total=TOTAL_BOUNDARIES, activation_sha=None,
++                       crash_at=None):
 +    """Digest-gated provisioning of the official schedule (Ruling 3): the
 +    start must be an exact UTC hour; the full boundary list is persisted
 +    (sealed) before any model call. Idempotent: an existing schedule/state is
@@ -2691,11 +2847,13 @@ index 0000000..06dd3db
 +    if creating:
 +        verify_pristine_official_state(store)   # raises BEFORE any write
 +    sched = pilot.provision(store, approved_digest, approved_site_digest,
-+                            start, total=total)
++                            start, total=total, crash_at=crash_at)
 +    if creating:
 +        write_activation_binding(store, activation_sha, approved_digest,
 +                                 approved_site_digest, sched["start"],
 +                                 sched["total"])
++        if crash_at == "after_binding":
++            raise recovery.CrashError("after_binding")
 +    return sched
 +
 +
@@ -3053,10 +3211,43 @@ index 08f4e1a..b235400 100644
  
  def _validate_account(aid, a):
 diff --git a/engine/pilot.py b/engine/pilot.py
-index 0cad599..9c4be07 100644
+index 0cad599..f85376b 100644
 --- a/engine/pilot.py
 +++ b/engine/pilot.py
-@@ -132,7 +132,8 @@
+@@ -26,24 +26,29 @@
+     pass
+ 
+ 
+-def provision(store, approved_digest, approved_site_digest, start, total=12):
++def provision(store, approved_digest, approved_site_digest, start, total=12,
++              crash_at=None):
+     """Create (or resume) a store ONLY if the current tree matches the
+     EXTERNALLY supplied mentor-approved combined digest (Ruling 010.1) AND
+     the static production UI matches the externally approved site digest
+     (Ruling 011.1). On any mismatch nothing is written: no manifests, no
+     state, no schedule. Idempotent on restart: existing state/schedule are
+-    preserved verbatim."""
++    preserved verbatim. `crash_at` is crash-injection for the recoverable
++    provisioning transaction tests (Ruling 020.2)."""
+     config_mod.check_approved_digest(approved_digest)   # halt BEFORE any write
+     config_mod.check_approved_site_digest(approved_site_digest)
+-    config_mod.provision_store(store, approved_digest, approved_site_digest)
++    config_mod.provision_store(store, approved_digest, approved_site_digest,
++                               crash_at=crash_at)
+     spath = os.path.join(store, "state.json")
+     if not os.path.exists(spath):
+         persistence.save_state(spath, state.init_accounts(), {"boundary": None})
++    config_mod._crash(crash_at, "after_state")
+     if not os.path.exists(os.path.join(store, SCHEDULE_NAME)):
+         _write_schedule(store, {
+             "start": start, "total": total,
+             "boundaries": [start + i * HOUR for i in range(total)],
+             "completed": []})
++    config_mod._crash(crash_at, "after_schedule")
+     return load_schedule(store)
+ 
+ 
+@@ -132,7 +137,8 @@
              replay_spec={c: s for c, s in spec.items()
                           if snaps.get(c) is not None},
              crash_at=crash_at, clock=clock,
@@ -3175,7 +3366,7 @@ index 62e15bb..e810820 100644
          results.append((T, entry["status"]))
      return results
 diff --git a/engine/recovery.py b/engine/recovery.py
-index 68c2194..8b7e3b5 100644
+index 68c2194..a221649 100644
 --- a/engine/recovery.py
 +++ b/engine/recovery.py
 @@ -23,6 +23,7 @@
@@ -3248,7 +3439,7 @@ index 68c2194..8b7e3b5 100644
                  "boundary_complete": False,
                  "coin_terminated": meta.get("coin_terminated", {}),
                  "replay_state": meta.get("replay_state", {}),
-@@ -100,6 +137,174 @@
+@@ -100,6 +137,202 @@
      # 2. reconcile any unflushed outbox from a prior crash (idempotent)
      persistence.flush_outbox(store, accounts, meta)
  
@@ -3342,17 +3533,45 @@ index 68c2194..8b7e3b5 100644
 +                candles = marketdata.validate_1m_coverage(spec["candles"],
 +                                                          eff_start, end)
 +            except marketdata.DataUnavailable as e:
-+                # process the contiguous prefix before the gap, preserving
-+                # the last trustworthy watermark; never past the gap (008.6)
-+                prefix = []
++                # FIRST-ANOMALY SCAN over the ORIGINAL ORDERED series
++                # (Rulings 008.6 + 020.1): ambiguous input is NEVER collapsed
++                # into a timestamp map. A duplicate timestamp creates a gap
++                # AT that minute — neither conflicting copy may execute;
++                # out-of-order and misaligned data follow the same
++                # no-execution rule; only the clean contiguous prefix
++                # STRICTLY BEFORE the first anomaly replays, preserving the
++                # last trustworthy watermark.
++                in_range = [c for c in spec["candles"]
++                            if eff_start <= c["t"] < end]
++                anomaly = None
 +                want = eff_start
-+                have = {c["t"]: c for c in spec["candles"]}
-+                while want in have:
-+                    prefix.append(have[want])
++                seen = set()
++                accepted = []
++                for i, c in enumerate(in_range):
++                    if c["t"] in seen:               # duplicate ANYWHERE
++                        anomaly = c["t"]
++                        break
++                    if c["t"] != want:               # gap/misorder/misalign
++                        anomaly = min(c["t"], want)
++                        break
++                    try:
++                        marketdata.validate_candle_values(c)
++                    except marketdata.DataUnavailable:
++                        anomaly = c["t"]
++                        break
++                    seen.add(c["t"])
++                    accepted.append(c)
 +                    want += 60
++                prefix = ([c for c in accepted if c["t"] < anomaly]
++                          if anomaly is not None else accepted)
 +                truncated = _apply_candles(prefix, append=False) \
 +                    if prefix else None
-+                eff_start = truncated if truncated is not None else want
++                if truncated is not None:
++                    eff_start = truncated
++                elif anomaly is not None:
++                    eff_start = anomaly
++                else:
++                    eff_start = want
 +                unresolved = end - eff_start
 +                if unresolved > MAX_GAP_S:
 +                    meta["coin_terminated"][coin] = True
@@ -3423,7 +3642,7 @@ index 68c2194..8b7e3b5 100644
      # 3. durable prompt archive BEFORE any request (Ruling 008.3)
      archived = persistence.read_prompt_archive(store, _seed(T))
      entries, pregen = [], {}
-@@ -113,6 +318,12 @@
+@@ -113,6 +346,12 @@
              e = archived[aid]
              if "user" in e:
                  pregen[aid] = (e["system"], e["user"])   # bytes reused verbatim
@@ -3436,7 +3655,7 @@ index 68c2194..8b7e3b5 100644
              continue
          if blocked:
              entries.append({"account_id": aid,
-@@ -136,7 +347,8 @@
+@@ -136,7 +375,8 @@
  
      # 4/5. wave collection + pair resolution under ONE hard deadline
      if deadline is None:
@@ -3446,7 +3665,7 @@ index 68c2194..8b7e3b5 100644
      timeout_s = cfg["request_payloads"]["common"]["timeout_seconds"]
      concurrency = cfg["collection"]["concurrency_max_simultaneous_requests"]
      n_written = [0]
-@@ -165,7 +377,9 @@
+@@ -165,7 +405,9 @@
                  continue
              a_raw = accounts[state.account_id(coin, model, "raw")]
              a_ta = accounts[state.account_id(coin, model, "ta")]
@@ -3457,7 +3676,7 @@ index 68c2194..8b7e3b5 100644
                  pair_meta[pid] = ("abort", rid, "crash_recovery", None)
              elif meta["coin_terminated"].get(coin):
                  pair_meta[pid] = ("abort", rid, "COIN_TERMINATED", None)
-@@ -207,52 +421,116 @@
+@@ -207,52 +449,116 @@
              if pid in recovered or pid not in pair_meta:
                  continue
              kind, rid, reason, terminal_ids = pair_meta[pid]
@@ -3593,7 +3812,7 @@ index 68c2194..8b7e3b5 100644
              _crash(crash_at, "after_checkpoint")
              persistence.flush_outbox(store, accounts, meta,
                                       crash=lambda p: _crash(crash_at, p))
-@@ -262,81 +540,10 @@
+@@ -262,81 +568,10 @@
                  done_one = True
                  _crash(crash_at, "after_one_pair")
  
@@ -3679,7 +3898,7 @@ index 68c2194..8b7e3b5 100644
      # DURABLE EQUITY HISTORY (Ruling 011.2): one point per completed boundary,
      # equity computed with THIS boundary's persisted mark; explicit null when
      # an open position has no valid mark. Idempotent across same-T re-runs.
-@@ -355,7 +562,19 @@
+@@ -355,7 +590,19 @@
          meta["equity_history_last"] = T
      meta["boundary_complete"] = True
      meta.pop("_recovering", None)
@@ -3700,7 +3919,7 @@ index 68c2194..8b7e3b5 100644
      return ledger, all_attempts, {aid: p[1] for aid, p in pregen.items()}
  
  
-@@ -371,12 +590,22 @@
+@@ -371,12 +618,22 @@
  
  
  def recover(store):
@@ -4893,10 +5112,10 @@ index 0000000..979265a
 +    main()
 diff --git a/scripts/run_official_14d.py b/scripts/run_official_14d.py
 new file mode 100644
-index 0000000..f21ed59
+index 0000000..288fcbd
 --- /dev/null
 +++ b/scripts/run_official_14d.py
-@@ -0,0 +1,447 @@
+@@ -0,0 +1,452 @@
 +"""OFFICIAL 14-DAY EXPERIMENT SERVICE — INSTALLED ARMED/OFF, NEVER SELF-ACTIVATING.
 +
 +Runs under systemd (deploy/arena-official.service, Restart=on-failure —
@@ -4950,11 +5169,14 @@ index 0000000..f21ed59
 +
 +
 +def read_activation():
-+    """The owner's activation record, or None while ARMED/OFF. Malformed or
-+    incomplete records are treated as absent (and reported via health)."""
++    """The owner's activation record as (record, sha256) — BOTH derived from
++    the SAME single byte read (Mentor Ruling 020.2: no TOCTOU window between
++    parsing one version and hashing another). Returns None while ARMED/OFF;
++    malformed or incomplete records are treated as absent."""
 +    try:
-+        with open(ACTIVATION) as f:
-+            a = json.load(f)
++        with open(ACTIVATION, "rb") as f:
++            raw = f.read()
++        a = json.loads(raw)
 +    except Exception:
 +        return None
 +    ok = (a.get("approved") == APPROVAL_LITERAL
@@ -4969,7 +5191,7 @@ index 0000000..f21ed59
 +          and isinstance(a.get("preflight"), dict)
 +          and a["preflight"].get("report_path")
 +          and a["preflight"].get("report_sha256"))
-+    return a if ok else None
++    return (a, hashlib.sha256(raw).hexdigest()) if ok else None
 +
 +
 +def kraken_ohlc(pair, interval_min):
@@ -5149,12 +5371,13 @@ index 0000000..f21ed59
 +
 +def armed_off_loop():
 +    """Idle until a valid activation record exists. Health shows ARMED_OFF;
-+    zero model calls, zero scheduling, zero writes to data-v1."""
++    zero model calls, zero scheduling, zero writes to data-v1. Returns
++    (record, sha) from a single byte read (no TOCTOU)."""
 +    from engine import official
 +    while True:
-+        act = read_activation()
-+        if act is not None:
-+            return act
++        got = read_activation()
++        if got is not None:
++            return got
 +        official.write_health(public_dir(), {
 +            "state": "ARMED_OFF", "pid": os.getpid(), "mode": official.MODE,
 +            "updated": time.time(),
@@ -5208,17 +5431,17 @@ index 0000000..f21ed59
 +    #                  the external control file, the 24h freshness test and
 +    #                  READY publication no longer apply
 +    #   complete    -> COMPLETE health, clean exit, zero publications/calls
++    # CRASH-RECOVERABLE PROVISIONING (Rulings 019.2 + 020.2): BEFORE normal
++    # integrity verification — a transaction that never reached its commit
++    # marker (including pre-schedule crashes with partial manifests) is
++    # restored to the exact pre-transaction ARMED/OFF shape.
++    if official.reconcile_incomplete_provisioning(OFFICIAL_STORE) \
++            == "rolled_back_incomplete":
++        print("INCOMPLETE PROVISIONING TRANSACTION ROLLED BACK "
++              "(pre-transaction shape restored; pristine accounts). "
++              "ARMED/OFF; rearm cleanly.")
 +    verify_store_integrity()         # integrity BEFORE any reconciliation
 +    kind = official.classify_official_store(OFFICIAL_STORE)
-+    if kind == "unstarted":
-+        # CRASH-RECOVERABLE PROVISIONING (Ruling 019.2): a transaction that
-+        # never reached its accepted-activation commit marker rolls back to
-+        # ARMED/OFF with pristine accounts instead of bricking the service.
-+        if official.reconcile_incomplete_provisioning(OFFICIAL_STORE) \
-+                == "rolled_back_incomplete":
-+            print("INCOMPLETE PROVISIONING TRANSACTION ROLLED BACK "
-+                  "(pristine accounts verified). ARMED/OFF; rearm cleanly.")
-+            kind = "no_schedule"
 +    if kind != "no_schedule":
 +        # MANDATORY durable trust validation (Ruling 018.3) — before the
 +        # COMPLETE report, before resume, before unstarted reconciliation
@@ -5260,7 +5483,7 @@ index 0000000..f21ed59
 +        print("STALE UNSTARTED SCHEDULE ROLLED BACK (activation record "
 +              "absent or changed while the service was down). ARMED/OFF.")
 +    while True:
-+        act = armed_off_loop()
++        act, act_sha = armed_off_loop()   # single-read record + SHA (020.2)
 +        # INTEGRITY GATES (Rulings 010.1/011.1): the EXTERNALLY issued
 +        # digests in the owner's activation record must match the current
 +        # tree BEFORE any state initialization or network use.
@@ -5284,7 +5507,8 @@ index 0000000..f21ed59
 +            print("REFUSED: ANTHROPIC_API_KEY not set. No model call was "
 +                  "made.")
 +            sys.exit(2)
-+        act_sha = official.activation_sha(ACTIVATION)
++        # act_sha comes from the SAME bytes the record was parsed from
++        # (Ruling 020.2) — the file is never re-read for hashing.
 +        # re-reconcile with the CURRENT record: a leftover unstarted
 +        # schedule bound to a different activation rolls back so the newly
 +        # requested start can provision (Ruling 015.2)
@@ -5645,10 +5869,10 @@ index 0000000..2ceabcf
 +    main()
 diff --git a/tests/test_official.py b/tests/test_official.py
 new file mode 100644
-index 0000000..6da49d9
+index 0000000..8679b77
 --- /dev/null
 +++ b/tests/test_official.py
-@@ -0,0 +1,362 @@
+@@ -0,0 +1,365 @@
 +"""Official 14-day runner (post-pilot Mentor Rulings 1, 2, 3, 5, 6, 8):
 +direct VPS publication with checksum verification, explicit sub-budgets
 +inside the unchanged hard T+12:00 deadline, sealed 336-boundary UTC schedule,
@@ -5952,7 +6176,10 @@ index 0000000..6da49d9
 +        act.write_text(json.dumps({**good, **corrupt}))
 +        assert mod.read_activation() is None         # every field enforced
 +    act.write_text(json.dumps(good))
-+    assert mod.read_activation() == good             # only the exact record
++    got = mod.read_activation()                      # (record, sha) from the
++    assert got[0] == good                            # SAME bytes (020.2)
++    import hashlib
++    assert got[1] == hashlib.sha256(act.read_bytes()).hexdigest()
 +
 +
 +# ---- Ruling 1.5: the mirror can never gate or break trading ----
@@ -8951,3 +9178,335 @@ index 0000000..7c5c98f
 +        assert '"feature":' not in text and '"ta":' in text
 +    assert "Feature arm in public" not in open(
 +        os.path.join(config.ROOT, "engine", "state.py")).read()
+diff --git a/tests/test_ruling020.py b/tests/test_ruling020.py
+new file mode 100644
+index 0000000..67125a8
+--- /dev/null
++++ b/tests/test_ruling020.py
+@@ -0,0 +1,326 @@
++"""Mentor Ruling 020 remediation regressions: strict-1m validation bypasses
++closed (P_T source validation, duplicate/misorder replay anomalies) and the
++fully recoverable pre-schedule provisioning transaction with TOCTOU-free
++activation reads. All offline and deterministic."""
++import json
++import os
++import tempfile
++import time
++from decimal import Decimal
++
++import pytest
++
++from conftest import T0, ScriptedCaller, load_fix, long_decision
++from engine import config, marketdata, official, persistence, pilot, recovery
++from test_official import direct, provisioned_official, run_official
++from test_ruling010 import digests, PilotClock
++from test_ruling011 import _sol_price
++from test_ruling016 import _load_script, mk_candles, snapshots_at
++from test_ruling018 import _kraken_stub, _open_sol
++from test_ruling019 import _arm_args
++
++HOUR = 3600
++T1, T2 = T0 + HOUR, T0 + 2 * HOUR
++
++
++# ---- 020.1a strict P_T source validation ----
++
++def _sol_1m_with_bad_final(T, price, bad_close):
++    """Valid series whose exact T-60 candle carries a malformed close."""
++    out = mk_candles(T - 2 * HOUR, 120, price)
++    assert out[-1]["t"] == T - 60
++    out[-1]["c"] = Decimal(str(bad_close))
++    out[-1]["l"] = Decimal(str(bad_close))
++    return out
++
++
++def test_invalid_T60_price_cannot_become_PT_production_path(cfg, monkeypatch):
++    """The mentor's reproduced hole: T-60 close = -999 with valid 1h/1d must
++    NOT produce a snapshot — DataUnavailable, no P_T."""
++    mod = _load_script("run_official_14d")
++    p = float(_sol_price())
++    monkeypatch.setattr(mod, "kraken_ohlc", _kraken_stub(
++        sol_1m=_sol_1m_with_bad_final(T1, p, -999)))
++    snap, spec = mod.fetch_market("SOL", T1, False)
++    assert snap is None                              # never P_T = -999
++
++
++def test_invalid_T60_price_first_boundary(cfg):
++    p = float(_sol_price())
++    k1m = _sol_1m_with_bad_final(T0, p, -999)
++    with pytest.raises(marketdata.DataUnavailable):
++        marketdata.build_snapshot("SOL", k1m, load_fix("SOL", "1h"),
++                                  load_fix("SOL", "1d"), T0)
++
++
++def test_duplicate_T60_candle_is_ambiguous_no_PT(cfg):
++    p = float(_sol_price())
++    k1m = mk_candles(T0 - 2 * HOUR, 120, p)
++    dup = dict(k1m[-1])
++    dup["c"] = Decimal(str(p * 2))                   # conflicting duplicate
++    k1m.append(dup)
++    assert k1m[-1]["t"] == T0 - 60 == k1m[-2]["t"]
++    with pytest.raises(marketdata.DataUnavailable):
++        marketdata.build_snapshot("SOL", k1m, load_fix("SOL", "1h"),
++                                  load_fix("SOL", "1d"), T0)
++
++
++def test_invalid_PT_zero_model_calls_and_no_mark(cfg, monkeypatch):
++    mod = _load_script("run_official_14d")
++    p = float(_sol_price())
++    bad_1m = _sol_1m_with_bad_final(T1, p, -999)
++    monkeypatch.setattr(mod, "kraken_ohlc", _kraken_stub(sol_1m=bad_1m))
++    snap, spec = mod.fetch_market("SOL", T1, False)
++    store = _open_sol(cfg)
++    caller = ScriptedCaller({})
++    snaps = snapshots_at(T1)
++    snaps["SOL"] = snap
++    ledger, _, _ = recovery.run_checkpointed(
++        T1, snaps, caller, cfg, store, pre_replay_spec={"SOL": spec})
++    assert not [c for c in caller.calls if c["id"].startswith("sol")]
++    _, meta = persistence.load_state(store + "/state.json")
++    # the malformed T-60 candle is ALSO rejected as a mark and stops replay
++    assert meta["marks"]["SOL"] is None
++    sol = [e for e in ledger if e.get("pair") == "sol_haiku"][0]
++    assert sol["reason"] == "DATA_UNAVAILABLE"
++    accounts, _ = persistence.load_state(store + "/state.json")
++    assert accounts["sol_haiku_raw"]["trades"] == []     # nothing executed
++
++
++# ---- 020.1b duplicate-timestamp replay bypass ----
++
++def _dup_at(candles, idx, **mutate):
++    dup = dict(candles[idx])
++    dup.update({k: Decimal(str(v)) for k, v in mutate.items()})
++    return candles[:idx + 1] + [dup] + candles[idx + 1:]
++
++
++@pytest.mark.parametrize("kind,mutate", [
++    ("stop", {"l": None}),                           # filled below with stop
++    ("target", {"h": None}),
++    ("invalidation", {"l": None}),
++])
++def test_conflicting_duplicate_never_executes(cfg, kind, mutate):
++    """The mentor's reproduced hole: two conflicting candles at the same
++    minute, one of which would cross a resting level. NEITHER may execute;
++    the duplicated minute becomes the gap."""
++    p = float(_sol_price())
++    if kind == "invalidation":
++        d = dict(long_decision(p, 2000), stop_loss=None, take_profit=None,
++                 invalidation={"timeframe": "1m_intrabar",
++                               "operator": "price_at_or_below",
++                               "level": p * 0.98})
++    else:
++        d = long_decision(p, 2000)
++    store = _open_sol(cfg, d)
++    candles = mk_candles(T0, 60, p)
++    cross = {"stop": {"l": p * 0.9, "c": p},
++             "target": {"h": p * 1.2},
++             "invalidation": {"l": p * 0.9, "c": p}}[kind]
++    candles = _dup_at(candles, 30, **cross)          # conflicting duplicate
++    caller = ScriptedCaller({})
++    recovery.run_checkpointed(
++        T1, snapshots_at(T1), caller, cfg, store,
++        pre_replay_spec={"SOL": {"start": T0, "end": T1, "candles": candles}})
++    accounts, meta = persistence.load_state(store + "/state.json")
++    a = accounts["sol_haiku_raw"]
++    assert a["trades"] == []                         # ZERO trades executed
++    assert a["qty"] != 0
++    if kind == "invalidation":
++        assert a["lifecycle"]["triggered"] is None   # never latched
++    # gap AT the duplicated minute; nothing at/after it executed
++    assert meta["replay_state"]["SOL"]["status"] == "CATCHUP_REQUIRED"
++    assert meta["replay_state"]["SOL"]["gap_since"] == T0 + 30 * 60
++    assert meta["replay_next_required"]["SOL"] == T0 + 30 * 60
++    assert not [c for c in caller.calls if c["id"].startswith("sol")]
++
++
++def test_out_of_order_and_misaligned_never_execute(cfg):
++    p = float(_sol_price())
++    store = _open_sol(cfg)
++    # out-of-order: a stop-crossing candle for an EARLIER minute reappears
++    candles = mk_candles(T0, 60, p)
++    late_dup = dict(candles[10])
++    late_dup["l"] = Decimal(str(p * 0.9))
++    candles = candles[:40] + [late_dup] + candles[40:]
++    recovery.run_checkpointed(
++        T1, snapshots_at(T1), ScriptedCaller({}), cfg, store,
++        pre_replay_spec={"SOL": {"start": T0, "end": T1, "candles": candles}})
++    accounts, meta = persistence.load_state(store + "/state.json")
++    assert accounts["sol_haiku_raw"]["trades"] == []
++    assert meta["replay_state"]["SOL"]["status"] == "CATCHUP_REQUIRED"
++    assert meta["replay_state"]["SOL"]["gap_since"] == T0 + 10 * 60
++    # misaligned: crossing candle at a non-minute timestamp
++    store2 = _open_sol(cfg)
++    candles2 = mk_candles(T0, 60, p)
++    candles2[30] = dict(candles2[30], t=candles2[30]["t"] + 30,
++                        l=Decimal(str(p * 0.9)))
++    recovery.run_checkpointed(
++        T1, snapshots_at(T1), ScriptedCaller({}), cfg, store2,
++        pre_replay_spec={"SOL": {"start": T0, "end": T1,
++                                 "candles": candles2}})
++    accounts2, meta2 = persistence.load_state(store2 + "/state.json")
++    assert accounts2["sol_haiku_raw"]["trades"] == []
++    assert meta2["replay_state"]["SOL"]["status"] != "REPLAY_COMPLETE"
++
++
++def test_replay_complete_impossible_after_any_anomaly(cfg):
++    p = float(_sol_price())
++    store = _open_sol(cfg)
++    candles = _dup_at(mk_candles(T0, 60, p), 59)     # anomaly at the very end
++    recovery.run_checkpointed(
++        T1, snapshots_at(T1), ScriptedCaller({}), cfg, store,
++        pre_replay_spec={"SOL": {"start": T0, "end": T1, "candles": candles}})
++    _, meta = persistence.load_state(store + "/state.json")
++    assert meta["replay_state"]["SOL"]["status"] == "CATCHUP_REQUIRED"
++
++
++def test_source_precision_still_exact(monkeypatch):
++    import io
++    mod = _load_script("run_official_14d")
++    precise = "144.123456789012345678"
++    rows = [[T0 - 60, precise, precise, precise, precise, "0", "1"]]
++    payload = json.dumps({"result": {"SOLUSD": rows, "last": T0}}).encode()
++
++    class FakeResp(io.BytesIO):
++        def __enter__(self):
++            return self
++
++        def __exit__(self, *a):
++            return False
++    monkeypatch.setattr(mod.urllib.request, "urlopen",
++                        lambda url, timeout=0: FakeResp(payload))
++    out = marketdata.to_dec(mod.kraken_ohlc("SOLUSD", 1))
++    assert str(out[0]["c"]) == precise
++
++
++# ---- 020.2 recoverable provisioning before a schedule exists ----
++
++CRASH_POINTS = ["after_tx_marker", "after_launch_manifest",
++                "after_site_manifest", "after_state", "after_schedule",
++                "after_binding", "after_preflight_copy"]
++
++
++def _snapshot_dir(store):
++    return {f: open(os.path.join(store, f), "rb").read()
++            for f in sorted(os.listdir(store))
++            if os.path.isfile(os.path.join(store, f))}
++
++
++@pytest.mark.parametrize("crash_at", CRASH_POINTS)
++def test_crash_after_every_write_recovers_to_pretx_shape(cfg, tmp_path,
++                                                         crash_at):
++    """The mentor's reproduced hole included launch-manifest-only (no site
++    manifest, no schedule). EVERY write point must restart to pristine
++    ARMED/OFF — including pre-schedule crashes — and rearm cleanly."""
++    act, sha, eng, site, blob = _arm_args(tmp_path, name=f"c_{crash_at}.json")
++    store = tempfile.mkdtemp(prefix="arena-r20-")
++    from engine import state as state_mod
++    persistence.save_state(os.path.join(store, "state.json"),
++                           state_mod.init_accounts(), {"boundary": None})
++    before = _snapshot_dir(store)
++    with pytest.raises((recovery.CrashError, RuntimeError)):
++        official.arm_store(store, act, sha, eng, site, report_blob=blob,
++                           crash_at=crash_at)
++    assert not os.path.exists(os.path.join(
++        store, official.ACCEPTED_ACTIVATION_NAME))   # never committed
++    assert official.reconcile_incomplete_provisioning(store) \
++        == "rolled_back_incomplete"
++    after = _snapshot_dir(store)
++    assert after == before                           # EXACT pre-tx shape
++    official.verify_pristine_official_state(store)
++    # clean rearm succeeds and validates fully
++    sched = official.arm_store(store, act, sha, eng, site, report_blob=blob)
++    assert sched["total"] == 2
++    assert official.reconcile_incomplete_provisioning(store) == "committed"
++    assert official.verify_durable_trust(store, time.time(),
++                                         waive_freshness=True)
++    assert not os.path.exists(os.path.join(store,
++                                           official.PROVISIONING_TX_NAME))
++
++
++def test_partial_manifest_crash_on_store_with_prior_manifests(cfg, tmp_path):
++    """A data-v1-shaped store (manifests already present): a crash between
++    manifest rewrites restores the ORIGINAL manifest bytes from the tx
++    journal."""
++    act, sha, eng, site, blob = _arm_args(tmp_path, name="prior.json")
++    store = tempfile.mkdtemp(prefix="arena-r20p-")
++    from engine import state as state_mod
++    persistence.save_state(os.path.join(store, "state.json"),
++                           state_mod.init_accounts(), {"boundary": None})
++    config.provision_store(store, eng, site)         # pre-existing manifests
++    before = _snapshot_dir(store)
++    with pytest.raises(RuntimeError):
++        official.arm_store(store, act, sha, eng, site, report_blob=blob,
++                           crash_at="after_launch_manifest")
++    assert official.reconcile_incomplete_provisioning(store) \
++        == "rolled_back_incomplete"
++    assert _snapshot_dir(store) == before            # bytes restored
++
++
++def test_fully_committed_transaction_validates_and_resumes(cfg, tmp_path):
++    act, sha, eng, site, blob = _arm_args(tmp_path, name="full.json")
++    store = tempfile.mkdtemp(prefix="arena-r20f-")
++    official.arm_store(store, act, sha, eng, site, report_blob=blob)
++    assert official.reconcile_incomplete_provisioning(store) == "committed"
++    assert official.verify_durable_trust(store, time.time())
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    sched = run_official(store, cfg, ScriptedCaller({}), dp, vc)
++    assert len(sched["completed"]) == 2              # normal run
++
++
++def test_marker_cleared_when_commit_raced_shutdown(cfg, tmp_path):
++    """Crash between the accepted record and marker removal: the accepted
++    record IS the commit — reconcile clears the stale marker and reports
++    committed."""
++    act, sha, eng, site, blob = _arm_args(tmp_path, name="race.json")
++    store = tempfile.mkdtemp(prefix="arena-r20m-")
++    official.arm_store(store, act, sha, eng, site, report_blob=blob)
++    official._begin_provisioning_tx(store, sha)      # simulate stale marker
++    assert official.reconcile_incomplete_provisioning(store) == "committed"
++    assert not os.path.exists(os.path.join(store,
++                                           official.PROVISIONING_TX_NAME))
++
++
++def test_started_run_never_rolled_back_even_with_marker(cfg):
++    store = provisioned_official(n=2)
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    with pytest.raises(recovery.CrashError):
++        run_official(store, cfg, ScriptedCaller({}), dp, vc,
++                     crash_at="after_one_pair")
++    official._begin_provisioning_tx(store, "00" * 32)
++    assert official.reconcile_incomplete_provisioning(store) == "started"
++    assert pilot.load_schedule(store)["boundaries"][0] == T0   # intact
++
++
++def test_activation_read_is_toctou_free(tmp_path, monkeypatch):
++    mod = _load_script("run_official_14d")
++    monkeypatch.setattr(mod, "ACTIVATION", str(tmp_path / "act.json"))
++    eng, site = digests()
++    good = {"approved": "YES-OFFICIAL-RUN-APPROVED", "engine_digest": eng,
++            "site_digest": site, "start_utc": T0, "total": 336,
++            "preflight": {"report_path": "/x", "report_sha256": "ab" * 32}}
++    (tmp_path / "act.json").write_text(json.dumps(good))
++    act, sha = mod.read_activation()
++    import hashlib
++    assert sha == hashlib.sha256(
++        (tmp_path / "act.json").read_bytes()).hexdigest()
++    # swapping the file AFTER the read cannot change what was bound
++    (tmp_path / "act.json").write_text(json.dumps(dict(good, start_utc=T1)))
++    assert official.make_disarm_check(str(tmp_path / "act.json"), sha)() \
++        is False                                     # swap detected
++    src = open(os.path.join(config.ROOT, "scripts",
++                            "run_official_14d.py")).read()
++    main_src = src[src.index("def main"):]
++    assert "activation_sha(ACTIVATION)" not in main_src   # no re-read
++    assert "act, act_sha = armed_off_loop()" in main_src
++
++
++def test_startup_reconciles_before_integrity_verification():
++    src = open(os.path.join(config.ROOT, "scripts",
++                            "run_official_14d.py")).read()
++    main_src = src[src.index("def main"):]
++    assert main_src.index("reconcile_incomplete_provisioning") \
++        < main_src.index("verify_store_integrity()")

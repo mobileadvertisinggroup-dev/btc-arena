@@ -1,3 +1,5 @@
+b3e07ceae8b9 ruling 020 remediation: strict-1m bypasses closed, pre-schedule re
+7ff4533b153a audit round v8: regenerate evidence after ruling 019 remediation
 e04c135c6b58 ruling 019 remediation: 1m marks, recoverable provisioning, strict
 b3b40c66bfb8 audit round v7: regenerate evidence after ruling 018 remediation
 a924c804728a ruling 018 remediation: independent 1m fetch, unambiguous config c
