@@ -1,8 +1,8 @@
 diff --git a/.gitignore b/.gitignore
-index 7707535..a177fcd 100644
+index 7707535..448c3d6 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -9,3 +9,18 @@
+@@ -9,3 +9,21 @@
  MANIFEST.sha256.json
  .DS_Store
  offline_audit_bundle_v1/
@@ -21,6 +21,9 @@ index 7707535..a177fcd 100644
 +offline_audit_bundle_v6.tar.gz
 +offline_audit_bundle_v6.tar.gz.sha256
 +offline_audit_bundle_v6/
++offline_audit_bundle_v7.tar.gz
++offline_audit_bundle_v7.tar.gz.sha256
++offline_audit_bundle_v7/
 diff --git a/README.md b/README.md
 index 2484ab4..ddb112e 100644
 --- a/README.md
@@ -90,7 +93,7 @@ index e38268a..acee8fb 100644
  ## 1. Mobile fit (bug)
  Page is slightly wider than the phone viewport — wiggles left/right when
 diff --git a/config/v1/experiment.json b/config/v1/experiment.json
-index 6668136..376fa02 100644
+index 6668136..65fbcc5 100644
 --- a/config/v1/experiment.json
 +++ b/config/v1/experiment.json
 @@ -1,432 +1,443 @@
@@ -852,7 +855,7 @@ index 6668136..376fa02 100644
 + "data_namespace": "data-v1/",
 + "prompt_archive": "data-v1/prompts/v1-ALL-{T}/{account_id}.json",
 + "round_id_format": "v1-{COIN}-{ISO8601_BOUNDARY}",
-+ "arm_naming": "scientific/public name for the treatment arm: 'Feature arm'; internal account-ID suffix remains _ta (legacy, permitted) to avoid migration churn",
++ "arm_naming": "public/visible name for the treatment arm: 'TA arm' (approved UI language); scientific description: the fixed neutral numerical feature summary; internal account-ID suffix remains _ta",
 + "feature_pack": {
 +  "principle": "the Feature arm may receive precomputed mathematical summaries, but never semantic judgments, trading guidance, recommended thresholds, or suggested actions",
 +  "outputs": {
@@ -967,10 +970,10 @@ index 6668136..376fa02 100644
  }
 diff --git a/deploy/DEPLOYMENT.md b/deploy/DEPLOYMENT.md
 new file mode 100644
-index 0000000..698c1f6
+index 0000000..124ffc3
 --- /dev/null
 +++ b/deploy/DEPLOYMENT.md
-@@ -0,0 +1,94 @@
+@@ -0,0 +1,106 @@
 +# VPS DEPLOYMENT RUNBOOK (Mentor Rulings 6 + 7)
 +
 +Nothing here may be executed until the mentor's formal PASS and the owner's
@@ -1030,20 +1033,32 @@ index 0000000..698c1f6
 +  only the three approved files, one HTTP block doing nothing but the exact
 +  redirect — no proxying, rewrites, extra locations, returns or if-blocks);
 +  live HTTPS + redirect work; the audited venv python and exact pinned
-+  package versions are in use. Any FAIL blocks activation.
++  package versions are in use; the system clock is NTP-synchronized
++  (every official deadline anchors to the VPS UTC clock — Ruling 019.5).
++  Any FAIL blocks activation.
 +
 +## 5. Server preflight (owner/mentor authorized; real model calls)
-+- ARENA_PREFLIGHT_APPROVED=YES-OWNER-MENTOR-AUTHORIZED \
-+  ARENA_APPROVED_MANIFEST_SHA256=<issued> ARENA_APPROVED_SITE_SHA256=<issued> \
-+  venv/bin/python scripts/preflight_official.py /home/arena/preflight-scratch
++- Load the secrets WITHOUT printing them (Ruling 019.5): source the env file
++  inside a subshell so nothing is echoed or persisted in history:
++    ( set -a && . /etc/arena/arena.env && set +a && \
++      ARENA_PREFLIGHT_APPROVED=YES-OWNER-MENTOR-AUTHORIZED \
++      ARENA_APPROVED_MANIFEST_SHA256=<issued> \
++      ARENA_APPROVED_SITE_SHA256=<issued> \
++      venv/bin/python scripts/preflight_official.py \
++          /home/arena/preflight-scratch )
++  Never cat/echo the env file; never paste secret values into a terminal.
 +  (audited script, hashed in the engine digest; SCRATCH store only — it
 +  refuses any path overlapping data-v1). 18/18 must pass AND the direct
 +  HTTPS endpoint probe must verify before activation is even proposed.
++  On PASS it prints the report path and its SHA-256 — both are REQUIRED for
++  activation.
 +
 +## 6. Activation (owner only)
 +- venv/bin/python scripts/arm_official.py --confirm \
 +    --engine-digest <externally issued> --site-digest <externally issued> \
-+    --start-utc next-hour
++    --start-utc next-hour \
++    --preflight-report <report path printed by the preflight> \
++    --preflight-sha <report SHA-256 printed by the preflight>
 +- The ARMED service validates the record + digests and starts the sealed
 +  336-boundary UTC schedule.
 +- REAL PRE-START DISARM (Ruling 014.1): deleting/replacing/modifying
@@ -1153,12 +1168,12 @@ index 0000000..62a29bd
 +rpds-py==2026.6.3
 +jsonschema-specifications==2025.9.1
 diff --git a/docs/demo_payload.js b/docs/demo_payload.js
-index 0aafad4..9ef1aff 100644
+index 0aafad4..1a742a4 100644
 --- a/docs/demo_payload.js
 +++ b/docs/demo_payload.js
 @@ -1 +1 @@
 -window.ARENA_DEMO = {"experiment": "v1.3", "label": "V1 EXPERIMENT", "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?", "hashes": {"config/v1/experiment.json": "f7da51051a7031c26e5b5905979eeb33a4473739c901f766f25638472f39ef70", "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032", "engine/config.py": "8ed48d38192ada58f4facc9cc64855b091e94496fa30762e54e362a1f470342b", "engine/dashboard.py": "ac362386b28c407ed6e57f7fc2526cd27cf6261f04120413cc139d4394f1f8d0", "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5", "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc", "engine/features.py": "69ea768643b5b91c4abc7f202b72330204836ddf35020027ef66bdc687ff1da2", "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872", "engine/marketdata.py": "0b035211e44d0b3978dfbd56230c342dfb2bf77a9f3b310211748b8dede19a28", "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9", "engine/persistence.py": "0ea8013e46d855fdfca1446b27d44eebec94b0741fb606a3500840c7a9740005", "engine/pilot.py": "bb8af7eb4a4de5a1af17768234bed815363a69f9cc46d4f88dbd15da66823228", "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22", "engine/publisher.py": "642d79fc5dbcb211c118cef89e6dc5242d18e02dd319b881e1849a508edfb7c4", "engine/recovery.py": "1740449c7dc91483cc6b05838e25abce14616645092d4964aea17f2381afc8be", "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42", "engine/rounds.py": "e80db03a868260e9d1ee8361553452e0c5e8d434cbea0f27381338be2126e036", "engine/state.py": "ca395fb36b0f4a3798309e8f1d254c55d330ed2dabb9d219c3d18cfd2abf5b70", "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b", "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c", "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8", "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04", "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63", "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64", "schemas/v1/records.schema.json": "eaf34924cbbc1f9606f9e272c6df6acf337b5e39f0a467bea2751694c9c347e2", "scripts/archive_pilot_reset.py": "9a6bbbed3da4634317013fa6c19851218ddfb80dc8afb48cc25a998dbd5b9694", "scripts/gen_demo_dashboard.py": "99606d3fb2198cb4a89e32dc0ac37b366d6bd644028aadd8cc5da81d117282e1", "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02", "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752", "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d"}, "combined_hash": "c425200e1b840524bb444288d6725bc1f728f60d94d72ed725d0fc704ec5432c", "pilot_link": {"href": "pilot/index.html", "label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"}, "health": {"heartbeat": {"ts": 1754877600, "code_hash": "c425200e1b840524bb444288d6725bc1f728f60d94d72ed725d0fc704ec5432c"}, "stale": false}, "round_counts": {"PAIR_COMMITTED": 9, "PAIR_ABORTED": 0, "PAIR_TERMINAL_SPLIT": 0}, "coins": {"BTC": {"accounts": [{"id": "btc_haiku_raw", "coin": "BTC", "model": "haiku", "arm": "raw", "equity": "9996.750022394440", "realized_pnl": "-3.249977605560", "unrealized_pnl": "0E-8", "total_return_pct": "-0.032499776055600", "fees": "3.249977605560", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "qty": "0.096156", "notional": "6499.95521112", "entry": "67598.02", "stop": "65570.0794", "tp": "70977.921", "thesis": "[DEMO] Range low held twice on the hourly candles; risking 3% against the prior swing low.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "64894.0992", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9996.750022394440", "fees": "3.249977605560"}]}, {"id": "btc_haiku_ta", "coin": "BTC", "model": "haiku", "arm": "ta", "equity": "9997.900033709690", "realized_pnl": "-2.099966290310", "unrealized_pnl": "0E-8", "total_return_pct": "-0.020999662903100", "fees": "2.099966290310", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "qty": "0.062131", "notional": "4199.93258062", "entry": "67598.02", "stop": "65570.0794", "tp": "70977.921", "thesis": "[DEMO] RSI 41.2 with price 1.1% under VWAP; small long against the SMA(50).", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "64894.0992", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9997.900033709690", "fees": "2.099966290310"}]}, {"id": "btc_sonnet_raw", "coin": "BTC", "model": "sonnet", "arm": "raw", "equity": "9998.500033735210", "realized_pnl": "-1.499966264790", "unrealized_pnl": "-0E-8", "total_return_pct": "-0.014999662647900", "fees": "1.499966264790", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "short", "qty": "0.044379", "notional": "2999.93252958", "entry": "67598.02", "stop": "69625.9606", "tp": "63542.1388", "thesis": "[DEMO] Lower highs on the daily closes; fading strength.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_above", "level": "70301.9408", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9998.500033735210", "fees": "1.499966264790"}]}, {"id": "btc_sonnet_ta", "coin": "BTC", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] Volume ratio 0.86 \u2014 waiting.", "invalidation": null, "watch": {"level": "68949.9804", "timeframe": "1h_close", "operator": "price_at_or_above", "triggered": false}, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_raw", "coin": "BTC", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] No edge in this chop; preserving capital.", "invalidation": null, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_ta", "coin": "BTC", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] ATR compressed; flat until expansion.", "invalidation": null, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "btc_haiku_raw", "feature": "btc_haiku_ta"}, {"model": "sonnet", "raw": "btc_sonnet_raw", "feature": "btc_sonnet_ta"}, {"model": "opus", "raw": "btc_opus_raw", "feature": "btc_opus_ta"}], "rounds": [{"round_id": "v1-BTC-2025-08-11T00:00:00Z", "pair": "btc_opus", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-BTC-2025-08-11T00:00:00Z", "pair": "btc_haiku", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-BTC-2025-08-11T00:00:00Z", "pair": "btc_sonnet", "status": "PAIR_COMMITTED", "reason": null}]}, "ETH": {"accounts": [{"id": "eth_haiku_raw", "coin": "ETH", "model": "haiku", "arm": "raw", "equity": "9996.7500015025", "realized_pnl": "-3.2499984975", "unrealized_pnl": "0.000000", "total_return_pct": "-0.03249998497500", "fees": "3.2499984975", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "qty": "2.51655", "notional": "6499.996995", "entry": "2582.9", "stop": "2505.413", "tp": "2712.045", "thesis": "[DEMO] Range low held twice on the hourly candles; risking 3% against the prior swing low.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "2479.584", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9996.7500015025", "fees": "3.2499984975"}]}, {"id": "eth_haiku_ta", "coin": "ETH", "model": "haiku", "arm": "ta", "equity": "9997.9000118985", "realized_pnl": "-2.0999881015", "unrealized_pnl": "0.000000", "total_return_pct": "-0.02099988101500", "fees": "2.0999881015", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "qty": "1.62607", "notional": "4199.976203", "entry": "2582.9", "stop": "2505.413", "tp": "2712.045", "thesis": "[DEMO] RSI 41.2 with price 1.1% under VWAP; small long against the SMA(50).", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "2479.584", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9997.9000118985", "fees": "2.0999881015"}]}, {"id": "eth_sonnet_raw", "coin": "ETH", "model": "sonnet", "arm": "raw", "equity": "9998.5000066540", "realized_pnl": "-1.4999933460", "unrealized_pnl": "-0.000000", "total_return_pct": "-0.0149999334600", "fees": "1.4999933460", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "short", "qty": "1.16148", "notional": "2999.986692", "entry": "2582.9", "stop": "2660.387", "tp": "2427.926", "thesis": "[DEMO] Lower highs on the daily closes; fading strength.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_above", "level": "2686.216", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9998.5000066540", "fees": "1.4999933460"}]}, {"id": "eth_sonnet_ta", "coin": "ETH", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] Volume ratio 0.86 \u2014 waiting.", "invalidation": null, "watch": {"level": "2634.558", "timeframe": "1h_close", "operator": "price_at_or_above", "triggered": false}, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_raw", "coin": "ETH", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] No edge in this chop; preserving capital.", "invalidation": null, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_ta", "coin": "ETH", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] ATR compressed; flat until expansion.", "invalidation": null, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "eth_haiku_raw", "feature": "eth_haiku_ta"}, {"model": "sonnet", "raw": "eth_sonnet_raw", "feature": "eth_sonnet_ta"}, {"model": "opus", "raw": "eth_opus_raw", "feature": "eth_opus_ta"}], "rounds": [{"round_id": "v1-ETH-2025-08-11T00:00:00Z", "pair": "eth_haiku", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-ETH-2025-08-11T00:00:00Z", "pair": "eth_sonnet", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-ETH-2025-08-11T00:00:00Z", "pair": "eth_opus", "status": "PAIR_COMMITTED", "reason": null}]}, "SOL": {"accounts": [{"id": "sol_haiku_raw", "coin": "SOL", "model": "haiku", "arm": "raw", "equity": "9996.750049680", "realized_pnl": "-3.249950320", "unrealized_pnl": "0.00000", "total_return_pct": "-0.032499503200", "fees": "3.249950320", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "qty": "43.942", "notional": "6499.90064", "entry": "147.92", "stop": "143.4824", "tp": "155.316", "thesis": "[DEMO] Range low held twice on the hourly candles; risking 3% against the prior swing low.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "142.0032", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9996.750049680", "fees": "3.249950320"}]}, {"id": "sol_haiku_ta", "coin": "SOL", "model": "haiku", "arm": "ta", "equity": "9997.900053720", "realized_pnl": "-2.099946280", "unrealized_pnl": "0.00000", "total_return_pct": "-0.020999462800", "fees": "2.099946280", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "qty": "28.393", "notional": "4199.89256", "entry": "147.92", "stop": "143.4824", "tp": "155.316", "thesis": "[DEMO] RSI 41.2 with price 1.1% under VWAP; small long against the SMA(50).", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "142.0032", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9997.900053720", "fees": "2.099946280"}]}, {"id": "sol_sonnet_raw", "coin": "SOL", "model": "sonnet", "arm": "raw", "equity": "9998.500017240", "realized_pnl": "-1.499982760", "unrealized_pnl": "-0.00000", "total_return_pct": "-0.014999827600", "fees": "1.499982760", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "short", "qty": "20.281", "notional": "2999.96552", "entry": "147.92", "stop": "152.3576", "tp": "139.0448", "thesis": "[DEMO] Lower highs on the daily closes; fading strength.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_above", "level": "153.8368", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9998.500017240", "fees": "1.499982760"}]}, {"id": "sol_sonnet_ta", "coin": "SOL", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] Volume ratio 0.86 \u2014 waiting.", "invalidation": null, "watch": {"level": "150.8784", "timeframe": "1h_close", "operator": "price_at_or_above", "triggered": false}, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_raw", "coin": "SOL", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] No edge in this chop; preserving capital.", "invalidation": null, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_ta", "coin": "SOL", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] ATR compressed; flat until expansion.", "invalidation": null, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "sol_haiku_raw", "feature": "sol_haiku_ta"}, {"model": "sonnet", "raw": "sol_sonnet_raw", "feature": "sol_sonnet_ta"}, {"model": "opus", "raw": "sol_opus_raw", "feature": "sol_opus_ta"}], "rounds": [{"round_id": "v1-SOL-2025-08-11T00:00:00Z", "pair": "sol_haiku", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-SOL-2025-08-11T00:00:00Z", "pair": "sol_sonnet", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-SOL-2025-08-11T00:00:00Z", "pair": "sol_opus", "status": "PAIR_COMMITTED", "reason": null}]}}, "mode": "PREPARATION", "banner": "AKRA ARENA \u2014 PREPARATION MODE \u2014 EXPERIMENT NOT STARTED", "data_notice": "ALL DATA ON THIS PAGE IS MOCK/DEMO DATA generated offline from fixtures. No model has been called; no experiment has started."};
-+window.ARENA_DEMO = {"experiment": "v1.3", "label": "V1 EXPERIMENT", "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?", "hashes": {"config/v1/experiment.json": "f7da51051a7031c26e5b5905979eeb33a4473739c901f766f25638472f39ef70", "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032", "engine/config.py": "8ed48d38192ada58f4facc9cc64855b091e94496fa30762e54e362a1f470342b", "engine/dashboard.py": "b4be1ecbfe23efa3d716b166b6f032ba18347ada3abb6a6a3e4606c9090b9598", "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5", "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc", "engine/features.py": "69ea768643b5b91c4abc7f202b72330204836ddf35020027ef66bdc687ff1da2", "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872", "engine/marketdata.py": "0b035211e44d0b3978dfbd56230c342dfb2bf77a9f3b310211748b8dede19a28", "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9", "engine/official.py": "89073cee447a7cd0957b09a7ac5ec2b6efa07892a3e4cacf478c1b3841719735", "engine/persistence.py": "0ea8013e46d855fdfca1446b27d44eebec94b0741fb606a3500840c7a9740005", "engine/pilot.py": "bb8af7eb4a4de5a1af17768234bed815363a69f9cc46d4f88dbd15da66823228", "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22", "engine/publisher.py": "739560008fd90b0ebb492b58338034ee75c63dd459bb674852f6bc2c2511e30e", "engine/recovery.py": "a06c066f3dd5ea0c3815bcf23d5fa73915c4dbed84d9004d5e0cdaec98f00a20", "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42", "engine/rounds.py": "e80db03a868260e9d1ee8361553452e0c5e8d434cbea0f27381338be2126e036", "engine/state.py": "ca395fb36b0f4a3798309e8f1d254c55d330ed2dabb9d219c3d18cfd2abf5b70", "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b", "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c", "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8", "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04", "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63", "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64", "schemas/v1/records.schema.json": "eaf34924cbbc1f9606f9e272c6df6acf337b5e39f0a467bea2751694c9c347e2", "scripts/archive_official.py": "e6da95fe4cd1c8ede79d257d8f924d1bcb6b170f97b18dafd61ec540d5c85035", "scripts/archive_pilot_reset.py": "9a6bbbed3da4634317013fa6c19851218ddfb80dc8afb48cc25a998dbd5b9694", "scripts/arm_official.py": "a90d12c66010ecd43bc5e92b159fe8cbcc512dbf7ff13e95bdf1b45f8e7d1b9f", "scripts/gen_demo_dashboard.py": "fb4fbf46ee4ac21a38c37bab6d3db3b37fe0954dfba1d00ead532c56227bb394", "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02", "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752", "scripts/run_official_14d.py": "7dbe089735c1a394524f21610236cc3ca248e73e2074487c06077109792c9037", "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d"}, "combined_hash": "da5a8063f4862d02f7763a95af3ffa7176b9212cd21eea0489f970f27da3181b", "pilot_link": {"href": "pilot/index.html", "label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"}, "health": {"heartbeat": {"ts": 1754877600, "code_hash": "da5a8063f4862d02f7763a95af3ffa7176b9212cd21eea0489f970f27da3181b"}, "stale": false}, "round_counts": {"PAIR_COMMITTED": 9, "PAIR_ABORTED": 0, "PAIR_TERMINAL_SPLIT": 0}, "coins": {"BTC": {"accounts": [{"id": "btc_haiku_raw", "coin": "BTC", "model": "haiku", "arm": "raw", "equity": "9996.750022394440", "realized_pnl": "-3.249977605560", "unrealized_pnl": "0E-8", "total_return_pct": "-0.032499776055600", "fees": "3.249977605560", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "0.096156", "notional": "6499.95521112", "entry": "67598.02", "stop": "65570.0794", "tp": "70977.921", "thesis": "[DEMO] Range low held twice on the hourly candles; risking 3% against the prior swing low.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "64894.0992", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9996.750022394440", "fees": "3.249977605560"}]}, {"id": "btc_haiku_ta", "coin": "BTC", "model": "haiku", "arm": "ta", "equity": "9997.900033709690", "realized_pnl": "-2.099966290310", "unrealized_pnl": "0E-8", "total_return_pct": "-0.020999662903100", "fees": "2.099966290310", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "0.062131", "notional": "4199.93258062", "entry": "67598.02", "stop": "65570.0794", "tp": "70977.921", "thesis": "[DEMO] RSI 41.2 with price 1.1% under VWAP; small long against the SMA(50).", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "64894.0992", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9997.900033709690", "fees": "2.099966290310"}]}, {"id": "btc_sonnet_raw", "coin": "BTC", "model": "sonnet", "arm": "raw", "equity": "9998.500033735210", "realized_pnl": "-1.499966264790", "unrealized_pnl": "-0E-8", "total_return_pct": "-0.014999662647900", "fees": "1.499966264790", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "short", "entry_t": 1754870400, "qty": "0.044379", "notional": "2999.93252958", "entry": "67598.02", "stop": "69625.9606", "tp": "63542.1388", "thesis": "[DEMO] Lower highs on the daily closes; fading strength.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_above", "level": "70301.9408", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9998.500033735210", "fees": "1.499966264790"}]}, {"id": "btc_sonnet_ta", "coin": "BTC", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] Volume ratio 0.86 \u2014 waiting.", "invalidation": null, "watch": {"level": "68949.9804", "timeframe": "1h_close", "operator": "price_at_or_above", "triggered": false}, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_raw", "coin": "BTC", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] No edge in this chop; preserving capital.", "invalidation": null, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_ta", "coin": "BTC", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] ATR compressed; flat until expansion.", "invalidation": null, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "btc_haiku_raw", "feature": "btc_haiku_ta"}, {"model": "sonnet", "raw": "btc_sonnet_raw", "feature": "btc_sonnet_ta"}, {"model": "opus", "raw": "btc_opus_raw", "feature": "btc_opus_ta"}], "rounds": [{"round_id": "v1-BTC-2025-08-11T00:00:00Z", "pair": "btc_opus", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-BTC-2025-08-11T00:00:00Z", "pair": "btc_haiku", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-BTC-2025-08-11T00:00:00Z", "pair": "btc_sonnet", "status": "PAIR_COMMITTED", "reason": null}]}, "ETH": {"accounts": [{"id": "eth_haiku_raw", "coin": "ETH", "model": "haiku", "arm": "raw", "equity": "9996.7500015025", "realized_pnl": "-3.2499984975", "unrealized_pnl": "0.000000", "total_return_pct": "-0.03249998497500", "fees": "3.2499984975", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "2.51655", "notional": "6499.996995", "entry": "2582.9", "stop": "2505.413", "tp": "2712.045", "thesis": "[DEMO] Range low held twice on the hourly candles; risking 3% against the prior swing low.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "2479.584", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9996.7500015025", "fees": "3.2499984975"}]}, {"id": "eth_haiku_ta", "coin": "ETH", "model": "haiku", "arm": "ta", "equity": "9997.9000118985", "realized_pnl": "-2.0999881015", "unrealized_pnl": "0.000000", "total_return_pct": "-0.02099988101500", "fees": "2.0999881015", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "1.62607", "notional": "4199.976203", "entry": "2582.9", "stop": "2505.413", "tp": "2712.045", "thesis": "[DEMO] RSI 41.2 with price 1.1% under VWAP; small long against the SMA(50).", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "2479.584", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9997.9000118985", "fees": "2.0999881015"}]}, {"id": "eth_sonnet_raw", "coin": "ETH", "model": "sonnet", "arm": "raw", "equity": "9998.5000066540", "realized_pnl": "-1.4999933460", "unrealized_pnl": "-0.000000", "total_return_pct": "-0.0149999334600", "fees": "1.4999933460", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "short", "entry_t": 1754870400, "qty": "1.16148", "notional": "2999.986692", "entry": "2582.9", "stop": "2660.387", "tp": "2427.926", "thesis": "[DEMO] Lower highs on the daily closes; fading strength.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_above", "level": "2686.216", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9998.5000066540", "fees": "1.4999933460"}]}, {"id": "eth_sonnet_ta", "coin": "ETH", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] Volume ratio 0.86 \u2014 waiting.", "invalidation": null, "watch": {"level": "2634.558", "timeframe": "1h_close", "operator": "price_at_or_above", "triggered": false}, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_raw", "coin": "ETH", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] No edge in this chop; preserving capital.", "invalidation": null, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_ta", "coin": "ETH", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] ATR compressed; flat until expansion.", "invalidation": null, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "eth_haiku_raw", "feature": "eth_haiku_ta"}, {"model": "sonnet", "raw": "eth_sonnet_raw", "feature": "eth_sonnet_ta"}, {"model": "opus", "raw": "eth_opus_raw", "feature": "eth_opus_ta"}], "rounds": [{"round_id": "v1-ETH-2025-08-11T00:00:00Z", "pair": "eth_haiku", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-ETH-2025-08-11T00:00:00Z", "pair": "eth_sonnet", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-ETH-2025-08-11T00:00:00Z", "pair": "eth_opus", "status": "PAIR_COMMITTED", "reason": null}]}, "SOL": {"accounts": [{"id": "sol_haiku_raw", "coin": "SOL", "model": "haiku", "arm": "raw", "equity": "9996.750049680", "realized_pnl": "-3.249950320", "unrealized_pnl": "0.00000", "total_return_pct": "-0.032499503200", "fees": "3.249950320", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "43.942", "notional": "6499.90064", "entry": "147.92", "stop": "143.4824", "tp": "155.316", "thesis": "[DEMO] Range low held twice on the hourly candles; risking 3% against the prior swing low.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "142.0032", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9996.750049680", "fees": "3.249950320"}]}, {"id": "sol_haiku_ta", "coin": "SOL", "model": "haiku", "arm": "ta", "equity": "9997.900053720", "realized_pnl": "-2.099946280", "unrealized_pnl": "0.00000", "total_return_pct": "-0.020999462800", "fees": "2.099946280", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "28.393", "notional": "4199.89256", "entry": "147.92", "stop": "143.4824", "tp": "155.316", "thesis": "[DEMO] RSI 41.2 with price 1.1% under VWAP; small long against the SMA(50).", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "142.0032", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9997.900053720", "fees": "2.099946280"}]}, {"id": "sol_sonnet_raw", "coin": "SOL", "model": "sonnet", "arm": "raw", "equity": "9998.500017240", "realized_pnl": "-1.499982760", "unrealized_pnl": "-0.00000", "total_return_pct": "-0.014999827600", "fees": "1.499982760", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "short", "entry_t": 1754870400, "qty": "20.281", "notional": "2999.96552", "entry": "147.92", "stop": "152.3576", "tp": "139.0448", "thesis": "[DEMO] Lower highs on the daily closes; fading strength.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_above", "level": "153.8368", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9998.500017240", "fees": "1.499982760"}]}, {"id": "sol_sonnet_ta", "coin": "SOL", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] Volume ratio 0.86 \u2014 waiting.", "invalidation": null, "watch": {"level": "150.8784", "timeframe": "1h_close", "operator": "price_at_or_above", "triggered": false}, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_raw", "coin": "SOL", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] No edge in this chop; preserving capital.", "invalidation": null, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_ta", "coin": "SOL", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] ATR compressed; flat until expansion.", "invalidation": null, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "sol_haiku_raw", "feature": "sol_haiku_ta"}, {"model": "sonnet", "raw": "sol_sonnet_raw", "feature": "sol_sonnet_ta"}, {"model": "opus", "raw": "sol_opus_raw", "feature": "sol_opus_ta"}], "rounds": [{"round_id": "v1-SOL-2025-08-11T00:00:00Z", "pair": "sol_haiku", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-SOL-2025-08-11T00:00:00Z", "pair": "sol_sonnet", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-SOL-2025-08-11T00:00:00Z", "pair": "sol_opus", "status": "PAIR_COMMITTED", "reason": null}]}}, "mode": "PREPARATION", "banner": "AKRA ARENA \u2014 PREPARATION MODE \u2014 EXPERIMENT NOT STARTED", "data_notice": "ALL DATA ON THIS PAGE IS MOCK/DEMO DATA generated offline from fixtures. No model has been called; no experiment has started."};
++window.ARENA_DEMO = {"experiment": "v1.3", "label": "V1 EXPERIMENT", "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?", "hashes": {"config/v1/experiment.json": "09c99774c2fcc11e4f648bae3f4eaf61c98464b65c0aa9229535ca56c94e918c", "deploy/arena-official.service": "f918bd1dff679955acb054a2bf22fbba5902e63fc4176a5a2debbd84b287ca94", "deploy/nginx-arena.conf": "b2ead8442059cfc686d3c61c1b342c39f53696468e83b2b4c95a79d678a677ab", "deploy/requirements-official.txt": "4d802d7c1ca0eff85563b5e1aa5ae100dcc789a32049fcc0d65e710e3c551f31", "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032", "engine/config.py": "80fb10bb37db0ec9f031af8a0e38de2518cd76cc547efe8179dd099283e7232d", "engine/dashboard.py": "ab1226f94ee2c70bd982f6e2d4dddfdc958ebfcc591af8a2d11d7e59b6efe64b", "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5", "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc", "engine/features.py": "69ea768643b5b91c4abc7f202b72330204836ddf35020027ef66bdc687ff1da2", "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872", "engine/marketdata.py": "1055a51274154d46c3795181b8e9f24d6618d54056935b02b480ace985202481", "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9", "engine/official.py": "37ae831a3d2b006a5d7ee280d7b6c99d711b29b01a6e9e6e7944be68a8d88d7e", "engine/persistence.py": "08802532f7e3ad1023730f4d4c2a6c2092710bc356f2bff720766d1120d21c73", "engine/pilot.py": "51a0dd2f4efb9db780b77047366efbf941530b8108ca1cbd02cf934485950a59", "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22", "engine/publisher.py": "739560008fd90b0ebb492b58338034ee75c63dd459bb674852f6bc2c2511e30e", "engine/recovery.py": "67d9abfc76433185ace37d50a41303c7be9f6d5d03218a87d68bac62703cac21", "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42", "engine/rounds.py": "9faa51d6194c198ede7a842e274393c9d6eefe83d2e5e5c22f36c56c40a5c5fc", "engine/state.py": "7374f11611b016f83fb86ae7b94c5f7fd1732dbee4ad6e96652f13165bebf4f2", "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b", "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c", "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8", "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04", "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63", "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64", "schemas/v1/records.schema.json": "3ab57bedf3ae0696a1be93507b2fac7a37ee912fee25f805bd32257ccf8d75d0", "scripts/archive_official.py": "e6da95fe4cd1c8ede79d257d8f924d1bcb6b170f97b18dafd61ec540d5c85035", "scripts/archive_pilot_reset.py": "9a6bbbed3da4634317013fa6c19851218ddfb80dc8afb48cc25a998dbd5b9694", "scripts/arm_official.py": "c2960cba0fedd97e8e8f589c5f8b959ba17b54eec473f67e8105f3fcade5fa35", "scripts/gen_demo_dashboard.py": "fb4fbf46ee4ac21a38c37bab6d3db3b37fe0954dfba1d00ead532c56227bb394", "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02", "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752", "scripts/preflight_official.py": "448df79169f6ed05e526fcd8d59130fb7cd893c012fce57a2ee7d0d4c16bf843", "scripts/run_official_14d.py": "9bcaaa87c755c5e32b4ab9fd4ec16ee873061478b2030c2d54a52d51a5dd94f7", "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d", "scripts/verify_deployment.py": "70f9c770f25135d74d9123a74b4a236711062a8d24457e7f1bc0e2373d6a82f0"}, "combined_hash": "0d8551f2b2514f65a9cba103ef1eb9184e74c8d3abafabb1fce085f43ea00d70", "pilot_link": {"href": "pilot/index.html", "label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"}, "health": {"heartbeat": {"ts": 1754877600, "code_hash": "0d8551f2b2514f65a9cba103ef1eb9184e74c8d3abafabb1fce085f43ea00d70"}, "stale": false}, "round_counts": {"PAIR_COMMITTED": 9, "PAIR_ABORTED": 0, "PAIR_TERMINAL_SPLIT": 0}, "coins": {"BTC": {"accounts": [{"id": "btc_haiku_raw", "coin": "BTC", "model": "haiku", "arm": "raw", "equity": "9996.750022394440", "realized_pnl": "-3.249977605560", "unrealized_pnl": "0E-8", "total_return_pct": "-0.032499776055600", "fees": "3.249977605560", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "0.096156", "notional": "6499.95521112", "entry": "67598.02", "stop": "65570.0794", "tp": "70977.921", "thesis": "[DEMO] Range low held twice on the hourly candles; risking 3% against the prior swing low.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "64894.0992", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9996.750022394440", "fees": "3.249977605560"}]}, {"id": "btc_haiku_ta", "coin": "BTC", "model": "haiku", "arm": "ta", "equity": "9997.900033709690", "realized_pnl": "-2.099966290310", "unrealized_pnl": "0E-8", "total_return_pct": "-0.020999662903100", "fees": "2.099966290310", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "0.062131", "notional": "4199.93258062", "entry": "67598.02", "stop": "65570.0794", "tp": "70977.921", "thesis": "[DEMO] RSI 41.2 with price 1.1% under VWAP; small long against the SMA(50).", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "64894.0992", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9997.900033709690", "fees": "2.099966290310"}]}, {"id": "btc_sonnet_raw", "coin": "BTC", "model": "sonnet", "arm": "raw", "equity": "9998.500033735210", "realized_pnl": "-1.499966264790", "unrealized_pnl": "-0E-8", "total_return_pct": "-0.014999662647900", "fees": "1.499966264790", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "short", "entry_t": 1754870400, "qty": "0.044379", "notional": "2999.93252958", "entry": "67598.02", "stop": "69625.9606", "tp": "63542.1388", "thesis": "[DEMO] Lower highs on the daily closes; fading strength.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_above", "level": "70301.9408", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9998.500033735210", "fees": "1.499966264790"}]}, {"id": "btc_sonnet_ta", "coin": "BTC", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] Volume ratio 0.86 \u2014 waiting.", "invalidation": null, "watch": {"level": "68949.9804", "timeframe": "1h_close", "operator": "price_at_or_above", "triggered": false}, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_raw", "coin": "BTC", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] No edge in this chop; preserving capital.", "invalidation": null, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_ta", "coin": "BTC", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] ATR compressed; flat until expansion.", "invalidation": null, "watch": null, "trades": [], "mark": "67598.02", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "btc_haiku_raw", "ta": "btc_haiku_ta"}, {"model": "sonnet", "raw": "btc_sonnet_raw", "ta": "btc_sonnet_ta"}, {"model": "opus", "raw": "btc_opus_raw", "ta": "btc_opus_ta"}], "rounds": [{"round_id": "v1-BTC-2025-08-11T00:00:00Z", "pair": "btc_opus", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-BTC-2025-08-11T00:00:00Z", "pair": "btc_haiku", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-BTC-2025-08-11T00:00:00Z", "pair": "btc_sonnet", "status": "PAIR_COMMITTED", "reason": null}]}, "ETH": {"accounts": [{"id": "eth_haiku_raw", "coin": "ETH", "model": "haiku", "arm": "raw", "equity": "9996.7500015025", "realized_pnl": "-3.2499984975", "unrealized_pnl": "0.000000", "total_return_pct": "-0.03249998497500", "fees": "3.2499984975", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "2.51655", "notional": "6499.996995", "entry": "2582.9", "stop": "2505.413", "tp": "2712.045", "thesis": "[DEMO] Range low held twice on the hourly candles; risking 3% against the prior swing low.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "2479.584", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9996.7500015025", "fees": "3.2499984975"}]}, {"id": "eth_haiku_ta", "coin": "ETH", "model": "haiku", "arm": "ta", "equity": "9997.9000118985", "realized_pnl": "-2.0999881015", "unrealized_pnl": "0.000000", "total_return_pct": "-0.02099988101500", "fees": "2.0999881015", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "1.62607", "notional": "4199.976203", "entry": "2582.9", "stop": "2505.413", "tp": "2712.045", "thesis": "[DEMO] RSI 41.2 with price 1.1% under VWAP; small long against the SMA(50).", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "2479.584", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9997.9000118985", "fees": "2.0999881015"}]}, {"id": "eth_sonnet_raw", "coin": "ETH", "model": "sonnet", "arm": "raw", "equity": "9998.5000066540", "realized_pnl": "-1.4999933460", "unrealized_pnl": "-0.000000", "total_return_pct": "-0.0149999334600", "fees": "1.4999933460", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "short", "entry_t": 1754870400, "qty": "1.16148", "notional": "2999.986692", "entry": "2582.9", "stop": "2660.387", "tp": "2427.926", "thesis": "[DEMO] Lower highs on the daily closes; fading strength.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_above", "level": "2686.216", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9998.5000066540", "fees": "1.4999933460"}]}, {"id": "eth_sonnet_ta", "coin": "ETH", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] Volume ratio 0.86 \u2014 waiting.", "invalidation": null, "watch": {"level": "2634.558", "timeframe": "1h_close", "operator": "price_at_or_above", "triggered": false}, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_raw", "coin": "ETH", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] No edge in this chop; preserving capital.", "invalidation": null, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_ta", "coin": "ETH", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] ATR compressed; flat until expansion.", "invalidation": null, "watch": null, "trades": [], "mark": "2582.9", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "eth_haiku_raw", "ta": "eth_haiku_ta"}, {"model": "sonnet", "raw": "eth_sonnet_raw", "ta": "eth_sonnet_ta"}, {"model": "opus", "raw": "eth_opus_raw", "ta": "eth_opus_ta"}], "rounds": [{"round_id": "v1-ETH-2025-08-11T00:00:00Z", "pair": "eth_haiku", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-ETH-2025-08-11T00:00:00Z", "pair": "eth_sonnet", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-ETH-2025-08-11T00:00:00Z", "pair": "eth_opus", "status": "PAIR_COMMITTED", "reason": null}]}, "SOL": {"accounts": [{"id": "sol_haiku_raw", "coin": "SOL", "model": "haiku", "arm": "raw", "equity": "9996.750049680", "realized_pnl": "-3.249950320", "unrealized_pnl": "0.00000", "total_return_pct": "-0.032499503200", "fees": "3.249950320", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "43.942", "notional": "6499.90064", "entry": "147.92", "stop": "143.4824", "tp": "155.316", "thesis": "[DEMO] Range low held twice on the hourly candles; risking 3% against the prior swing low.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "142.0032", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9996.750049680", "fees": "3.249950320"}]}, {"id": "sol_haiku_ta", "coin": "SOL", "model": "haiku", "arm": "ta", "equity": "9997.900053720", "realized_pnl": "-2.099946280", "unrealized_pnl": "0.00000", "total_return_pct": "-0.020999462800", "fees": "2.099946280", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "long", "entry_t": 1754870400, "qty": "28.393", "notional": "4199.89256", "entry": "147.92", "stop": "143.4824", "tp": "155.316", "thesis": "[DEMO] RSI 41.2 with price 1.1% under VWAP; small long against the SMA(50).", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_below", "level": "142.0032", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9997.900053720", "fees": "2.099946280"}]}, {"id": "sol_sonnet_raw", "coin": "SOL", "model": "sonnet", "arm": "raw", "equity": "9998.500017240", "realized_pnl": "-1.499982760", "unrealized_pnl": "-0.00000", "total_return_pct": "-0.014999827600", "fees": "1.499982760", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "short", "entry_t": 1754870400, "qty": "20.281", "notional": "2999.96552", "entry": "147.92", "stop": "152.3576", "tp": "139.0448", "thesis": "[DEMO] Lower highs on the daily closes; fading strength.", "invalidation": {"timeframe": "1h_close", "operator": "price_at_or_above", "level": "153.8368", "status": "NOT TRIGGERED", "triggered_t": null}, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "9998.500017240", "fees": "1.499982760"}]}, {"id": "sol_sonnet_ta", "coin": "SOL", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] Volume ratio 0.86 \u2014 waiting.", "invalidation": null, "watch": {"level": "150.8784", "timeframe": "1h_close", "operator": "price_at_or_above", "triggered": false}, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_raw", "coin": "SOL", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] No edge in this chop; preserving capital.", "invalidation": null, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_ta", "coin": "SOL", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 1, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": "[DEMO] ATR compressed; flat until expansion.", "invalidation": null, "watch": null, "trades": [], "mark": "147.92", "mark_unavailable": false, "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "sol_haiku_raw", "ta": "sol_haiku_ta"}, {"model": "sonnet", "raw": "sol_sonnet_raw", "ta": "sol_sonnet_ta"}, {"model": "opus", "raw": "sol_opus_raw", "ta": "sol_opus_ta"}], "rounds": [{"round_id": "v1-SOL-2025-08-11T00:00:00Z", "pair": "sol_haiku", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-SOL-2025-08-11T00:00:00Z", "pair": "sol_sonnet", "status": "PAIR_COMMITTED", "reason": null}, {"round_id": "v1-SOL-2025-08-11T00:00:00Z", "pair": "sol_opus", "status": "PAIR_COMMITTED", "reason": null}]}}, "mode": "PREPARATION", "banner": "AKRA ARENA \u2014 PREPARATION MODE \u2014 EXPERIMENT NOT STARTED", "data_notice": "ALL DATA ON THIS PAGE IS MOCK/DEMO DATA generated offline from fixtures. No model has been called; no experiment has started."};
 diff --git a/docs/handoff/BUILD_BATCH_DESIGN.md b/docs/handoff/BUILD_BATCH_DESIGN.md
 new file mode 100644
 index 0000000..5e78479
@@ -1976,12 +1991,12 @@ index 23b3d5c..1f9b7aa 100644
  setInterval(pollLive, 60000);
  
 diff --git a/docs/prestart_payload.js b/docs/prestart_payload.js
-index 9574f8c..66e6cff 100644
+index 9574f8c..f75a842 100644
 --- a/docs/prestart_payload.js
 +++ b/docs/prestart_payload.js
 @@ -1 +1 @@
 -window.ARENA_PRESTART = {"experiment": "v1.3", "label": "V1 EXPERIMENT", "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?", "hashes": {"config/v1/experiment.json": "f7da51051a7031c26e5b5905979eeb33a4473739c901f766f25638472f39ef70", "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032", "engine/config.py": "8ed48d38192ada58f4facc9cc64855b091e94496fa30762e54e362a1f470342b", "engine/dashboard.py": "ac362386b28c407ed6e57f7fc2526cd27cf6261f04120413cc139d4394f1f8d0", "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5", "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc", "engine/features.py": "69ea768643b5b91c4abc7f202b72330204836ddf35020027ef66bdc687ff1da2", "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872", "engine/marketdata.py": "0b035211e44d0b3978dfbd56230c342dfb2bf77a9f3b310211748b8dede19a28", "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9", "engine/persistence.py": "0ea8013e46d855fdfca1446b27d44eebec94b0741fb606a3500840c7a9740005", "engine/pilot.py": "bb8af7eb4a4de5a1af17768234bed815363a69f9cc46d4f88dbd15da66823228", "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22", "engine/publisher.py": "642d79fc5dbcb211c118cef89e6dc5242d18e02dd319b881e1849a508edfb7c4", "engine/recovery.py": "1740449c7dc91483cc6b05838e25abce14616645092d4964aea17f2381afc8be", "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42", "engine/rounds.py": "e80db03a868260e9d1ee8361553452e0c5e8d434cbea0f27381338be2126e036", "engine/state.py": "ca395fb36b0f4a3798309e8f1d254c55d330ed2dabb9d219c3d18cfd2abf5b70", "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b", "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c", "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8", "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04", "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63", "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64", "schemas/v1/records.schema.json": "eaf34924cbbc1f9606f9e272c6df6acf337b5e39f0a467bea2751694c9c347e2", "scripts/archive_pilot_reset.py": "9a6bbbed3da4634317013fa6c19851218ddfb80dc8afb48cc25a998dbd5b9694", "scripts/gen_demo_dashboard.py": "99606d3fb2198cb4a89e32dc0ac37b366d6bd644028aadd8cc5da81d117282e1", "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02", "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752", "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d"}, "combined_hash": "c425200e1b840524bb444288d6725bc1f728f60d94d72ed725d0fc704ec5432c", "pilot_link": {"href": "pilot/index.html", "label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"}, "health": {"heartbeat": null, "stale": true}, "round_counts": {"PAIR_COMMITTED": 0, "PAIR_ABORTED": 0, "PAIR_TERMINAL_SPLIT": 0}, "coins": {"BTC": {"accounts": [{"id": "btc_haiku_raw", "coin": "BTC", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_haiku_ta", "coin": "BTC", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_raw", "coin": "BTC", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_ta", "coin": "BTC", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_raw", "coin": "BTC", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_ta", "coin": "BTC", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "btc_haiku_raw", "feature": "btc_haiku_ta"}, {"model": "sonnet", "raw": "btc_sonnet_raw", "feature": "btc_sonnet_ta"}, {"model": "opus", "raw": "btc_opus_raw", "feature": "btc_opus_ta"}], "rounds": []}, "ETH": {"accounts": [{"id": "eth_haiku_raw", "coin": "ETH", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_haiku_ta", "coin": "ETH", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_raw", "coin": "ETH", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_ta", "coin": "ETH", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_raw", "coin": "ETH", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_ta", "coin": "ETH", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "eth_haiku_raw", "feature": "eth_haiku_ta"}, {"model": "sonnet", "raw": "eth_sonnet_raw", "feature": "eth_sonnet_ta"}, {"model": "opus", "raw": "eth_opus_raw", "feature": "eth_opus_ta"}], "rounds": []}, "SOL": {"accounts": [{"id": "sol_haiku_raw", "coin": "SOL", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_haiku_ta", "coin": "SOL", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_raw", "coin": "SOL", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_ta", "coin": "SOL", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_raw", "coin": "SOL", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_ta", "coin": "SOL", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for pilot", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "sol_haiku_raw", "feature": "sol_haiku_ta"}, {"model": "sonnet", "raw": "sol_sonnet_raw", "feature": "sol_sonnet_ta"}, {"model": "opus", "raw": "sol_opus_raw", "feature": "sol_opus_ta"}], "rounds": []}}, "mode": "PREPARATION", "banner": "AKRA ARENA \u2014 PREPARATION MODE \u2014 EXPERIMENT NOT STARTED", "data_notice": "No model has been called. No paper-trading pilot or official experiment has started.", "pilot_progress": {"done": 0, "total": 12}};
-+window.ARENA_PRESTART = {"experiment": "v1.3", "label": "V1 EXPERIMENT", "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?", "hashes": {"config/v1/experiment.json": "f7da51051a7031c26e5b5905979eeb33a4473739c901f766f25638472f39ef70", "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032", "engine/config.py": "8ed48d38192ada58f4facc9cc64855b091e94496fa30762e54e362a1f470342b", "engine/dashboard.py": "b4be1ecbfe23efa3d716b166b6f032ba18347ada3abb6a6a3e4606c9090b9598", "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5", "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc", "engine/features.py": "69ea768643b5b91c4abc7f202b72330204836ddf35020027ef66bdc687ff1da2", "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872", "engine/marketdata.py": "0b035211e44d0b3978dfbd56230c342dfb2bf77a9f3b310211748b8dede19a28", "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9", "engine/official.py": "89073cee447a7cd0957b09a7ac5ec2b6efa07892a3e4cacf478c1b3841719735", "engine/persistence.py": "0ea8013e46d855fdfca1446b27d44eebec94b0741fb606a3500840c7a9740005", "engine/pilot.py": "bb8af7eb4a4de5a1af17768234bed815363a69f9cc46d4f88dbd15da66823228", "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22", "engine/publisher.py": "739560008fd90b0ebb492b58338034ee75c63dd459bb674852f6bc2c2511e30e", "engine/recovery.py": "a06c066f3dd5ea0c3815bcf23d5fa73915c4dbed84d9004d5e0cdaec98f00a20", "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42", "engine/rounds.py": "e80db03a868260e9d1ee8361553452e0c5e8d434cbea0f27381338be2126e036", "engine/state.py": "ca395fb36b0f4a3798309e8f1d254c55d330ed2dabb9d219c3d18cfd2abf5b70", "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b", "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c", "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8", "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04", "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63", "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64", "schemas/v1/records.schema.json": "eaf34924cbbc1f9606f9e272c6df6acf337b5e39f0a467bea2751694c9c347e2", "scripts/archive_official.py": "e6da95fe4cd1c8ede79d257d8f924d1bcb6b170f97b18dafd61ec540d5c85035", "scripts/archive_pilot_reset.py": "9a6bbbed3da4634317013fa6c19851218ddfb80dc8afb48cc25a998dbd5b9694", "scripts/arm_official.py": "a90d12c66010ecd43bc5e92b159fe8cbcc512dbf7ff13e95bdf1b45f8e7d1b9f", "scripts/gen_demo_dashboard.py": "fb4fbf46ee4ac21a38c37bab6d3db3b37fe0954dfba1d00ead532c56227bb394", "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02", "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752", "scripts/run_official_14d.py": "7dbe089735c1a394524f21610236cc3ca248e73e2074487c06077109792c9037", "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d"}, "combined_hash": "da5a8063f4862d02f7763a95af3ffa7176b9212cd21eea0489f970f27da3181b", "pilot_link": {"href": "pilot/index.html", "label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"}, "health": {"heartbeat": null, "stale": true}, "round_counts": {"PAIR_COMMITTED": 0, "PAIR_ABORTED": 0, "PAIR_TERMINAL_SPLIT": 0}, "coins": {"BTC": {"accounts": [{"id": "btc_haiku_raw", "coin": "BTC", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_haiku_ta", "coin": "BTC", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_raw", "coin": "BTC", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_ta", "coin": "BTC", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_raw", "coin": "BTC", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_ta", "coin": "BTC", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "btc_haiku_raw", "feature": "btc_haiku_ta"}, {"model": "sonnet", "raw": "btc_sonnet_raw", "feature": "btc_sonnet_ta"}, {"model": "opus", "raw": "btc_opus_raw", "feature": "btc_opus_ta"}], "rounds": []}, "ETH": {"accounts": [{"id": "eth_haiku_raw", "coin": "ETH", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_haiku_ta", "coin": "ETH", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_raw", "coin": "ETH", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_ta", "coin": "ETH", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_raw", "coin": "ETH", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_ta", "coin": "ETH", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "eth_haiku_raw", "feature": "eth_haiku_ta"}, {"model": "sonnet", "raw": "eth_sonnet_raw", "feature": "eth_sonnet_ta"}, {"model": "opus", "raw": "eth_opus_raw", "feature": "eth_opus_ta"}], "rounds": []}, "SOL": {"accounts": [{"id": "sol_haiku_raw", "coin": "SOL", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_haiku_ta", "coin": "SOL", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_raw", "coin": "SOL", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_ta", "coin": "SOL", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_raw", "coin": "SOL", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_ta", "coin": "SOL", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "sol_haiku_raw", "feature": "sol_haiku_ta"}, {"model": "sonnet", "raw": "sol_sonnet_raw", "feature": "sol_sonnet_ta"}, {"model": "opus", "raw": "sol_opus_raw", "feature": "sol_opus_ta"}], "rounds": []}}, "mode": "PREPARATION", "banner": "AKRA ARENA \u2014 PREPARATION MODE \u2014 EXPERIMENT NOT STARTED", "data_notice": "No model has been called. No paper-trading pilot or official experiment has started.", "pilot_progress": {"done": 0, "total": null}};
++window.ARENA_PRESTART = {"experiment": "v1.3", "label": "V1 EXPERIMENT", "question": "Does giving an AI trader a fixed neutral numerical feature summary, in addition to the same raw market data, change its trading behaviour and performance across BTC, ETH, and SOL?", "hashes": {"config/v1/experiment.json": "09c99774c2fcc11e4f648bae3f4eaf61c98464b65c0aa9229535ca56c94e918c", "deploy/arena-official.service": "f918bd1dff679955acb054a2bf22fbba5902e63fc4176a5a2debbd84b287ca94", "deploy/nginx-arena.conf": "b2ead8442059cfc686d3c61c1b342c39f53696468e83b2b4c95a79d678a677ab", "deploy/requirements-official.txt": "4d802d7c1ca0eff85563b5e1aa5ae100dcc789a32049fcc0d65e710e3c551f31", "engine/__init__.py": "ff56aa6af8f8c642a52a13cf564eccf781758a8234e53db71007e1263c3ce032", "engine/config.py": "80fb10bb37db0ec9f031af8a0e38de2518cd76cc547efe8179dd099283e7232d", "engine/dashboard.py": "ab1226f94ee2c70bd982f6e2d4dddfdc958ebfcc591af8a2d11d7e59b6efe64b", "engine/decisions.py": "203cdb546026ba8b3133d4a34058045833480ee9121e2fd166080beff0f073a5", "engine/execution.py": "4432eebd20b8e17d6a03f9230504a6eafc9f6320c54c260487409ea5daa369bc", "engine/features.py": "69ea768643b5b91c4abc7f202b72330204836ddf35020027ef66bdc687ff1da2", "engine/lifecycle.py": "dfa95097efbbec95f1c1d8e41a54d970614b5156814c8c2407b3d4f2dc0c5872", "engine/marketdata.py": "1055a51274154d46c3795181b8e9f24d6618d54056935b02b480ace985202481", "engine/metrics.py": "f3735305ca96f9fa54e4ac6e9117234a930d2d02d29cb2de914e634fa6c63da9", "engine/official.py": "37ae831a3d2b006a5d7ee280d7b6c99d711b29b01a6e9e6e7944be68a8d88d7e", "engine/persistence.py": "08802532f7e3ad1023730f4d4c2a6c2092710bc356f2bff720766d1120d21c73", "engine/pilot.py": "51a0dd2f4efb9db780b77047366efbf941530b8108ca1cbd02cf934485950a59", "engine/prompts.py": "dd9e19bdcf25b93a7392956039f7c05ae32d46a23a94293b1e2349af1be56d22", "engine/publisher.py": "739560008fd90b0ebb492b58338034ee75c63dd459bb674852f6bc2c2511e30e", "engine/recovery.py": "67d9abfc76433185ace37d50a41303c7be9f6d5d03218a87d68bac62703cac21", "engine/replay.py": "578c669a04ac1ac2e416112d05bd643b9c4437206c7854992a66d11d4f583b42", "engine/rounds.py": "9faa51d6194c198ede7a842e274393c9d6eefe83d2e5e5c22f36c56c40a5c5fc", "engine/state.py": "7374f11611b016f83fb86ae7b94c5f7fd1732dbee4ad6e96652f13165bebf4f2", "prompts/v1/blocks.md": "b47686123a49180542cf1a615284a687dd8b713da1fa46984537d549ff0c0e5b", "prompts/v1/placeholders.json": "4ec4c7ccc135e529d0ce4a45a80ed33bd6941a8a041e450ec7f90fc551af0b8c", "prompts/v1/system.txt": "b4c963d41aa2e5f423c0a27c846cdc832539ff0d61b04c88a5095582ce1a72d8", "prompts/v1/user_feature.txt": "8e4074111db757d52c496c5c58d79b254cd7fcd6f282a3c9f866ee1cd90afb04", "prompts/v1/user_raw.txt": "922ae35b7db979f2c4f7e26254db23b04a01d7c5a2d71f54f6c1ad5add0eba63", "schemas/v1/decision.schema.json": "5d9d09e2c761760d76ae1e307ff8ff4fa15682bab28fcca63e6dc634897cee64", "schemas/v1/records.schema.json": "3ab57bedf3ae0696a1be93507b2fac7a37ee912fee25f805bd32257ccf8d75d0", "scripts/archive_official.py": "e6da95fe4cd1c8ede79d257d8f924d1bcb6b170f97b18dafd61ec540d5c85035", "scripts/archive_pilot_reset.py": "9a6bbbed3da4634317013fa6c19851218ddfb80dc8afb48cc25a998dbd5b9694", "scripts/arm_official.py": "c2960cba0fedd97e8e8f589c5f8b959ba17b54eec473f67e8105f3fcade5fa35", "scripts/gen_demo_dashboard.py": "fb4fbf46ee4ac21a38c37bab6d3db3b37fe0954dfba1d00ead532c56227bb394", "scripts/mock_run.py": "38da5514db7d317e03fceaff2018915fff28cbe5c0bb621f1af99dad797b8e02", "scripts/mock_season.py": "0d2f82f406ae705823a37f8086fa1efa588c4df078817ccd59dd7ad6d0d3e752", "scripts/preflight_official.py": "448df79169f6ed05e526fcd8d59130fb7cd893c012fce57a2ee7d0d4c16bf843", "scripts/run_official_14d.py": "9bcaaa87c755c5e32b4ab9fd4ec16ee873061478b2030c2d54a52d51a5dd94f7", "scripts/run_pilot_12h.py": "dac05902f68284d0d55aafdb59074084662ca6097356b1b6aaf7ed009d45044d", "scripts/verify_deployment.py": "70f9c770f25135d74d9123a74b4a236711062a8d24457e7f1bc0e2373d6a82f0"}, "combined_hash": "0d8551f2b2514f65a9cba103ef1eb9184e74c8d3abafabb1fce085f43ea00d70", "pilot_link": {"href": "pilot/index.html", "label": "PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE"}, "health": {"heartbeat": null, "stale": true}, "round_counts": {"PAIR_COMMITTED": 0, "PAIR_ABORTED": 0, "PAIR_TERMINAL_SPLIT": 0}, "coins": {"BTC": {"accounts": [{"id": "btc_haiku_raw", "coin": "BTC", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_haiku_ta", "coin": "BTC", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_raw", "coin": "BTC", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_sonnet_ta", "coin": "BTC", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_raw", "coin": "BTC", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "btc_opus_ta", "coin": "BTC", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "btc_haiku_raw", "ta": "btc_haiku_ta"}, {"model": "sonnet", "raw": "btc_sonnet_raw", "ta": "btc_sonnet_ta"}, {"model": "opus", "raw": "btc_opus_raw", "ta": "btc_opus_ta"}], "rounds": []}, "ETH": {"accounts": [{"id": "eth_haiku_raw", "coin": "ETH", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_haiku_ta", "coin": "ETH", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_raw", "coin": "ETH", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_sonnet_ta", "coin": "ETH", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_raw", "coin": "ETH", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "eth_opus_ta", "coin": "ETH", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "eth_haiku_raw", "ta": "eth_haiku_ta"}, {"model": "sonnet", "raw": "eth_sonnet_raw", "ta": "eth_sonnet_ta"}, {"model": "opus", "raw": "eth_opus_raw", "ta": "eth_opus_ta"}], "rounds": []}, "SOL": {"accounts": [{"id": "sol_haiku_raw", "coin": "SOL", "model": "haiku", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_haiku_ta", "coin": "SOL", "model": "haiku", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_raw", "coin": "SOL", "model": "sonnet", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_sonnet_ta", "coin": "SOL", "model": "sonnet", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_raw", "coin": "SOL", "model": "opus", "arm": "raw", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}, {"id": "sol_opus_ta", "coin": "SOL", "model": "opus", "arm": "ta", "equity": "10000.00", "realized_pnl": "0.00", "unrealized_pnl": "0", "total_return_pct": "0", "fees": "0", "n_trades": 0, "n_decisions": 0, "terminal": false, "side": "flat", "entry_t": null, "qty": "0", "notional": "0", "entry": null, "stop": null, "tp": null, "thesis": null, "invalidation": null, "watch": null, "trades": [], "mark": null, "mark_unavailable": true, "status_text": "Waiting for start", "series": [{"t": 0, "equity": "10000.00", "fees": "0"}, {"t": 1, "equity": "10000.00", "fees": "0"}]}], "pairs": [{"model": "haiku", "raw": "sol_haiku_raw", "ta": "sol_haiku_ta"}, {"model": "sonnet", "raw": "sol_sonnet_raw", "ta": "sol_sonnet_ta"}, {"model": "opus", "raw": "sol_opus_raw", "ta": "sol_opus_ta"}], "rounds": []}}, "mode": "PREPARATION", "banner": "AKRA ARENA \u2014 PREPARATION MODE \u2014 EXPERIMENT NOT STARTED", "data_notice": "No model has been called. No paper-trading pilot or official experiment has started.", "pilot_progress": {"done": 0, "total": null}};
 diff --git a/engine/config.py b/engine/config.py
 index 9908d20..3056cf5 100644
 --- a/engine/config.py
@@ -2001,7 +2016,7 @@ index 9908d20..3056cf5 100644
  
  # Static production UI, frozen by its own externally approved manifest
 diff --git a/engine/dashboard.py b/engine/dashboard.py
-index 145185a..1c1786a 100644
+index 145185a..59f26eb 100644
 --- a/engine/dashboard.py
 +++ b/engine/dashboard.py
 @@ -30,6 +30,12 @@
@@ -2017,12 +2032,67 @@ index 145185a..1c1786a 100644
          "qty": str(abs(a["qty"])),
          "notional": notional,
          "entry": str(a["entry"]) if a["entry"] is not None else None,
+@@ -79,7 +85,7 @@
+             "accounts": [_account_row(a, mark) for a in coin_accounts],
+             "pairs": [{"model": m,
+                        "raw": state.account_id(coin, m, "raw"),
+-                       "feature": state.account_id(coin, m, "ta")}
++                       "ta": state.account_id(coin, m, "ta")}
+                       for m in state.MODELS],
+             "rounds": [e for e in ledger if e["round_id"].startswith(f"v1-{coin}-")],
+         }
+diff --git a/engine/marketdata.py b/engine/marketdata.py
+index ba41c11..1139323 100644
+--- a/engine/marketdata.py
++++ b/engine/marketdata.py
+@@ -54,14 +54,39 @@
+             raise DataUnavailable(f"{label}: OHLC sanity violation at {c['t']}")
+ 
+ 
++def validate_candle_values(c, label="1m"):
++    """STRICT single-candle value validation (Mentor Ruling 019.3): aligned
++    timestamp; finite positive O/H/L/C; H >= O,C,L; L <= O,C,H; finite
++    non-negative volume. A malformed candle must never execute a stop,
++    target, liquidation or invalidation — callers turn this into
++    DATA_UNAVAILABLE / CATCHUP_REQUIRED."""
++    if c["t"] % MIN != 0:
++        raise DataUnavailable(f"{label}: timestamp {c['t']} not aligned")
++    for k in "ohlc":
++        if not c[k].is_finite() or c[k] <= 0:
++            raise DataUnavailable(
++                f"{label}: non-finite/non-positive price at {c['t']}")
++    if not c["v"].is_finite() or c["v"] < 0:
++        raise DataUnavailable(f"{label}: bad volume at {c['t']}")
++    if c["h"] < max(c["o"], c["c"], c["l"]) \
++            or c["l"] > min(c["o"], c["c"], c["h"]):
++        raise DataUnavailable(f"{label}: OHLC sanity violation at {c['t']}")
++    return True
++
++
+ def validate_1m_coverage(candles, start_t, end_t):
+-    """Complete contiguous 1m coverage for [start_t, end_t); raises on any gap."""
++    """Complete contiguous 1m coverage for [start_t, end_t) PLUS strict
++    per-candle value validation (Ruling 019.3); raises on any gap, duplicate,
++    misalignment or malformed value."""
+     want = list(range(start_t, end_t, MIN))
+     have = [c["t"] for c in candles if start_t <= c["t"] < end_t]
+     if have != want:
+         missing = sorted(set(want) - set(have))[:3]
+         raise DataUnavailable(f"1m gap: missing {len(set(want)-set(have))} candles, first {missing}")
+-    return [c for c in candles if start_t <= c["t"] < end_t]
++    out = [c for c in candles if start_t <= c["t"] < end_t]
++    for c in out:
++        validate_candle_values(c)
++    return out
+ 
+ 
+ def build_snapshot(coin, k1m, k1h, k1d, T):
 diff --git a/engine/official.py b/engine/official.py
 new file mode 100644
-index 0000000..1762ec5
+index 0000000..06dd3db
 --- /dev/null
 +++ b/engine/official.py
-@@ -0,0 +1,861 @@
+@@ -0,0 +1,923 @@
 +"""OFFICIAL 14-DAY RUN orchestration (Mentor Rulings 1, 2, 3, 6, 8).
 +
 +Differences from the pilot loop (engine.pilot), each mandated by a ruling:
@@ -2403,28 +2473,81 @@ index 0000000..1762ec5
 +    return "unstarted"
 +
 +
-+def archive_activation(store, act, act_sha):
-+    """Mentor Ruling 017.1: durably archive the ACCEPTED activation record
-+    and its verified preflight report inside the store BEFORE the first
-+    boundary — a started run resumes from these immutable copies and never
-+    depends on the external control file or the scratch report again."""
-+    path = os.path.join(store, ACCEPTED_ACTIVATION_NAME)
++def archive_activation(store, act, act_sha, report_blob=None, crash_at=None):
++    """Mentor Rulings 017.1 + 019.2: durably archive the verified preflight
++    bytes FIRST (from the already-verified in-memory blob when supplied —
++    never re-reading an untrusted/changing source later — and always checked
++    against the accepted SHA-256), THEN write the accepted activation record
++    LAST as the ATOMIC COMMIT MARKER of the provisioning transaction. A
++    started run resumes from these immutable copies and never depends on the
++    external control file or the scratch report again."""
++    pf = act.get("preflight") or {}
++    want_sha = pf.get("report_sha256")
++    if report_blob is None and pf.get("report_path") \
++            and os.path.exists(pf["report_path"]):
++        report_blob = open(pf["report_path"], "rb").read()
++    if report_blob is not None:
++        if want_sha and hashlib.sha256(report_blob).hexdigest() != want_sha:
++            raise TrustRecordError(
++                "preflight bytes do not match the accepted SHA-256")
++        dst = os.path.join(store, ACCEPTED_PREFLIGHT_NAME)
++        tmp = dst + ".tmp"
++        with open(tmp, "wb") as f:
++            f.write(report_blob)
++            f.flush()
++            os.fsync(f.fileno())
++        os.replace(tmp, dst)
++    if crash_at == "after_preflight_copy":
++        raise recovery.CrashError("after_preflight_copy")
++    path = os.path.join(store, ACCEPTED_ACTIVATION_NAME)   # COMMIT MARKER
 +    tmp = path + ".tmp"
 +    with open(tmp, "w") as f:
 +        json.dump({"record": act, "activation_sha": act_sha}, f, indent=1)
 +        f.flush()
 +        os.fsync(f.fileno())
 +    os.replace(tmp, path)
-+    report_src = (act.get("preflight") or {}).get("report_path")
-+    if report_src and os.path.exists(report_src):
-+        dst = os.path.join(store, ACCEPTED_PREFLIGHT_NAME)
-+        tmp = dst + ".tmp"
-+        with open(report_src, "rb") as src, open(tmp, "wb") as f:
-+            f.write(src.read())
-+            f.flush()
-+            os.fsync(f.fileno())
-+        os.replace(tmp, dst)
 +    return path
++
++
++def arm_store(store, act, act_sha, approved_digest, approved_site_digest,
++              report_blob=None, crash_at=None):
++    """THE INITIAL ACTIVATION TRANSACTION (Mentor Ruling 019.2), recoverable
++    across every write point: manifests + pristine state + schedule +
++    binding (provision_official) -> archived preflight bytes -> accepted
++    activation record (the atomic commit marker). A crash anywhere leaves a
++    store that reconcile_incomplete_provisioning() safely rolls back to
++    ARMED/OFF with provably pristine accounts; a completed transaction
++    passes verify_durable_trust()."""
++    sched = provision_official(store, approved_digest, approved_site_digest,
++                               act["start_utc"], total=act["total"],
++                               activation_sha=act_sha)
++    if crash_at == "after_provision":
++        raise recovery.CrashError("after_provision")
++    archive_activation(store, act, act_sha, report_blob=report_blob,
++                       crash_at=crash_at)
++    return sched
++
++
++def reconcile_incomplete_provisioning(store):
++    """Mentor Ruling 019.2: a crash mid-transaction leaves a schedule
++    WITHOUT the accepted-activation commit marker. Allowed ONLY while zero
++    boundaries have started: the partial artifacts are rolled back, the
++    accounts are proven pristine, and the service returns to ARMED/OFF for
++    clean rearming. Returns 'no_schedule' | 'started' | 'committed' |
++    'rolled_back_incomplete'. NEVER rolls back once any boundary started."""
++    try:
++        sched = pilot.load_schedule(store)
++    except pilot.ScheduleError:
++        return "no_schedule"
++    _, meta = persistence.load_state(os.path.join(store, "state.json"),
++                                     expect_full_roster=True)
++    if sched["completed"] or meta.get("boundary") is not None:
++        return "started"
++    if os.path.exists(os.path.join(store, ACCEPTED_ACTIVATION_NAME)):
++        return "committed"
++    rollback_unstarted(store)
++    verify_pristine_official_state(store)   # PROOF: pristine, zero boundary
++    return "rolled_back_incomplete"
 +
 +
 +def write_activation_binding(store, activation_sha, engine_digest,
@@ -2839,10 +2962,19 @@ index 0000000..1762ec5
 +                spec[coin] = empty
 +                continue
 +            try:
-+                snaps[coin], spec[coin] = fetch_market(coin, T, first)
++                snap_i, spec_i = fetch_market(coin, T, first)
 +            except Exception:
 +                snaps[coin] = None
 +                spec[coin] = empty
++                continue
++            # POST-FETCH BUDGET CHECK (Mentor Ruling 019.4): a prompt
++            # snapshot COMPLETING at/after T+30 is never used for a model
++            # call — but the valid 1m replay data (and its P_T mark) already
++            # obtained is retained for replay and marking.
++            if clock() >= T + THINKING_DURABLE_S:
++                snap_i = None
++            snaps[coin] = snap_i
++            spec[coin] = spec_i
 +        # ---- THINKING durable + DIRECT public verification by T+01:00 ----
 +        done, total = len(sched["completed"]), sched["total"]
 +        _set_deadline(publish, T + THINKING_VERIFIED_S)
@@ -3043,7 +3175,7 @@ index 62e15bb..e810820 100644
          results.append((T, entry["status"]))
      return results
 diff --git a/engine/recovery.py b/engine/recovery.py
-index 68c2194..95b832a 100644
+index 68c2194..8b7e3b5 100644
 --- a/engine/recovery.py
 +++ b/engine/recovery.py
 @@ -23,6 +23,7 @@
@@ -3116,7 +3248,7 @@ index 68c2194..95b832a 100644
                  "boundary_complete": False,
                  "coin_terminated": meta.get("coin_terminated", {}),
                  "replay_state": meta.get("replay_state", {}),
-@@ -100,6 +137,145 @@
+@@ -100,6 +137,174 @@
      # 2. reconcile any unflushed outbox from a prior crash (idempotent)
      persistence.flush_outbox(store, accounts, meta)
  
@@ -3153,6 +3285,12 @@ index 68c2194..95b832a 100644
 +                for c in candle_list:
 +                    if replay_deadline is not None \
 +                            and clock() >= replay_deadline:
++                        return c["t"]
++                    # STRICT VALUE VALIDATION (Ruling 019.3): a malformed
++                    # candle never executes anything — it becomes the gap
++                    try:
++                        marketdata.validate_candle_values(c)
++                    except marketdata.DataUnavailable:
 +                        return c["t"]
 +                    recs = []
 +                    originals = {a2: accounts[a2] for a2 in ids}
@@ -3254,15 +3392,38 @@ index 68c2194..95b832a 100644
 +                raise ValueError(
 +                    f"pre_replay_spec for {coin} ends at {spec['end']} > "
 +                    f"T={T} — pre-decision replay must be strictly pre-T")
++    def _adopt_1m_marks():
++        # AUTHORITATIVE 1m MARK (Mentor Ruling 019.1): when the prompt
++        # snapshot is unavailable but the coin's 1m stream is COMPLETE
++        # through T (replay_next_required == T), the strictly validated
++        # close of the exact T-60 candle is the boundary mark — marked
++        # equity, equity history and dashboard P&L never go null merely
++        # because 1h/1d prompt data failed. A true 1m failure fabricates
++        # nothing (the mark stays None and CATCHUP applies).
++        for coin, spec in (pre_replay_spec or {}).items():
++            if meta.get("marks", {}).get(coin) is not None:
++                continue
++            if meta.get("replay_next_required", {}).get(coin) != T:
++                continue                 # 1m stream not proven complete
++            last = [c for c in spec["candles"] if c["t"] == T - 60]
++            if not last:
++                continue
++            try:
++                marketdata.validate_candle_values(last[0])
++            except marketdata.DataUnavailable:
++                continue
++            meta["marks"][coin] = str(last[0]["c"])
++
 +    if pre_replay_spec and meta.get("phase") == "pre_replay":
 +        _replay_pass(pre_replay_spec, "during_pre_replay")
++        _adopt_1m_marks()
 +        meta["phase"] = "decision"
 +        persistence.save_state(spath, accounts, meta)
 +
      # 3. durable prompt archive BEFORE any request (Ruling 008.3)
      archived = persistence.read_prompt_archive(store, _seed(T))
      entries, pregen = [], {}
-@@ -113,6 +289,12 @@
+@@ -113,6 +318,12 @@
              e = archived[aid]
              if "user" in e:
                  pregen[aid] = (e["system"], e["user"])   # bytes reused verbatim
@@ -3275,7 +3436,7 @@ index 68c2194..95b832a 100644
              continue
          if blocked:
              entries.append({"account_id": aid,
-@@ -136,7 +318,8 @@
+@@ -136,7 +347,8 @@
  
      # 4/5. wave collection + pair resolution under ONE hard deadline
      if deadline is None:
@@ -3285,7 +3446,7 @@ index 68c2194..95b832a 100644
      timeout_s = cfg["request_payloads"]["common"]["timeout_seconds"]
      concurrency = cfg["collection"]["concurrency_max_simultaneous_requests"]
      n_written = [0]
-@@ -165,7 +348,9 @@
+@@ -165,7 +377,9 @@
                  continue
              a_raw = accounts[state.account_id(coin, model, "raw")]
              a_ta = accounts[state.account_id(coin, model, "ta")]
@@ -3296,7 +3457,7 @@ index 68c2194..95b832a 100644
                  pair_meta[pid] = ("abort", rid, "crash_recovery", None)
              elif meta["coin_terminated"].get(coin):
                  pair_meta[pid] = ("abort", rid, "COIN_TERMINATED", None)
-@@ -207,52 +392,116 @@
+@@ -207,52 +421,116 @@
              if pid in recovered or pid not in pair_meta:
                  continue
              kind, rid, reason, terminal_ids = pair_meta[pid]
@@ -3432,7 +3593,7 @@ index 68c2194..95b832a 100644
              _crash(crash_at, "after_checkpoint")
              persistence.flush_outbox(store, accounts, meta,
                                       crash=lambda p: _crash(crash_at, p))
-@@ -262,81 +511,10 @@
+@@ -262,81 +540,10 @@
                  done_one = True
                  _crash(crash_at, "after_one_pair")
  
@@ -3518,7 +3679,7 @@ index 68c2194..95b832a 100644
      # DURABLE EQUITY HISTORY (Ruling 011.2): one point per completed boundary,
      # equity computed with THIS boundary's persisted mark; explicit null when
      # an open position has no valid mark. Idempotent across same-T re-runs.
-@@ -355,7 +533,19 @@
+@@ -355,7 +562,19 @@
          meta["equity_history_last"] = T
      meta["boundary_complete"] = True
      meta.pop("_recovering", None)
@@ -3539,7 +3700,7 @@ index 68c2194..95b832a 100644
      return ledger, all_attempts, {aid: p[1] for aid, p in pregen.items()}
  
  
-@@ -371,12 +561,22 @@
+@@ -371,12 +590,22 @@
  
  
  def recover(store):
@@ -3674,6 +3835,19 @@ index 8c85294..e3971ad 100644
          return None, ("transport_failure_on_retry" if why2 == "transport_failure"
                        else why2), None
      return None, "validation_failure_after_retry", None
+diff --git a/engine/state.py b/engine/state.py
+index e17dda5..aa264fe 100644
+--- a/engine/state.py
++++ b/engine/state.py
+@@ -11,7 +11,7 @@
+ 
+ COINS = ["BTC", "ETH", "SOL"]
+ MODELS = ["haiku", "sonnet", "opus"]
+-ARMS = ["raw", "ta"]  # internal ids; 'ta' is the Feature arm in public language
++ARMS = ["raw", "ta"]  # internal ids; 'ta' is the TA arm in public language
+ START_CASH = Decimal(_CFG_PARAMS["start_cash_usd"])
+ FEE_RATE = Decimal(_CFG_PARAMS["fee_rate"])
+ MAINT_MARGIN = Decimal(_CFG_PARAMS["maintenance_margin"])
 diff --git a/schemas/v1/records.schema.json b/schemas/v1/records.schema.json
 index fa231f3..46c7cb9 100644
 --- a/schemas/v1/records.schema.json
@@ -4367,10 +4541,10 @@ index ad73e0e..bdee898 100644
  out2 = os.path.join(ROOT, "docs", "prestart_payload.js")
 diff --git a/scripts/preflight_official.py b/scripts/preflight_official.py
 new file mode 100644
-index 0000000..f1def75
+index 0000000..979265a
 --- /dev/null
 +++ b/scripts/preflight_official.py
-@@ -0,0 +1,344 @@
+@@ -0,0 +1,346 @@
 +"""OFFICIAL SERVER PREFLIGHT (Mentor Ruling 014.4) — VALIDATION ONLY.
 +
 +Audited production preflight (hashed into the engine digest). Exactly 18
@@ -4587,13 +4761,15 @@ index 0000000..f1def75
 +
 +
 +def kraken_ohlc(pair, interval_min):
++    """Source-precision preserving (Ruling 019.3): Kraken strings carried
++    verbatim into Decimal conversion — never through Python float."""
 +    url = (f"https://api.kraken.com/0/public/OHLC?pair={pair}"
 +           f"&interval={interval_min}")
 +    with urllib.request.urlopen(url, timeout=20) as r:
 +        raw = json.loads(r.read().decode())
 +    key = [k for k in raw["result"] if k != "last"][0]
-+    return [{"t": int(x[0]), "o": float(x[1]), "h": float(x[2]),
-+             "l": float(x[3]), "c": float(x[4]), "v": float(x[6])}
++    return [{"t": int(x[0]), "o": x[1], "h": x[2],
++             "l": x[3], "c": x[4], "v": x[6]}
 +            for x in raw["result"][key]]
 +
 +
@@ -4717,10 +4893,10 @@ index 0000000..f1def75
 +    main()
 diff --git a/scripts/run_official_14d.py b/scripts/run_official_14d.py
 new file mode 100644
-index 0000000..0c74019
+index 0000000..f21ed59
 --- /dev/null
 +++ b/scripts/run_official_14d.py
-@@ -0,0 +1,418 @@
+@@ -0,0 +1,447 @@
 +"""OFFICIAL 14-DAY EXPERIMENT SERVICE — INSTALLED ARMED/OFF, NEVER SELF-ACTIVATING.
 +
 +Runs under systemd (deploy/arena-official.service, Restart=on-failure —
@@ -4748,6 +4924,7 @@ index 0000000..0c74019
 +                             (or be unset; any other value refuses)
 +  ARENA_DEPLOY_TOKEN         optional, mirror only
 +"""
++import hashlib
 +import json
 +import os
 +import sys
@@ -4796,13 +4973,16 @@ index 0000000..0c74019
 +
 +
 +def kraken_ohlc(pair, interval_min):
++    """SOURCE-PRECISION PRESERVING (Mentor Ruling 019.3): Kraken's OHLC
++    strings are carried verbatim into Decimal conversion — never through
++    Python float."""
 +    url = (f"https://api.kraken.com/0/public/OHLC?pair={pair}"
 +           f"&interval={interval_min}")
 +    with urllib.request.urlopen(url, timeout=15) as r:
 +        raw = json.loads(r.read().decode())
 +    key = [k for k in raw["result"] if k != "last"][0]
-+    return [{"t": int(x[0]), "o": float(x[1]), "h": float(x[2]),
-+             "l": float(x[3]), "c": float(x[4]), "v": float(x[6])}
++    return [{"t": int(x[0]), "o": x[1], "h": x[2],
++             "l": x[3], "c": x[4], "v": x[6]}
 +            for x in raw["result"][key]]
 +
 +
@@ -5030,6 +5210,15 @@ index 0000000..0c74019
 +    #   complete    -> COMPLETE health, clean exit, zero publications/calls
 +    verify_store_integrity()         # integrity BEFORE any reconciliation
 +    kind = official.classify_official_store(OFFICIAL_STORE)
++    if kind == "unstarted":
++        # CRASH-RECOVERABLE PROVISIONING (Ruling 019.2): a transaction that
++        # never reached its accepted-activation commit marker rolls back to
++        # ARMED/OFF with pristine accounts instead of bricking the service.
++        if official.reconcile_incomplete_provisioning(OFFICIAL_STORE) \
++                == "rolled_back_incomplete":
++            print("INCOMPLETE PROVISIONING TRANSACTION ROLLED BACK "
++                  "(pristine accounts verified). ARMED/OFF; rearm cleanly.")
++            kind = "no_schedule"
 +    if kind != "no_schedule":
 +        # MANDATORY durable trust validation (Ruling 018.3) — before the
 +        # COMPLETE report, before resume, before unstarted reconciliation
@@ -5042,6 +5231,14 @@ index 0000000..0c74019
 +              "Exiting cleanly.")
 +        return
 +    if kind == "started":
++        # CREDENTIAL HALT (Ruling 019.5): the key is required BEFORE any
++        # reconciliation or publication — never an uncaught KeyError inside
++        # a model thread.
++        if not os.environ.get("ANTHROPIC_API_KEY"):
++            print("CREDENTIAL HALT: ANTHROPIC_API_KEY not set — cannot "
++                  "resume the started official run. No reconciliation, no "
++                  "publication, no model call was attempted.")
++            sys.exit(2)
 +        print("RESUMING started schedule from the validated durable trust "
 +              "record (external activation file and freshness rule no "
 +              "longer apply).")
@@ -5094,14 +5291,22 @@ index 0000000..0c74019
 +        official.reconcile_unstarted_schedule(OFFICIAL_STORE, ACTIVATION)
 +        print(f"ACTIVATION ACCEPTED sha256={act_sha} "
 +              f"start={act['start_utc']} total={act['total']}")
-+        sched = official.provision_official(
-+            OFFICIAL_STORE, act["engine_digest"], act["site_digest"],
-+            act["start_utc"], total=act["total"], activation_sha=act_sha)
-+        # DURABLE ATTESTATION ARCHIVE (Ruling 017.1): the accepted activation
-+        # record and verified preflight report are copied into the store so a
-+        # started run resumes without the external control file or the
-+        # scratch report.
-+        official.archive_activation(OFFICIAL_STORE, act, act_sha)
++        # RECOVERABLE ACTIVATION TRANSACTION (Rulings 017.1 + 019.2): read
++        # the just-verified report bytes ONCE, guard against a swap since
++        # verification, and run the whole provision+archive transaction with
++        # the accepted record as its atomic commit marker.
++        blob = open(act["preflight"]["report_path"], "rb").read()
++        if hashlib.sha256(blob).hexdigest() \
++                != act["preflight"]["report_sha256"]:
++            print("REFUSED: preflight report changed since verification. "
++                  "No model call was made; ARMED/OFF.")
++            time.sleep(ARMED_POLL_S)
++            continue
++        sched = official.arm_store(
++            OFFICIAL_STORE, act, act_sha, act["engine_digest"],
++            act["site_digest"], report_blob=blob)
++        # durable trust must validate BEFORE the READY publication
++        validate_trust_or_halt("unstarted")
 +        cfg = config.load_config()
 +        publish = direct_publisher()
 +        print(f"OFFICIAL RUN ARMED — {sched['total']} boundaries from "
@@ -5141,10 +5346,10 @@ index 0000000..0c74019
 +    main()
 diff --git a/scripts/verify_deployment.py b/scripts/verify_deployment.py
 new file mode 100644
-index 0000000..6385bf3
+index 0000000..2ceabcf
 --- /dev/null
 +++ b/scripts/verify_deployment.py
-@@ -0,0 +1,272 @@
+@@ -0,0 +1,293 @@
 +"""POST-DEPLOYMENT VERIFICATION (Mentor Rulings 014.6 + 015.5) — read-only.
 +
 +Run ON the server after any deployment. Proves the installed service and the
@@ -5298,6 +5503,23 @@ index 0000000..6385bf3
 +    return out
 +
 +
++def check_time_sync(run=None):
++    """Mentor Ruling 019.5: every official deadline anchors to the VPS UTC
++    clock — NTP synchronization must be active. `run` is injectable for
++    tests; default queries systemd-timedated."""
++    if run is None:
++        def run():
++            return subprocess.run(
++                ["timedatectl", "show", "-p", "NTPSynchronized", "--value"],
++                capture_output=True, text=True, timeout=10).stdout.strip()
++    try:
++        out = run()
++    except Exception as e:
++        out = f"error: {e}"
++    return [("system clock is NTP-synchronized", out == "yes",
++             f"NTPSynchronized={out!r}")]
++
++
 +def check_https(fetch=None):
 +    """(name, ok, detail) checks for effective HTTPS + redirect. `fetch` is
 +    injectable for tests; default uses urllib against the live host."""
@@ -5385,6 +5607,10 @@ index 0000000..6385bf3
 +                check(name, ok, detail)
 +        except Exception as e:
 +            check("effective https reachable", False, str(e)[:80])
++
++    # 4b. NTP synchronization (Ruling 019.5) — deadline anchor integrity
++    for name, ok, detail in check_time_sync():
++        check(name, ok, detail)
 +
 +    # 5. audited venv python + pinned packages
 +    venv_py = os.path.join(ROOT, "venv", "bin", "python")
@@ -6428,10 +6654,10 @@ index 0000000..2c53f5f
 +    assert "GitHub Pages" in readme                  # dashboard role stated
 diff --git a/tests/test_ruling015.py b/tests/test_ruling015.py
 new file mode 100644
-index 0000000..9c530cf
+index 0000000..d02f9dd
 --- /dev/null
 +++ b/tests/test_ruling015.py
-@@ -0,0 +1,478 @@
+@@ -0,0 +1,479 @@
 +"""Mentor Ruling 015 remediation regressions: pristine official-state launch
 +gate, disarm surviving service stop/reboot via activation binding,
 +transactional pair/replay resolution (no commit after T+630), strict
@@ -6633,7 +6859,8 @@ index 0000000..9c530cf
 +    src = open(os.path.join(config.ROOT, "scripts",
 +                            "run_official_14d.py")).read()
 +    assert src.count("reconcile_unstarted_schedule") >= 2   # boot + per-arm
-+    assert "activation_sha=act_sha" in src           # binding is written
++    # binding + durable archive happen inside the arm_store transaction
++    assert "official.arm_store(" in src and "act_sha" in src
 +
 +
 +# ---- 015.3 transactional resolution: nothing commits after T+630 ----
@@ -7609,7 +7836,7 @@ index 0000000..6877d07
 +    assert "failed" in notes[0]
 diff --git a/tests/test_ruling017.py b/tests/test_ruling017.py
 new file mode 100644
-index 0000000..3d9a1a3
+index 0000000..ce9d702
 --- /dev/null
 +++ b/tests/test_ruling017.py
 @@ -0,0 +1,455 @@
@@ -7755,7 +7982,7 @@ index 0000000..3d9a1a3
 +    i_rec = src.index("official.reconcile_unstarted_schedule")
 +    assert i_int < i_cls < i_rec                     # integrity FIRST
 +    assert 'kind == "complete"' in src and 'kind == "started"' in src
-+    assert "archive_activation" in src               # durable before start
++    assert "official.arm_store(" in src              # durable before start
 +    # the started-resume path never consults armed_off_loop
 +    started_block = src[src.index('kind == "started"'):i_rec]
 +    assert "armed_off_loop" not in started_block
@@ -8366,3 +8593,361 @@ index 0000000..cdc2005
 +             src.index("def main")]
 +    assert "verify_durable_trust" in fn and "sys.exit(3)" in fn
 +    assert "INTEGRITY_HALT" in fn                # public health reflects it
+diff --git a/tests/test_ruling019.py b/tests/test_ruling019.py
+new file mode 100644
+index 0000000..7c5c98f
+--- /dev/null
++++ b/tests/test_ruling019.py
+@@ -0,0 +1,352 @@
++"""Mentor Ruling 019 remediation regressions: authoritative 1m marks
++independent of prompt data, crash-recoverable initial provisioning, strict
++1m candle-value validation with source precision, post-fetch T+30 budget
++enforcement, and operational cleanup. All offline and deterministic."""
++import io
++import json
++import os
++import time
++from decimal import Decimal
++
++import pytest
++
++from conftest import T0, ScriptedCaller, long_decision
++from engine import (config, dashboard, marketdata, official, persistence,
++                    recovery)
++from test_official import direct, provisioned_official, run_official
++from test_ruling010 import PilotClock, digests, parse_payload
++from test_ruling011 import _sol_price
++from test_ruling016 import (_load_script, _passing_report, mk_candles,
++                            snapshots_at)
++from test_ruling018 import _kraken_stub, _open_sol
++
++HOUR = 3600
++T1, T2 = T0 + HOUR, T0 + 2 * HOUR
++
++
++# ---- 019.1 authoritative 1m mark independent of prompt data ----
++
++@pytest.mark.parametrize("fail_interval", [60, 1440])
++def test_prompt_outage_still_persists_the_valid_1m_mark(cfg, monkeypatch,
++                                                        fail_interval):
++    """The mentor's reproduced hole: open position + valid 1m + failed
++    prompt snapshot must keep the REAL T-60 mark, real equity history, and
++    real dashboard P&L — with zero model calls for the coin."""
++    mod = _load_script("run_official_14d")
++    p = float(_sol_price())
++    sol_1m = mk_candles(T0, 120, p)                  # flat: position survives
++    monkeypatch.setattr(mod, "kraken_ohlc", _kraken_stub(
++        sol_1m=sol_1m, fail={("SOLUSD", fail_interval)}))
++    snap, spec = mod.fetch_market("SOL", T1, False)  # production split path
++    assert snap is None
++    store = _open_sol(cfg)
++    caller = ScriptedCaller({})
++    snaps = snapshots_at(T1)
++    snaps["SOL"] = snap
++    recovery.run_checkpointed(T1, snaps, caller, cfg, store,
++                              pre_replay_spec={"SOL": spec})
++    accounts, meta = persistence.load_state(store + "/state.json")
++    a = accounts["sol_haiku_raw"]
++    assert a["qty"] != 0                             # position survived
++    expected_mark = str(sol_1m[59]["c"])             # exact T1-60 close
++    assert meta["marks"]["SOL"] == expected_mark     # REAL mark persisted
++    # equity history carries the real marked equity, never null
++    pt = meta["equity_history"]["sol_haiku_raw"][-1]
++    assert pt["T"] == T1 and pt["equity"] is not None
++    from engine import state as state_mod
++    assert Decimal(pt["equity"]) == state_mod.equity_at(
++        a, Decimal(expected_mark))
++    # dashboard payload: correct mark and non-null P&L
++    manifest = config.build_manifest()
++    pl = dashboard.payload(accounts, [], {c: None for c in ("BTC", "ETH",
++                                                            "SOL")},
++                           None, manifest, cfg,
++                           marks={c: (meta["marks"] or {}).get(c)
++                                  for c in ("BTC", "ETH", "SOL")})
++    row = {r["id"]: r for r in pl["coins"]["SOL"]["accounts"]}["sol_haiku_raw"]
++    assert row["mark"] == expected_mark
++    assert row["unrealized_pnl"] is not None and row["equity"] is not None
++    assert not [c for c in caller.calls if c["id"].startswith("sol")]
++
++
++def test_true_1m_failure_fabricates_no_mark(cfg):
++    store = _open_sol(cfg)
++    snaps = snapshots_at(T1)
++    snaps["SOL"] = None
++    recovery.run_checkpointed(
++        T1, snaps, ScriptedCaller({}), cfg, store,
++        pre_replay_spec={"SOL": {"start": T0, "end": T1, "candles": []}})
++    _, meta = persistence.load_state(store + "/state.json")
++    assert meta["marks"]["SOL"] is None              # nothing fabricated
++    assert meta["replay_state"]["SOL"]["status"] == "CATCHUP_REQUIRED"
++
++
++def test_final_boundary_uses_valid_1m_mark_despite_prompt_outage(cfg,
++                                                                 monkeypatch):
++    """The FINAL official boundary reports real marked equity from the 1m
++    P_T even when the hourly/daily prompt data is down."""
++    mod = _load_script("run_official_14d")
++    p = float(_sol_price())
++    calls = {"n": 0}
++    real_stub = _kraken_stub(sol_1m=mk_candles(T0 - HOUR, 240, p))
++
++    def stub(pair, interval_min):
++        if pair == "SOLUSD" and interval_min in (60, 1440):
++            calls["n"] += 1
++            if calls["n"] > 2:                       # b1 ok; final b2 fails
++                raise RuntimeError("prompt feed down")
++        return real_stub(pair, interval_min)
++    monkeypatch.setattr(mod, "kraken_ohlc", stub)
++    store = provisioned_official(n=2)
++    vc = PilotClock(float(T0) - 60)
++    dp, pub_dir = direct(vc)
++    d = long_decision(p, 2000)
++    official.run_official(store, cfg, ScriptedCaller({"sol_haiku_raw": d}),
++                          mod.fetch_market, dp, vc, vc.sleep)
++    pl = parse_payload(open(os.path.join(pub_dir, "live_payload.js")).read())
++    row = {r["id"]: r for r in pl["coins"]["SOL"]["accounts"]}["sol_haiku_raw"]
++    assert pl["marks"]["SOL"]["price"] is not None   # final 1m mark used
++    assert row["equity"] is not None                 # final marked equity
++
++
++# ---- 019.2 crash-recoverable initial provisioning ----
++
++def _arm_args(tmp_path, n=2, name="r19.json"):
++    eng, site = digests()
++    path, sha = _passing_report(tmp_path, eng, site, name=name)
++    act = {"approved": "YES-OFFICIAL-RUN-APPROVED", "engine_digest": eng,
++           "site_digest": site, "start_utc": T0, "total": n,
++           "preflight": {"report_path": path, "report_sha256": sha}}
++    blob = open(path, "rb").read()
++    return act, "ab" * 32, eng, site, blob
++
++
++@pytest.mark.parametrize("crash_at", ["after_provision",
++                                      "after_preflight_copy"])
++def test_crash_mid_transaction_recovers_to_armed_off(cfg, tmp_path, crash_at):
++    import tempfile
++    act, sha, eng, site, blob = _arm_args(tmp_path, name=f"{crash_at}.json")
++    store = tempfile.mkdtemp(prefix="arena-r19-")
++    persistence.save_state(os.path.join(store, "state.json"),
++                           __import__("engine.state",
++                                      fromlist=["init_accounts"])
++                           .init_accounts(), {"boundary": None})
++    with pytest.raises(recovery.CrashError):
++        official.arm_store(store, act, sha, eng, site, report_blob=blob,
++                           crash_at=crash_at)
++    # zero boundary work; accepted marker absent
++    assert not os.path.exists(os.path.join(
++        store, official.ACCEPTED_ACTIVATION_NAME))
++    assert official.reconcile_incomplete_provisioning(store) \
++        == "rolled_back_incomplete"                  # pristine proven inside
++    official.verify_pristine_official_state(store)
++    # clean re-arm succeeds completely
++    sched = official.arm_store(store, act, sha, eng, site, report_blob=blob)
++    assert sched["total"] == 2
++    assert official.reconcile_incomplete_provisioning(store) == "committed"
++    assert official.verify_durable_trust(store, time.time(),
++                                         waive_freshness=True)
++
++
++def test_crash_before_binding_recovers(cfg, tmp_path, monkeypatch):
++    import tempfile
++    act, sha, eng, site, blob = _arm_args(tmp_path, name="nobind.json")
++    store = tempfile.mkdtemp(prefix="arena-r19b-")
++
++    def boom(*a, **k):
++        raise recovery.CrashError("before_binding")
++    monkeypatch.setattr(official, "write_activation_binding", boom)
++    with pytest.raises(recovery.CrashError):
++        official.arm_store(store, act, sha, eng, site, report_blob=blob)
++    monkeypatch.undo()
++    assert official.reconcile_incomplete_provisioning(store) \
++        == "rolled_back_incomplete"
++    sched = official.arm_store(store, act, sha, eng, site, report_blob=blob)
++    assert official.verify_durable_trust(store, time.time(),
++                                         waive_freshness=True)
++    assert sched["start"] == T0
++
++
++def test_tampered_blob_refuses_archive(cfg, tmp_path):
++    import tempfile
++    act, sha, eng, site, blob = _arm_args(tmp_path, name="tamper.json")
++    store = tempfile.mkdtemp(prefix="arena-r19t-")
++    with pytest.raises(official.TrustRecordError):
++        official.arm_store(store, act, sha, eng, site,
++                           report_blob=blob + b" ")
++    assert not os.path.exists(os.path.join(
++        store, official.ACCEPTED_ACTIVATION_NAME))
++
++
++def test_started_run_never_rolled_back_by_incomplete_check(cfg):
++    store = provisioned_official(n=2)                # no accepted marker
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    with pytest.raises(recovery.CrashError):
++        run_official(store, cfg, ScriptedCaller({}), dp, vc,
++                     crash_at="after_one_pair")
++    assert official.reconcile_incomplete_provisioning(store) == "started"
++    from engine import pilot
++    assert pilot.load_schedule(store)["boundaries"][0] == T0   # intact
++
++
++def test_runner_wires_incomplete_recovery_and_trust_before_ready():
++    src = open(os.path.join(config.ROOT, "scripts",
++                            "run_official_14d.py")).read()
++    assert "reconcile_incomplete_provisioning" in src
++    arm_block = src[src.index("official.arm_store("):]
++    assert arm_block.index('validate_trust_or_halt("unstarted")') \
++        < arm_block.index("run_official(")           # trust BEFORE READY
++
++
++# ---- 019.3 strict candle-value validation + source precision ----
++
++BAD_CANDLES = {
++    "negative_price": {"l": Decimal("-1")},
++    "zero_price": {"c": Decimal("0")},
++    "nonfinite": {"h": Decimal("NaN")},
++    "impossible_high": {"h": Decimal("1"), "l": Decimal("2"),
++                        "o": Decimal("2"), "c": Decimal("2")},
++    "negative_volume": {"v": Decimal("-5")},
++    "misaligned": {"t": T0 + 30},
++}
++
++
++@pytest.mark.parametrize("case", sorted(BAD_CANDLES))
++def test_malformed_candle_values_rejected(case):
++    c = {"t": T0, "o": Decimal("10"), "h": Decimal("10"),
++         "l": Decimal("10"), "c": Decimal("10"), "v": Decimal("1")}
++    c.update(BAD_CANDLES[case])
++    with pytest.raises(marketdata.DataUnavailable):
++        marketdata.validate_candle_values(c)
++    candles = mk_candles(T0, 60, 10)
++    candles[30] = dict(candles[30], **BAD_CANDLES[case])
++    with pytest.raises(marketdata.DataUnavailable):
++        marketdata.validate_1m_coverage(candles, T0, T1)
++
++
++def test_duplicate_candles_rejected():
++    candles = mk_candles(T0, 60, 10)
++    candles.insert(31, dict(candles[30]))            # duplicate timestamp
++    with pytest.raises(marketdata.DataUnavailable):
++        marketdata.validate_1m_coverage(candles, T0, T1)
++
++
++def test_malformed_candle_never_executes_a_stop(cfg):
++    """A stop-crossing candle with an impossible OHLC must NOT execute — it
++    becomes the gap."""
++    p = float(_sol_price())
++    store = _open_sol(cfg)
++    candles = mk_candles(T0, 60, p, dip_to=p * 0.5, at=30)
++    candles[30]["h"] = Decimal("0")                  # malformed (would-hit)
++    recovery.run_checkpointed(
++        T1, snapshots_at(T1), ScriptedCaller({}), cfg, store,
++        pre_replay_spec={"SOL": {"start": T0, "end": T1, "candles": candles}})
++    accounts, meta = persistence.load_state(store + "/state.json")
++    assert accounts["sol_haiku_raw"]["trades"] == []     # nothing executed
++    assert accounts["sol_haiku_raw"]["qty"] != 0
++    assert meta["replay_state"]["SOL"]["status"] == "CATCHUP_REQUIRED"
++    assert meta["replay_next_required"]["SOL"] == T0 + 30 * 60
++
++
++def test_kraken_source_precision_preserved(monkeypatch):
++    mod = _load_script("run_official_14d")
++    precise = "67123.123456789012345"
++    rows = [[T0 - 60 + i * 60, precise, precise, precise, precise, "0",
++             "1.000000000000000001"] for i in range(3)]
++    payload = json.dumps({"result": {"XXBTZUSD": rows, "last": T0}}).encode()
++
++    class FakeResp(io.BytesIO):
++        def __enter__(self):
++            return self
++
++        def __exit__(self, *a):
++            return False
++    monkeypatch.setattr(mod.urllib.request, "urlopen",
++                        lambda url, timeout=0: FakeResp(payload))
++    out = mod.kraken_ohlc("XBTUSD", 1)
++    assert out[0]["o"] == precise                    # strings carried through
++    spec_candles = __import__("engine.marketdata",
++                              fromlist=["to_dec"]).to_dec(out)
++    assert str(spec_candles[0]["o"]) == precise      # exact Decimal
++    assert str(spec_candles[0]["v"]) == "1.000000000000000001"
++    assert Decimal(precise) != Decimal(str(float(precise)))   # float mangles
++
++
++# ---- 019.4 post-fetch T+30 budget ----
++
++def test_fetch_completing_after_T30_blocks_prompts_keeps_replay(cfg):
++    store = provisioned_official(n=2)
++    vc = PilotClock(float(T0) - 60)
++    dp, _ = direct(vc)
++    p = float(_sol_price())
++    from test_ruling010 import fake_fetch
++
++    def slow_sol_fetch(coin, T, first):
++        snap, spec = fake_fetch(coin, T, first)
++        if coin == "SOL" and T == T1:
++            spec = {"start": T0, "end": T1,
++                    "candles": mk_candles(T0, 60, p)}
++            vc.t = T1 + 40.0                         # completes AFTER T+30
++        return snap, spec
++    caller = ScriptedCaller({"sol_haiku_raw": long_decision(p, 2000)})
++    official.run_official(store, cfg, caller, slow_sol_fetch, dp, vc,
++                          vc.sleep)
++    _, meta = persistence.load_state(os.path.join(store, "state.json"))
++    ledger = persistence.read_ledger(os.path.join(store, "ledger.jsonl"))
++    from engine import prompts
++    b2_sol = [e for e in ledger if e.get("pair") == "sol_haiku"
++              and e.get("round_id") == prompts.round_id("SOL", T1)]
++    # late prompt snapshot never used: boundary-2 SOL pairs blocked
++    sol_calls_b2 = [c for c in caller.calls[18:]
++                    if c["id"].startswith("sol")]
++    assert sol_calls_b2 == []
++    # but the valid 1m data was RETAINED: replay complete + mark present
++    assert meta["replay_state"]["SOL"]["status"] == "REPLAY_COMPLETE"
++    assert meta["replay_next_required"]["SOL"] == T1
++    assert meta["marks"]["SOL"] is not None
++    assert b2_sol and b2_sol[0]["reason"] == "DATA_UNAVAILABLE"
++
++
++# ---- 019.5 operational cleanup ----
++
++def test_started_restart_requires_api_key_before_anything():
++    src = open(os.path.join(config.ROOT, "scripts",
++                            "run_official_14d.py")).read()
++    started = src[src.index('kind == "started"'):src.index("RESUMING")]
++    assert "ANTHROPIC_API_KEY" in started            # checked BEFORE resume
++    assert "CREDENTIAL HALT" in started
++
++
++def test_deployment_doc_activation_and_env_guidance():
++    doc = open(os.path.join(config.ROOT, "deploy", "DEPLOYMENT.md")).read()
++    assert "--preflight-report" in doc and "--preflight-sha" in doc
++    assert "set -a" in doc and "without printing" in doc.lower()
++    assert "NTP" in doc
++
++
++def test_verifier_checks_ntp_sync():
++    mod = _load_script("verify_deployment")
++    ok = mod.check_time_sync(run=lambda: "yes")
++    assert [o for _, o, _ in ok] == [True]
++    bad = mod.check_time_sync(run=lambda: "no")
++    assert [o for _, o, _ in bad] == [False]
++    src = open(os.path.join(config.ROOT, "scripts",
++                            "verify_deployment.py")).read()
++    assert "check_time_sync()" in src                # wired into main
++
++
++def test_public_naming_is_ta_everywhere(cfg):
++    from engine import state as state_mod
++    manifest = config.build_manifest()
++    pl = dashboard.payload(state_mod.init_accounts(), [],
++                           {c: None for c in ("BTC", "ETH", "SOL")},
++                           None, manifest, cfg)
++    pair = pl["coins"]["BTC"]["pairs"][0]
++    assert "ta" in pair and "feature" not in pair    # payload key renamed
++    assert "TA arm" in cfg["arm_naming"]
++    for rel in ("docs/prestart_payload.js", "docs/demo_payload.js"):
++        text = open(os.path.join(config.ROOT, rel)).read()
++        assert '"feature":' not in text and '"ta":' in text
++    assert "Feature arm in public" not in open(
++        os.path.join(config.ROOT, "engine", "state.py")).read()

@@ -1,3 +1,5 @@
+e04c135c6b58 ruling 019 remediation: 1m marks, recoverable provisioning, strict
+b3b40c66bfb8 audit round v7: regenerate evidence after ruling 018 remediation
 a924c804728a ruling 018 remediation: independent 1m fetch, unambiguous config c
 cb938ac192c1 audit round v6: regenerate evidence after ruling 017 remediation
 6a60b2812bd6 ruling 017 remediation: restart state machine, exact replay-gap tr
