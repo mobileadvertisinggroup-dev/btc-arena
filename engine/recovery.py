@@ -306,26 +306,26 @@ def run_checkpointed(T, snapshots, caller, cfg, store, crash_at=None,
                     f"pre_replay_spec for {coin} ends at {spec['end']} > "
                     f"T={T} — pre-decision replay must be strictly pre-T")
     def _adopt_1m_marks():
-        # AUTHORITATIVE 1m MARK (Mentor Ruling 019.1): when the prompt
-        # snapshot is unavailable but the coin's 1m stream is COMPLETE
-        # through T (replay_next_required == T), the strictly validated
-        # close of the exact T-60 candle is the boundary mark — marked
-        # equity, equity history and dashboard P&L never go null merely
-        # because 1h/1d prompt data failed. A true 1m failure fabricates
-        # nothing (the mark stays None and CATCHUP applies).
+        # AUTHORITATIVE 1m MARK (Mentor Rulings 019.1 + 021): when the
+        # prompt snapshot is unavailable but the coin's 1m stream is
+        # COMPLETE through T (replay_next_required == T), the SHARED
+        # authoritative-mark rule (marketdata.authoritative_1m_mark —
+        # EXACTLY ONE strictly validated T-60 candle) supplies the boundary
+        # mark, so marked equity, equity history and dashboard P&L never go
+        # null merely because 1h/1d prompt data failed. Zero OR MULTIPLE
+        # T-60 candles (ambiguous duplicate) => no mark, no arbitrary
+        # selection; a true 1m failure fabricates nothing (the mark stays
+        # None and CATCHUP applies).
         for coin, spec in (pre_replay_spec or {}).items():
             if meta.get("marks", {}).get(coin) is not None:
                 continue
             if meta.get("replay_next_required", {}).get(coin) != T:
                 continue                 # 1m stream not proven complete
-            last = [c for c in spec["candles"] if c["t"] == T - 60]
-            if not last:
-                continue
             try:
-                marketdata.validate_candle_values(last[0])
+                mark = marketdata.authoritative_1m_mark(spec["candles"], T)
             except marketdata.DataUnavailable:
-                continue
-            meta["marks"][coin] = str(last[0]["c"])
+                continue                 # ambiguous/absent/malformed: no mark
+            meta["marks"][coin] = str(mark)
 
     if pre_replay_spec and meta.get("phase") == "pre_replay":
         _replay_pass(pre_replay_spec, "during_pre_replay")

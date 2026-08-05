@@ -74,6 +74,22 @@ def validate_candle_values(c, label="1m"):
     return True
 
 
+def authoritative_1m_mark(candles, T, label="1m P_T"):
+    """THE single authoritative-mark rule (Mentor Rulings 020.1 + 021),
+    shared by build_snapshot() and the coordinator's mark adoption so no two
+    call sites can apply different uniqueness rules: an authoritative
+    one-minute mark requires EXACTLY ONE candle whose timestamp equals T-60,
+    and that sole candle must pass strict value validation. Zero or multiple
+    T-60 candles => DataUnavailable — no mark may ever be derived from an
+    ambiguous or absent source."""
+    finals = [c for c in candles if c["t"] == T - MIN]
+    if len(finals) != 1:
+        raise DataUnavailable(
+            f"{label}: {len(finals)} candles at T-60 — ambiguous/absent")
+    validate_candle_values(finals[0], label)
+    return finals[0]["c"]
+
+
 def validate_1m_coverage(candles, start_t, end_t):
     """Complete contiguous 1m coverage for [start_t, end_t) PLUS strict
     per-candle value validation (Ruling 019.3); raises on any gap, duplicate,
@@ -106,15 +122,10 @@ def build_snapshot(coin, k1m, k1h, k1d, T):
     _check_sane(daily, DAY, "daily")
     m1 = [c for c in k1m if c["t"] + MIN <= T]
     _check_fresh(m1, MIN, T - MIN, "1m")
-    # STRICT P_T SOURCE VALIDATION (Mentor Ruling 020.1): the exact T-60
-    # candle must be unambiguous (no duplicate) and pass full value
-    # validation BEFORE its close may become P_T — a malformed price can
+    # STRICT P_T SOURCE VALIDATION (Mentor Rulings 020.1 + 021): the SHARED
+    # authoritative-mark rule — exactly one strictly validated T-60 candle —
+    # before its close may become P_T. A malformed or ambiguous price can
     # never reach prompts, decisions, execution, equity or the dashboard.
-    finals = [c for c in m1 if c["t"] == T - MIN]
-    if len(finals) != 1:
-        raise DataUnavailable(
-            f"1m P_T: {len(finals)} candles at T-60 — ambiguous/absent")
-    validate_candle_values(finals[0], "1m P_T")
-    p_t = finals[0]["c"]
+    p_t = authoritative_1m_mark(m1, T)
     return {"coin": coin, "T": T, "P_T": p_t, "hourly": hourly,
             "daily_closes": [c["c"] for c in daily], "source": "kraken"}
