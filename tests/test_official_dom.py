@@ -84,14 +84,17 @@ def test_comparison_table_raw_vs_ta(official_payload):
     res = _harness(official_payload)
     cmp_html = res["dom"]["comparison"]
     assert "RAW vs TA" in cmp_html                        # wishlist #10
-    assert "OPEN LONG" in cmp_html                        # current position
-    assert "CURRENT POSITION" in cmp_html                 # separate sections
+    assert "1 OPEN LONG" in cmp_html                      # count + direction
+    assert "OPEN TRADES" in cmp_html                      # separate sections
     assert "CLOSED TRADES" in cmp_html
+    assert "OPEN P/L" in cmp_html                         # combined open P/L
     assert "MODEL / MARKET" in cmp_html                   # new header
     assert cmp_html.count("RAW ARM") >= 9                 # permanent labels
-    assert "ENTRY" in cmp_html and "STOP" in cmp_html and "TARGET" in cmp_html
-    assert MARKER[:60] in cmp_html                        # reasoning snippet
-    assert "FLAT — NO OPEN POSITION" in cmp_html          # honest flats
+    # v12: compact summary only — no per-position detail inside the table
+    assert "ENTRY" not in cmp_html and "STOP</span>" not in cmp_html
+    assert "TARGET" not in cmp_html and "VALUE" not in cmp_html
+    assert MARKER[:60] not in cmp_html                    # no thesis text
+    assert "NO OPEN TRADES" in cmp_html                   # honest flats
     assert "NO CLOSED TRADES" in cmp_html                 # untraded arms honest
 
 

@@ -758,27 +758,18 @@ function openCards(){
       </div>`;
   }).join('');
 }
-/* wishlist #10 + UI-rev items 6-8: RAW vs TA side-by-side comparison with
-   the CURRENT POSITION and CLOSED TRADES in visibly separate sections */
+/* wishlist #10 + UI-rev items 6-8 + v12: RAW vs TA side-by-side comparison
+   with a compact OPEN TRADES summary (count, direction, open P/L only —
+   full detail lives in the dedicated Open Positions section) visibly
+   separate from the CLOSED TRADES summary */
 function posSection(a){
   if (a.side === 'flat')
-    return `<div class="cmp-sec"><span class="sec-t">CURRENT POSITION</span>
-      <div class="muted">FLAT — NO OPEN POSITION</div></div>`;
+    return `<div class="cmp-sec"><span class="sec-t">OPEN TRADES</span>
+      <div class="muted">NO OPEN TRADES</div></div>`;
   const na = a.mark == null || a.unrealized_pnl == null;
-  return `<div class="cmp-sec"><span class="sec-t">CURRENT POSITION</span>
-    <span class="badge ${a.side}">OPEN ${a.side.toUpperCase()}</span>
-    <div class="kv">
-      <span class="k">ENTRY</span><b>${price(a.entry)}</b>
-      <span class="k">CURRENT</span><b>${a.mark == null ? 'unavailable' : price(a.mark)}</b>
-      <span class="k">STOP</span><b>${a.stop == null ? 'none' : price(a.stop)}</b>
-      <span class="k">TARGET</span><b>${a.tp == null ? 'none' : price(a.tp)}</b>
-      <span class="k">VALUE</span><b>${a.notional == null ? 'N/A — price unavailable' : price(a.notional)}</b>
-      <span class="k">AGE</span><b>${demo ? 'intra-demo' : ageText(a)}</b>
-      <span class="k">UNREALIZED P/L</span>${pnlSpan(a.unrealized_pnl, na)}
-    </div>
-    ${a.thesis ? `<div class="snip">“${esc(a.thesis).slice(0, 110)}${a.thesis.length > 110 ? '…' : ''}”</div>
-      <button type="button" class="expandbtn" onclick="this.parentElement.classList.toggle('open')">Expand ▾</button>
-      <div class="xtra">“${esc(a.thesis)}”</div>` : ''}
+  return `<div class="cmp-sec"><span class="sec-t">OPEN TRADES</span>
+    <div class="statline"><span class="badge ${a.side}">1 OPEN ${a.side.toUpperCase()}</span></div>
+    <div class="statline">OPEN P/L ${pnlSpan(a.unrealized_pnl, na)}</div>
   </div>`;
 }
 function closedSection(a){
