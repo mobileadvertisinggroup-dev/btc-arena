@@ -391,6 +391,7 @@ function exitBadge(reason){
                stop_loss: ['PROTECTIVE STOP TRIGGERED', 'exit-how'],
                decision_close: ['MODEL CHOSE TO CLOSE', 'exit-how'],
                decision_flip: ['MODEL REVERSED DIRECTION', 'exit-how'],
+               invalidation: ['INVALIDATION TRIGGERED', 'exit-how'],
                liquidation: ['LIQUIDATED', 'exit-sl']};
   const [t, cls] = map[reason] ||
     [String(reason).replace(/_/g, ' ').toUpperCase(), 'exit-how'];
@@ -404,19 +405,22 @@ function exitExplain(t){
   const won = N(t.pnl) > 0;
   if (t.reason === 'stop_loss')
     return won
-      ? 'The model had moved its protective stop into profit territory to '
-        + 'lock in gains; the price came back to that level and the trade '
-        + 'closed automatically — with a profit, not a loss.'
-      : 'The price moved against the position and hit the model’s '
-        + 'protective stop, closing the trade automatically to limit the loss.';
+      ? `The model moved its safety stop ${t.side === 'short' ? 'below'
+          : 'above'} the entry price to protect its profit. When the price `
+        + 'returned to that level, the trade closed automatically with a profit.'
+      : 'The price moved against the position and reached the model’s '
+        + 'safety stop, so the trade closed automatically to limit the loss.';
   if (t.reason === 'take_profit')
-    return 'The price reached the profit target the model had set, so the '
-      + 'trade closed automatically at that target.';
+    return 'The price reached the model’s profit target, so the trade '
+      + 'closed automatically with a profit.';
   if (t.reason === 'decision_close')
     return 'The model reviewed the market and chose to close this trade.';
   if (t.reason === 'decision_flip')
     return 'The model closed this trade to open a new one in the opposite '
       + 'direction.';
+  if (t.reason === 'invalidation')
+    return 'The market condition the model said would invalidate its idea '
+      + 'occurred, so the trade was closed.';
   if (t.reason === 'liquidation')
     return 'Losses reached the account’s safety limit and the engine '
       + 'force-closed the position.';
@@ -704,7 +708,7 @@ function tradeCards(){
     const pnl = N(t.pnl);
     const cls = pnl > 0 ? 'up' : pnl < 0 ? 'down' : 'zero';
     const res = pnl > 0 ? `PROFIT +${price(pnl)}`
-      : pnl < 0 ? `LOSS −${price(Math.abs(pnl))}` : `BREAK-EVEN ${price(0)}`;
+      : pnl < 0 ? `LOSS −${price(Math.abs(pnl))}` : `BREAKEVEN ${price(0)}`;
     return `<div class="tcard" style="border-left-color:${MODEL[t.a.model].c}">
       <div class="row1">${icon(t.a.model)}
         <div><div class="who" style="font-size:14.5px;font-weight:800">${MODEL[t.a.model].name}</div>
