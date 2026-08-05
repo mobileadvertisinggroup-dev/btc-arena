@@ -1,3 +1,5 @@
+3ec25100c685 ruling 021 remediation: shared authoritative-mark rule (exactly on
+dcf6257ed28d audit round v9: regenerate evidence after ruling 020 remediation
 b3e07ceae8b9 ruling 020 remediation: strict-1m bypasses closed, pre-schedule re
 7ff4533b153a audit round v8: regenerate evidence after ruling 019 remediation
 e04c135c6b58 ruling 019 remediation: 1m marks, recoverable provisioning, strict

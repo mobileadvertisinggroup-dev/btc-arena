@@ -1,8 +1,8 @@
 diff --git a/.gitignore b/.gitignore
-index 7707535..3001d7e 100644
+index 7707535..71de2bb 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -9,3 +9,24 @@
+@@ -9,3 +9,27 @@
  MANIFEST.sha256.json
  .DS_Store
  offline_audit_bundle_v1/
@@ -27,6 +27,9 @@ index 7707535..3001d7e 100644
 +offline_audit_bundle_v8.tar.gz
 +offline_audit_bundle_v8.tar.gz.sha256
 +offline_audit_bundle_v8/
++offline_audit_bundle_v9.tar.gz
++offline_audit_bundle_v9.tar.gz.sha256
++offline_audit_bundle_v9/
 diff --git a/README.md b/README.md
 index 2484ab4..ddb112e 100644
 --- a/README.md
@@ -2088,10 +2091,10 @@ index 145185a..59f26eb 100644
              "rounds": [e for e in ledger if e["round_id"].startswith(f"v1-{coin}-")],
          }
 diff --git a/engine/marketdata.py b/engine/marketdata.py
-index ba41c11..950cb1a 100644
+index ba41c11..848d1cc 100644
 --- a/engine/marketdata.py
 +++ b/engine/marketdata.py
-@@ -54,14 +54,39 @@
+@@ -54,14 +54,55 @@
              raise DataUnavailable(f"{label}: OHLC sanity violation at {c['t']}")
  
  
@@ -2115,6 +2118,22 @@ index ba41c11..950cb1a 100644
 +    return True
 +
 +
++def authoritative_1m_mark(candles, T, label="1m P_T"):
++    """THE single authoritative-mark rule (Mentor Rulings 020.1 + 021),
++    shared by build_snapshot() and the coordinator's mark adoption so no two
++    call sites can apply different uniqueness rules: an authoritative
++    one-minute mark requires EXACTLY ONE candle whose timestamp equals T-60,
++    and that sole candle must pass strict value validation. Zero or multiple
++    T-60 candles => DataUnavailable — no mark may ever be derived from an
++    ambiguous or absent source."""
++    finals = [c for c in candles if c["t"] == T - MIN]
++    if len(finals) != 1:
++        raise DataUnavailable(
++            f"{label}: {len(finals)} candles at T-60 — ambiguous/absent")
++    validate_candle_values(finals[0], label)
++    return finals[0]["c"]
++
++
  def validate_1m_coverage(candles, start_t, end_t):
 -    """Complete contiguous 1m coverage for [start_t, end_t); raises on any gap."""
 +    """Complete contiguous 1m coverage for [start_t, end_t) PLUS strict
@@ -2133,21 +2152,16 @@ index ba41c11..950cb1a 100644
  
  
  def build_snapshot(coin, k1m, k1h, k1d, T):
-@@ -81,6 +106,15 @@
+@@ -81,6 +122,10 @@
      _check_sane(daily, DAY, "daily")
      m1 = [c for c in k1m if c["t"] + MIN <= T]
      _check_fresh(m1, MIN, T - MIN, "1m")
 -    p_t = m1[-1]["c"]
-+    # STRICT P_T SOURCE VALIDATION (Mentor Ruling 020.1): the exact T-60
-+    # candle must be unambiguous (no duplicate) and pass full value
-+    # validation BEFORE its close may become P_T — a malformed price can
++    # STRICT P_T SOURCE VALIDATION (Mentor Rulings 020.1 + 021): the SHARED
++    # authoritative-mark rule — exactly one strictly validated T-60 candle —
++    # before its close may become P_T. A malformed or ambiguous price can
 +    # never reach prompts, decisions, execution, equity or the dashboard.
-+    finals = [c for c in m1 if c["t"] == T - MIN]
-+    if len(finals) != 1:
-+        raise DataUnavailable(
-+            f"1m P_T: {len(finals)} candles at T-60 — ambiguous/absent")
-+    validate_candle_values(finals[0], "1m P_T")
-+    p_t = finals[0]["c"]
++    p_t = authoritative_1m_mark(m1, T)
      return {"coin": coin, "T": T, "P_T": p_t, "hourly": hourly,
              "daily_closes": [c["c"] for c in daily], "source": "kraken"}
 diff --git a/engine/official.py b/engine/official.py
@@ -3366,7 +3380,7 @@ index 62e15bb..e810820 100644
          results.append((T, entry["status"]))
      return results
 diff --git a/engine/recovery.py b/engine/recovery.py
-index 68c2194..a221649 100644
+index 68c2194..ae8ccc0 100644
 --- a/engine/recovery.py
 +++ b/engine/recovery.py
 @@ -23,6 +23,7 @@
@@ -3612,26 +3626,26 @@ index 68c2194..a221649 100644
 +                    f"pre_replay_spec for {coin} ends at {spec['end']} > "
 +                    f"T={T} — pre-decision replay must be strictly pre-T")
 +    def _adopt_1m_marks():
-+        # AUTHORITATIVE 1m MARK (Mentor Ruling 019.1): when the prompt
-+        # snapshot is unavailable but the coin's 1m stream is COMPLETE
-+        # through T (replay_next_required == T), the strictly validated
-+        # close of the exact T-60 candle is the boundary mark — marked
-+        # equity, equity history and dashboard P&L never go null merely
-+        # because 1h/1d prompt data failed. A true 1m failure fabricates
-+        # nothing (the mark stays None and CATCHUP applies).
++        # AUTHORITATIVE 1m MARK (Mentor Rulings 019.1 + 021): when the
++        # prompt snapshot is unavailable but the coin's 1m stream is
++        # COMPLETE through T (replay_next_required == T), the SHARED
++        # authoritative-mark rule (marketdata.authoritative_1m_mark —
++        # EXACTLY ONE strictly validated T-60 candle) supplies the boundary
++        # mark, so marked equity, equity history and dashboard P&L never go
++        # null merely because 1h/1d prompt data failed. Zero OR MULTIPLE
++        # T-60 candles (ambiguous duplicate) => no mark, no arbitrary
++        # selection; a true 1m failure fabricates nothing (the mark stays
++        # None and CATCHUP applies).
 +        for coin, spec in (pre_replay_spec or {}).items():
 +            if meta.get("marks", {}).get(coin) is not None:
 +                continue
 +            if meta.get("replay_next_required", {}).get(coin) != T:
 +                continue                 # 1m stream not proven complete
-+            last = [c for c in spec["candles"] if c["t"] == T - 60]
-+            if not last:
-+                continue
 +            try:
-+                marketdata.validate_candle_values(last[0])
++                mark = marketdata.authoritative_1m_mark(spec["candles"], T)
 +            except marketdata.DataUnavailable:
-+                continue
-+            meta["marks"][coin] = str(last[0]["c"])
++                continue                 # ambiguous/absent/malformed: no mark
++            meta["marks"][coin] = str(mark)
 +
 +    if pre_replay_spec and meta.get("phase") == "pre_replay":
 +        _replay_pass(pre_replay_spec, "during_pre_replay")
@@ -9510,3 +9524,159 @@ index 0000000..67125a8
 +    main_src = src[src.index("def main"):]
 +    assert main_src.index("reconcile_incomplete_provisioning") \
 +        < main_src.index("verify_store_integrity()")
+diff --git a/tests/test_ruling021.py b/tests/test_ruling021.py
+new file mode 100644
+index 0000000..70a5bed
+--- /dev/null
++++ b/tests/test_ruling021.py
+@@ -0,0 +1,150 @@
++"""Mentor Ruling 021 remediation regressions: the authoritative one-minute
++mark requires EXACTLY ONE strictly validated T-60 candle — an ambiguous
++duplicate can never be selected for the mark, equity history, dashboard P&L
++or final marked equity. One shared helper governs build_snapshot() and
++_adopt_1m_marks(). All offline and deterministic."""
++import os
++from decimal import Decimal
++
++import pytest
++
++from conftest import T0, ScriptedCaller, long_decision
++from engine import config, marketdata, persistence, recovery, state
++from test_ruling011 import _sol_price
++from test_ruling016 import mk_candles, snapshots_at, _prod_store
++from test_ruling018 import _open_sol
++
++HOUR = 3600
++T1 = T0 + HOUR
++
++
++def _dup_t60(T, price, close_a=100, close_b=200):
++    """Complete flat hour whose T-60 minute has TWO individually valid but
++    conflicting candles (the mentor's exact reproduction)."""
++    candles = mk_candles(T - HOUR, 60, price)
++    assert candles[-1]["t"] == T - 60
++    a = dict(candles[-1], o=Decimal(str(close_a)), h=Decimal(str(close_a)),
++             l=Decimal(str(close_a)), c=Decimal(str(close_a)))
++    b = dict(candles[-1], o=Decimal(str(close_b)), h=Decimal(str(close_b)),
++             l=Decimal(str(close_b)), c=Decimal(str(close_b)))
++    return candles[:-1] + [a, b]
++
++
++def test_shared_helper_requires_exactly_one_t60_candle():
++    p = float(_sol_price())
++    good = mk_candles(T1 - HOUR, 60, p)
++    assert marketdata.authoritative_1m_mark(good, T1) == good[-1]["c"]
++    with pytest.raises(marketdata.DataUnavailable):     # zero
++        marketdata.authoritative_1m_mark(good[:-1], T1)
++    with pytest.raises(marketdata.DataUnavailable):     # multiple
++        marketdata.authoritative_1m_mark(_dup_t60(T1, p), T1)
++    # build_snapshot and the coordinator share THIS helper (no divergence)
++    for rel in ("engine/marketdata.py", "engine/recovery.py"):
++        assert "authoritative_1m_mark" in open(
++            os.path.join(config.ROOT, rel)).read()
++    rsrc = open(os.path.join(config.ROOT, "engine", "recovery.py")).read()
++    adopt = rsrc[rsrc.index("def _adopt_1m_marks"):
++                 rsrc.index("if pre_replay_spec and")]
++    assert 'c["t"] == T - 60' not in adopt          # no local selection rule
++
++
++def test_first_boundary_duplicate_t60_no_mark_no_calls(cfg):
++    """Required test 1: first official boundary, snapshot unavailable, two
++    conflicting valid T-60 candles => mark None, zero model calls,
++    DATA_UNAVAILABLE."""
++    p = float(_sol_price())
++    store = _prod_store()
++    snaps = snapshots_at(T0)
++    snaps["SOL"] = None
++    caller = ScriptedCaller({})
++    # first boundary: empty replay interval [T0, T0) but candles present
++    spec = {"SOL": {"start": T0, "end": T0, "candles": _dup_t60(T0, p)}}
++    ledger, _, _ = recovery.run_checkpointed(T0, snaps, caller, cfg, store,
++                                             pre_replay_spec=spec)
++    _, meta = persistence.load_state(store + "/state.json")
++    assert meta["marks"]["SOL"] is None              # no arbitrary pick
++    assert not [c for c in caller.calls if c["id"].startswith("sol")]
++    sol = [e for e in ledger if e.get("pair") == "sol_haiku"][0]
++    assert sol["status"] == "PAIR_ABORTED"
++    assert sol["reason"] == "DATA_UNAVAILABLE"
++    # equity history for the coin is honestly null, never from close 100/200
++    pt = meta["equity_history"]["sol_haiku_raw"][-1]
++    assert pt["equity"] == "10000.00"                # flat: exact cash only
++
++
++def test_crash_resume_shape_duplicate_t60_no_ambiguous_equity(cfg):
++    """Required test 2: phase=pre_replay, replay_next_required=T, open
++    position, mark absent, two conflicting T-60 candles => mark None and no
++    ambiguous marked equity anywhere."""
++    p = float(_sol_price())
++    store = _open_sol(cfg, long_decision(p, 2000))
++    snaps = snapshots_at(T1)
++    snaps["SOL"] = None
++    # a complete hour of candles ending in the conflicting duplicate pair:
++    # replay reaches T (required==T via the clean [T0, T1) coverage from the
++    # non-duplicated minutes)... the duplicate sits at T-60, so coverage
++    # itself is anomalous — required stops before T and no mark may adopt.
++    candles = _dup_t60(T1, p, close_a=100, close_b=200)
++    caller = ScriptedCaller({})
++    recovery.run_checkpointed(
++        T1, snaps, caller, cfg, store,
++        pre_replay_spec={"SOL": {"start": T0, "end": T1, "candles": candles}})
++    accounts, meta = persistence.load_state(store + "/state.json")
++    assert meta["marks"]["SOL"] is None              # never 100 nor 200
++    a = accounts["sol_haiku_raw"]
++    assert a["qty"] != 0                             # position intact
++    pt = meta["equity_history"]["sol_haiku_raw"][-1]
++    assert pt["equity"] is None                      # honest null, not marked
++    assert not [c for c in caller.calls if c["id"].startswith("sol")]
++    # ALSO the pure crash-resume shape: force the exact meta the mentor
++    # described (required==T, mark absent) and re-run mark adoption alone
++    store2 = _open_sol(cfg, long_decision(p, 2000))
++    spath2 = store2 + "/state.json"
++    accounts2, meta2 = persistence.load_state(spath2,
++                                              expect_full_roster=True)
++    meta2.update({"boundary": T1, "phase": "pre_replay",
++                  "finalized_pairs": {}, "boundary_complete": False,
++                  "marks": {"BTC": None, "ETH": None, "SOL": None},
++                  "marks_T": T1,
++                  "replay_next_required": {"SOL": T1}})
++    persistence.save_state(spath2, accounts2, meta2)
++    recovery.run_checkpointed(
++        T1, {**snapshots_at(T1), "SOL": None}, ScriptedCaller({}), cfg,
++        store2,
++        pre_replay_spec={"SOL": {"start": T0, "end": T1, "candles": candles}})
++    _, meta2b = persistence.load_state(spath2)
++    assert meta2b["marks"]["SOL"] is None            # resume adopts nothing
++
++
++def test_single_valid_t60_candle_still_adopts_mark(cfg):
++    """Required test 3: exactly one valid T-60 candle => adoption succeeds."""
++    p = float(_sol_price())
++    store = _open_sol(cfg, long_decision(p, 2000))
++    snaps = snapshots_at(T1)
++    snaps["SOL"] = None
++    candles = mk_candles(T0, 60, p)
++    recovery.run_checkpointed(
++        T1, snaps, ScriptedCaller({}), cfg, store,
++        pre_replay_spec={"SOL": {"start": T0, "end": T1, "candles": candles}})
++    _, meta = persistence.load_state(store + "/state.json")
++    assert meta["marks"]["SOL"] == str(candles[-1]["c"])
++    accounts, _ = persistence.load_state(store + "/state.json")
++    pt = meta["equity_history"]["sol_haiku_raw"][-1]
++    assert Decimal(pt["equity"]) == state.equity_at(
++        accounts["sol_haiku_raw"], candles[-1]["c"])
++
++
++def test_zero_t60_candles_mark_stays_none(cfg):
++    """Required test 4: complete-looking data that stops before T-60 =>
++    mark remains None."""
++    p = float(_sol_price())
++    store = _open_sol(cfg, long_decision(p, 2000))
++    snaps = snapshots_at(T1)
++    snaps["SOL"] = None
++    candles = mk_candles(T0, 59, p)                  # ends at T1-120
++    recovery.run_checkpointed(
++        T1, snaps, ScriptedCaller({}), cfg, store,
++        pre_replay_spec={"SOL": {"start": T0, "end": T1, "candles": candles}})
++    _, meta = persistence.load_state(store + "/state.json")
++    assert meta["marks"]["SOL"] is None
++    assert meta["replay_state"]["SOL"]["status"] == "CATCHUP_REQUIRED"

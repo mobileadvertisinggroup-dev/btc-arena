@@ -6,7 +6,7 @@
  "engine/execution.py": 127,
  "engine/features.py": 94,
  "engine/lifecycle.py": 48,
- "engine/marketdata.py": 120,
+ "engine/marketdata.py": 131,
  "engine/metrics.py": 167,
  "engine/official.py": 1018,
  "engine/persistence.py": 319,
