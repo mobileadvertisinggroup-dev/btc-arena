@@ -13,8 +13,11 @@
   --chrome:#e9e8e2; --tint-haiku:#eef4fc; --tint-sonnet:#edf7f1; --tint-opus:#fdf4e7;
 }
 *{box-sizing:border-box;margin:0}
-html{scroll-behavior:smooth;overflow-x:hidden}
-body{background:var(--paper);color:var(--ink);overflow-x:hidden;
+/* overflow-x:clip prevents sideways scroll WITHOUT creating a scroll
+   container, so position:sticky (nav + RAW vs TA header) keeps working;
+   hidden remains as the fallback for older engines */
+html{scroll-behavior:smooth;overflow-x:hidden;overflow-x:clip}
+body{background:var(--paper);color:var(--ink);overflow-x:hidden;overflow-x:clip;
   font:14.5px/1.55 ui-monospace,"SF Mono",Menlo,Consolas,"Courier New",monospace}
 a{color:var(--ink)}
 .wrap{max-width:1360px;margin:0 auto;padding:0 22px}
@@ -67,12 +70,35 @@ nav a:hover{background:var(--ink);color:var(--paper)}
   padding:5px 12px;cursor:pointer;border-radius:3px}
 .metrics button.active{background:var(--ink);color:var(--paper);
   border-color:var(--ink);font-weight:700}
+.metrics button:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
 .coin-tabs{display:flex;border-bottom:1px solid var(--hair);background:var(--chrome)}
-.coin-tabs .tab{padding:10px 22px;cursor:pointer;font-weight:700;font-size:12.5px;
+.coin-tabs .tab{font:inherit;border:none;background:none;
+  padding:10px 22px;cursor:pointer;font-weight:700;font-size:12.5px;
   letter-spacing:1.5px;color:var(--mut);border-bottom:3px solid transparent}
-/* wishlist #9: the selected coin tab must be unmistakable */
+/* wishlist #9 + UI-rev item 2: the selected tab must be unmistakable and
+   re-rendered on every tap/keypress */
 .coin-tabs .tab.active{background:var(--ink);color:var(--paper);
   border-bottom-color:var(--ink);font-weight:800}
+.coin-tabs .tab:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+/* UI-rev: status badges */
+.badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:1px;
+  padding:2px 9px;border-radius:3px;color:#fff;white-space:nowrap}
+.badge.long,.badge.exit-tp{background:var(--up)}
+.badge.short,.badge.exit-sl{background:var(--down)}
+.badge.flat,.badge.exit-model{background:var(--mut)}
+/* UI-rev: labeled key/value layout for cards */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 16px;
+  font-size:13px;margin-top:8px;align-items:baseline}
+.kv .k{color:var(--mut);font-size:10px;letter-spacing:1.2px;white-space:nowrap}
+.kv b{font-variant-numeric:tabular-nums}
+.pnl-na{color:var(--mut);font-weight:700}
+.invblock{border-top:1px dashed var(--hair);margin-top:9px;padding-top:7px;
+  font-size:12.5px}
+.invblock .k{color:var(--mut);font-size:10px;letter-spacing:1.2px}
+.expandbtn{font:inherit;font-size:11px;letter-spacing:1px;margin-top:8px;
+  background:var(--paper);color:var(--mut);border:1px solid var(--hair);
+  padding:4px 10px;cursor:pointer;border-radius:3px;display:block}
+.expandbtn:focus-visible{outline:2px solid var(--ink)}
 .chart-inner{padding:16px}
 #chartwrap{position:relative}
 #chartmsg{position:absolute;inset:0;display:flex;align-items:center;
@@ -148,11 +174,43 @@ nav a:hover{background:var(--ink);color:var(--paper)}
 .tcard .grid b{color:var(--ink)}
 .pnl.up{color:var(--up)} .pnl.down{color:var(--down)} .pnl.zero{color:var(--mut)}
 .tcard.open .xtra{display:block}      /* wishlist #4: expandable thesis */
-/* wishlist #10: Raw-vs-TA comparison table */
-.cmp td{white-space:normal;vertical-align:top;min-width:250px}
-.cmp .item{margin-bottom:9px}
-.cmp .item:last-child{margin-bottom:0}
-.cmp .snip{color:var(--mut);font-size:12px}
+/* wishlist #10 + UI-rev items 6-8: RAW vs TA comparison table */
+/* sticky needs NO overflow ancestor: the cmp table is fixed-layout and
+   always fits the page width (blocks on mobile), so its wrapper may keep
+   overflow visible without ever causing horizontal page scroll */
+.twrap.cmpwrap{overflow:visible}
+.cmp{table-layout:fixed;width:100%}
+.cmp col.c-model{width:22%}
+.cmp col.c-arm{width:39%}
+.cmp th{text-align:center}
+.cmp th.h-model{text-align:left}
+.cmp thead th{position:sticky;top:var(--navh,58px);background:var(--chrome);
+  z-index:8;box-shadow:0 2px 0 var(--rule)}      /* sticky context header */
+.cmp td{white-space:normal;vertical-align:top;padding:12px 14px;
+  border-bottom:2px solid var(--hair)}
+.cmp td.cmp-model{font-weight:800}
+.cmp td.cmp-model .sub{font-weight:400}
+.cmp .armtag{display:inline-block;font-size:9px;font-weight:800;
+  letter-spacing:1.5px;border:1.5px solid var(--ink);padding:1px 7px;
+  border-radius:3px;margin-bottom:6px}
+.cmp .cmp-sec{border-top:1px dashed var(--hair);margin-top:9px;padding-top:7px}
+.cmp .cmp-sec:first-of-type{border-top:none;margin-top:4px;padding-top:0}
+.cmp .sec-t{display:block;color:var(--mut);font-size:9.5px;
+  letter-spacing:1.5px;margin-bottom:4px}
+.cmp .kv{font-size:12px;gap:2px 12px;margin-top:6px}
+.cmp .muted{color:var(--mut);font-size:12px}
+.cmp .snip{color:var(--mut);font-size:11.5px;margin-top:6px}
+.cmp .statline{font-size:12px;margin:2px 0}
+/* UI-rev item 7/8 mobile: stack RAW and TA vertically; sticky model header */
+@media (max-width:700px){
+  .cmp,.cmp tbody,.cmp tr,.cmp td{display:block;width:100%}
+  .cmp colgroup,.cmp thead{display:none}
+  .cmp td{border-bottom:none;padding:10px 12px}
+  .cmp td.cmp-model{position:sticky;top:var(--navh,58px);z-index:6;
+    background:var(--chrome);border-bottom:1px solid var(--rule);
+    padding:8px 12px}
+  .cmp tr{border-bottom:3px solid var(--rule);margin-bottom:4px}
+}
 /* sections below */
 section{margin-top:26px}
 .rulehead{border-bottom:3px solid var(--rule);display:flex;
@@ -194,8 +252,8 @@ footer{border-top:3px solid var(--rule);margin-top:30px;padding:16px 0 34px;
 <body>
 <div class="demoflag">DEMONSTRATION SCENARIO — NOT REAL ACTIVITY — <a href="?" style="color:#fff">EXIT</a></div>
 <div class="prep" id="prepbanner">AKRA ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED</div>
-<div class="notice">No model has been called. No paper-trading pilot or official experiment has started. Ticker prices are live display data only — trading accounts are inactive.</div>
-<div class="top"><div class="wrap mast">
+<div class="notice" id="notice">No model has been called. No paper-trading pilot or official experiment has started. Ticker prices are live display data only — trading accounts are inactive.</div>
+<div class="top" id="topbar"><div class="wrap mast">
   <div class="brand"><div class="t1">AKRA ARENA</div>
     <div class="t2">RAW <b>vs</b> TA · 3 MODELS · 3 COINS · 18 ACCOUNTS</div></div>
   <nav>
@@ -308,6 +366,87 @@ function invText(a){
   const op = inv.operator === 'price_at_or_below' ? '≤' : '≥';
   const tf = String(inv.timeframe || '').replace(/_/g, ' ');
   return `${inv.status} — invalidates if price ${op} ${px(inv.level)} (${tf})`;
+}
+/* ---- UI-rev helpers (display only; every value comes straight from the
+   payload — nothing is recalculated or fabricated) ---- */
+const esc = s => String(s).replace(/</g, '&lt;');
+const price = v => v == null ? 'unavailable'
+  : '$' + N(v).toLocaleString('en-US', {minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2});
+function pnlSpan(v, na){
+  if (na || v == null) return '<b class="pnl-na">N/A — price unavailable</b>';
+  const u = N(v);
+  return `<b class="${u > 0 ? 'up' : u < 0 ? 'down' : 'zero'}">` +
+         `${u >= 0 ? '+' : ''}${price(u)}</b>`;
+}
+function exitBadge(reason){
+  const map = {take_profit: ['CLOSED — TAKE PROFIT', 'exit-tp'],
+               stop_loss: ['CLOSED — STOP LOSS', 'exit-sl'],
+               decision_close: ['CLOSED — MODEL EXIT', 'exit-model'],
+               decision_flip: ['CLOSED — MODEL EXIT', 'exit-model'],
+               liquidation: ['CLOSED — LIQUIDATED', 'exit-sl']};
+  const [t, cls] = map[reason] ||
+    [`CLOSED — ${String(reason).replace(/_/g, ' ').toUpperCase()}`,
+     'exit-model'];
+  return `<span class="badge ${cls}">${t}</span>`;
+}
+function invHtml(a){
+  const inv = a.invalidation;
+  if (!inv) return '<span class="muted">none submitted</span>';
+  const op = inv.operator === 'price_at_or_below' ? '≤' : '≥';
+  const tf = inv.timeframe === '1h_close' ? '1-hour close'
+    : inv.timeframe === '1m_intrabar' ? '1-minute intrabar'
+    : String(inv.timeframe || '').replace(/_/g, ' ');
+  return `<b>${inv.status}</b><br>Invalidates if price ${op} ` +
+         `${price(inv.level)} on a ${tf}`;
+}
+/* UI-rev item 1: the banner and notice always state the CURRENT payload
+   truth — nothing hardcoded that can later become false */
+function boundaryIso(){
+  if (!D.published_boundary) return '';
+  return new Date(D.published_boundary * 1000).toISOString()
+    .replace('.000Z', 'Z');
+}
+function latestRoundAborts(){
+  let n = 0;
+  const reasons = new Set();
+  const iso = boundaryIso();
+  for (const c of COINS)
+    for (const e of (D.coins[c].rounds || []))
+      if (e.status === 'PAIR_ABORTED' && e.round_id
+          && e.round_id.endsWith(iso)){
+        n++;
+        if (e.reason) reasons.add(String(e.reason).replace(/_/g, ' '));
+      }
+  return {n, reasons: [...reasons]};
+}
+function liveStatusText(){
+  const prog = D.pilot_progress || {done: 0, total: null};
+  const progTxt = `${prog.done} / ${prog.total || '—'}`;
+  if (!isLive())
+    return ['AKRA ARENA — PREPARATION MODE — EXPERIMENT NOT STARTED',
+            'The experiment has not started. No model has been called. ' +
+            'Ticker prices are live display data only — trading accounts ' +
+            'are inactive.'];
+  if (prog.total && prog.done >= prog.total)
+    return [D.banner,
+            `The official 14-day experiment is complete. ${progTxt} rounds.`];
+  const lc = D.round_lifecycle;
+  if (lc === 'READY')
+    return [D.banner, 'The official experiment is armed and waiting for ' +
+            'the first boundary.'];
+  if (lc === 'THINKING')
+    return [D.banner, 'The official experiment is processing the current ' +
+            `hourly round. Progress ${progTxt}.`];
+  if (lc === 'ROUND_COMMITTED'){
+    const ab = latestRoundAborts();
+    return [D.banner, ab.n
+      ? `Latest round: ${ab.n} pair${ab.n > 1 ? 's' : ''} honestly aborted` +
+        (ab.reasons.length ? ` (${ab.reasons.join(', ')})` : '') +
+        `. Progress ${progTxt}.`
+      : `The latest round completed successfully. Progress ${progTxt}.`];
+  }
+  return [D.banner, `Status: ${lc || 'unknown'}. Progress ${progTxt}.`];
 }
 
 /* ================= DISPLAY-ONLY MARKET TICKER — NON-AUTHORITATIVE =========
@@ -535,17 +674,18 @@ function tradeCards(){
     return `<div class="tcard" style="border-left-color:${MODEL[t.a.model].c}">
       <div class="row1">${icon(t.a.model)}
         <div><div class="who" style="font-size:14.5px;font-weight:800">${MODEL[t.a.model].name}</div>
-        <div class="sub">${t.a.coin} · ${armLabel(t.a)} · ${t.side.toUpperCase()}</div></div>
-        <div class="pnl ${cls}">${pnl >= 0 ? '+' : ''}${money(pnl)}</div></div>
-      <div class="route">${px(t.entry)} → ${px(t.exit)}</div>
-      <div class="grid">
-        <span>quantity</span><b>${t.qty}</b>
-        <span>open notional</span><b>${money(N(t.qty) * N(t.entry))}</b>
-        <span>close notional</span><b>${money(N(t.qty) * N(t.exit))}</b>
-        <span>holding time</span><b>${demo ? 'intra-demo' : '—'}</b>
-        <span>fees</span><b>${money(t.fee)}</b>
-        <span>exit reason</span><b>${t.reason.replace(/_/g,' ')}</b>
-      </div></div>`;
+        <div class="sub">${t.a.coin} · ${armLabel(t.a)} · was ${t.side.toUpperCase()}</div></div>
+        ${exitBadge(t.reason)}</div>
+      <div class="kv">
+        <span class="k">ENTRY PRICE</span><b>${price(t.entry)}</b>
+        <span class="k">EXIT PRICE</span><b>${price(t.exit)}</b>
+        <span class="k">CURRENT PRICE</span><b>${t.a.mark == null ? 'unavailable' : price(t.a.mark)}</b>
+        <span class="k">REALIZED P/L</span><b class="pnl ${cls}" style="font-size:16px">${pnl >= 0 ? '+' : ''}${price(pnl)}</b>
+        <span class="k">FEES</span><b>${price(t.fee)}</b>
+      </div>
+      <div class="sub" style="margin-top:6px">Realized P/L is final and net
+        of the exit fee; the current price is reference information only.</div>
+      </div>`;
   }).join('');
 }
 function openCards(){
@@ -557,41 +697,69 @@ function openCards(){
     // null market values stay null (Ruling 013): the payload's explicit
     // a.mark is authoritative — never derived from notional/qty, never 0
     const na = a.mark == null || a.unrealized_pnl == null;
-    const u = na ? null : N(a.unrealized_pnl);
-    return `<div class="tcard" style="border-left-color:${MODEL[a.model].c};cursor:pointer"
-      onclick="this.classList.toggle('open')">
+    return `<div class="tcard" style="border-left-color:${MODEL[a.model].c}">
       <div class="row1">${icon(a.model)}
         <div><div class="who" style="font-size:14.5px;font-weight:800">${MODEL[a.model].name}</div>
         <div class="sub">${a.coin} · ${armLabel(a)}</div></div>
-        <div class="pnl ${u == null ? '' : u > 0 ? 'up' : u < 0 ? 'down' : 'zero'}">${u == null ? 'MARK N/A' : (u >= 0 ? '+' : '') + money(u)}</div></div>
-      <div class="route"><span class="dir ${a.side}" style="font-size:12px;padding:2px 9px;color:#fff">${a.side.toUpperCase()}</span>
-        &nbsp;entry ${px(a.entry)} · mark ${a.mark == null ? 'MARK N/A' : px(a.mark)}</div>
-      <div class="grid">
-        <span>size</span><b>${money(a.notional)}</b>
-        <span>stop</span><b>${px(a.stop)}</b>
-        <span>target</span><b>${px(a.tp)}</b>
-        <span>age</span><b>${demo ? 'intra-demo' : ageText(a)}</b>
-        <span>invalidation</span><b>${invText(a)}</b>
+        <span class="badge ${a.side}" style="margin-left:auto">OPEN ${a.side.toUpperCase()}</span></div>
+      <div class="kv">
+        <span class="k">ENTRY PRICE</span><b>${price(a.entry)}</b>
+        <span class="k">CURRENT PRICE</span><b>${a.mark == null ? 'unavailable' : price(a.mark)}</b>
+        <span class="k">STOP</span><b>${a.stop == null ? 'none' : price(a.stop)}</b>
+        <span class="k">TARGET</span><b>${a.tp == null ? 'none' : price(a.tp)}</b>
+        <span class="k">POSITION VALUE</span><b>${a.notional == null ? 'N/A — price unavailable' : price(a.notional)}</b>
+        <span class="k">POSITION AGE</span><b>${demo ? 'intra-demo' : ageText(a)}</b>
+        <span class="k">OPEN P/L</span>${pnlSpan(a.unrealized_pnl, na)}
       </div>
-      <div class="expand-hint" style="padding:6px 0 0">click for full thought process ▾</div>
-      <div class="xtra">${a.thesis ? `opening thesis: “${String(a.thesis).replace(/</g,'&lt;')}”` : 'No submitted thesis recorded for this position.'}</div>
+      <div class="invblock"><span class="k">INVALIDATION</span><br>${invHtml(a)}</div>
+      <button type="button" class="expandbtn" onclick="this.parentElement.classList.toggle('open')">Expand thought process ▾</button>
+      <div class="xtra">${a.thesis ? `“${esc(a.thesis)}”` : 'No submitted thesis recorded for this position.'}</div>
       </div>`;
   }).join('');
 }
-/* wishlist #10: Raw-vs-TA side-by-side comparison (ongoing AND closed) */
-function cmpItems(a){
-  const items = [];
-  if (a.side !== 'flat')
-    items.push(`<div class="item"><b>ONGOING ${a.side.toUpperCase()}</b>
-      · entry ${px(a.entry)} · stop ${px(a.stop)} · target ${px(a.tp)}
-      · size ${money(a.notional)} · age ${demo ? 'intra-demo' : ageText(a)}
-      ${a.thesis ? `<div class="snip">“${String(a.thesis).slice(0,140).replace(/</g,'&lt;')}${a.thesis.length > 140 ? '…' : ''}”</div>` : ''}</div>`);
-  (a.trades || []).slice(-3).reverse().forEach(t => {
-    items.push(`<div class="item"><b>CLOSED ${t.side.toUpperCase()}</b>
-      · ${px(t.entry)} → ${px(t.exit)} · ${N(t.pnl) >= 0 ? '+' : ''}${money(t.pnl)}
-      · ${String(t.reason).replace(/_/g,' ')}</div>`);
-  });
-  return items.join('') || '<div class="item" style="color:var(--mut)">no trades yet</div>';
+/* wishlist #10 + UI-rev items 6-8: RAW vs TA side-by-side comparison with
+   the CURRENT POSITION and CLOSED TRADES in visibly separate sections */
+function posSection(a){
+  if (a.side === 'flat')
+    return `<div class="cmp-sec"><span class="sec-t">CURRENT POSITION</span>
+      <div class="muted">FLAT — NO OPEN POSITION</div></div>`;
+  const na = a.mark == null || a.unrealized_pnl == null;
+  return `<div class="cmp-sec"><span class="sec-t">CURRENT POSITION</span>
+    <span class="badge ${a.side}">OPEN ${a.side.toUpperCase()}</span>
+    <div class="kv">
+      <span class="k">ENTRY</span><b>${price(a.entry)}</b>
+      <span class="k">CURRENT</span><b>${a.mark == null ? 'unavailable' : price(a.mark)}</b>
+      <span class="k">STOP</span><b>${a.stop == null ? 'none' : price(a.stop)}</b>
+      <span class="k">TARGET</span><b>${a.tp == null ? 'none' : price(a.tp)}</b>
+      <span class="k">VALUE</span><b>${a.notional == null ? 'N/A — price unavailable' : price(a.notional)}</b>
+      <span class="k">AGE</span><b>${demo ? 'intra-demo' : ageText(a)}</b>
+      <span class="k">UNREALIZED P/L</span>${pnlSpan(a.unrealized_pnl, na)}
+    </div>
+    ${a.thesis ? `<div class="snip">“${esc(a.thesis).slice(0, 110)}${a.thesis.length > 110 ? '…' : ''}”</div>
+      <button type="button" class="expandbtn" onclick="this.parentElement.classList.toggle('open')">Expand ▾</button>
+      <div class="xtra">“${esc(a.thesis)}”</div>` : ''}
+  </div>`;
+}
+function closedSection(a){
+  if (!a.n_trades)
+    return `<div class="cmp-sec"><span class="sec-t">CLOSED TRADES</span>
+      <div class="muted">NO CLOSED TRADES</div></div>`;
+  const trades = a.trades || [];
+  const wins = trades.filter(t => N(t.pnl) > 0).length;
+  const losses = trades.filter(t => N(t.pnl) < 0).length;
+  const net = trades.reduce((s, t) => s + N(t.pnl), 0);
+  // the payload carries each account's most recent 5 trades; when more
+  // exist the aggregate stats are labeled honestly as a window
+  const partial = a.n_trades > trades.length;
+  const win = partial ? ` (last ${trades.length})` : '';
+  const last = trades[trades.length - 1];
+  return `<div class="cmp-sec"><span class="sec-t">CLOSED TRADES</span>
+    <div class="statline">TOTAL <b>${a.n_trades}</b> · WINS <b>${wins}</b>${win ? '' : ''} · LOSSES <b>${losses}</b> ·
+      NET${win} ${pnlSpan(net, false)}</div>
+    <div class="statline">LATEST: ${price(last.entry)} → ${price(last.exit)}
+      ${exitBadge(last.reason)} ${pnlSpan(last.pnl, false)}</div>
+    ${partial ? `<div class="muted">win/loss/net cover the last ${trades.length} trades (payload window)</div>` : ''}
+  </div>`;
 }
 function comparison(){
   let rows = '';
@@ -599,12 +767,19 @@ function comparison(){
     for (const m of Object.keys(MODEL)){
       const raw = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'raw');
       const ta = D.coins[coin].accounts.find(a => a.model === m && a.arm === 'ta');
-      rows += `<tr><td style="white-space:nowrap"><span class="mdot" style="background:${MODEL[m].c}"></span><b>${MODEL[m].name}</b><br>${coin}</td>
-        <td>${cmpItems(raw)}</td><td>${cmpItems(ta)}</td></tr>`;
+      rows += `<tr>
+        <td class="cmp-model"><span class="mdot" style="background:${MODEL[m].c}"></span>${MODEL[m].name}<br>
+          <span class="sub">${coin} market</span></td>
+        <td class="cmp-cell"><span class="armtag">RAW ARM</span>${posSection(raw)}${closedSection(raw)}</td>
+        <td class="cmp-cell"><span class="armtag">TA ARM</span>${posSection(ta)}${closedSection(ta)}</td>
+      </tr>`;
     }
   $('comparison').innerHTML = `<div class="rulehead"><h2>RAW vs TA</h2>
-    <span class="sub">what did TA do vs what did Raw do — ongoing and closed trades</span></div>
-    <div class="twrap"><table class="cmp"><tr><th>Model · Coin</th><th>RAW</th><th>TA</th></tr>${rows}</table></div>`;
+    <span class="sub">what did TA do vs what did Raw do — current positions and closed trades, separately</span></div>
+    <div class="twrap cmpwrap"><table class="cmp">
+      <colgroup><col class="c-model"><col class="c-arm"><col class="c-arm"></colgroup>
+      <thead><tr><th class="h-model">MODEL / MARKET</th><th>RAW ARM</th><th>TA ARM</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
 }
 function pairCards(){
   const fm = $('f_model').value, fc = $('f_coin').value;
@@ -673,19 +848,33 @@ function leaderboard(){
 function boot(){
   D = data();
   document.body.classList.toggle('demo', demo);
-  // the top banner always states the PUBLISHED payload's own mode/banner
-  if (isLive()) $('prepbanner').textContent = D.banner;
-  $('cointabs').innerHTML = ['AGGREGATE', ...COINS].map(t =>
-    `<div class="tab ${t === coinTab ? 'active' : ''}" onclick="setCoin('${t}')">${t}</div>`).join('');
-  $('metricbtns').innerHTML = METRICS.map(m =>
-    `<button class="${m === metric ? 'active' : ''}" onclick="setMetric('${m}')">${m}</button>`).join('');
+  // UI-rev item 1: the banner AND the notice line always state the current
+  // payload truth (never hardcoded text that can become false)
+  const [bannerTxt, noticeTxt] = liveStatusText();
+  $('prepbanner').textContent = bannerTxt;
+  $('notice').textContent = noticeTxt;
+  // sticky offsets track the real nav height (UI-rev item 8)
+  try {
+    const h = document.getElementById('topbar').offsetHeight;
+    if (h) document.documentElement.style.setProperty('--navh', h + 'px');
+  } catch (e) { /* stubbed DOM in tests */ }
+  renderTabs();
   strip(); chart(); panel(); comparison(); leaderboard();
   $('abouttext').textContent = D.question + ' Three Claude models (Haiku 4.5, Sonnet 5, Opus 4.8) each run two isolated $10,000 paper accounts per coin: RAW sees only candles; TA sees the same candles plus a fixed neutral numerical feature summary (technical analysis). Same rules, same prices, hourly decisions, machine-checked invalidations. Paper money only.';
   $('foot').innerHTML = `${D.banner} · integrity ${D.combined_hash.slice(0,12)}… · <a href="pilot-archive/">old pilot archive</a> (OLD PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE) · <a href="design/DESIGN_PACK_V1_1.md">methodology</a><br>
     <span style="font-size:11px">Ticker prices are display-only (Coinbase spot, 30s refresh) and non-authoritative; official experiment execution uses Kraken data.</span>`;
 }
-window.setCoin = t => { coinTab = t; chart(); };
-window.setMetric = m => { metric = m; chart(); };
+/* UI-rev item 2: the selected-tab styling is re-rendered on EVERY change so
+   the highlighted tab always matches the chart; real <button> elements give
+   native touch + keyboard (Enter/Space) activation */
+function renderTabs(){
+  $('cointabs').innerHTML = ['AGGREGATE', ...COINS].map(t =>
+    `<button type="button" class="tab ${t === coinTab ? 'active' : ''}" role="tab" aria-selected="${t === coinTab}" onclick="setCoin('${t}')">${t}</button>`).join('');
+  $('metricbtns').innerHTML = METRICS.map(m =>
+    `<button type="button" class="${m === metric ? 'active' : ''}" role="tab" aria-selected="${m === metric}" onclick="setMetric('${m}')">${m}</button>`).join('');
+}
+window.setCoin = t => { coinTab = t; renderTabs(); chart(); };
+window.setMetric = m => { metric = m; renderTabs(); chart(); };
 ['f_model','f_coin','f_arm'].forEach(id => $(id).addEventListener('change', panel));
 
 /* ---- live payload auto-refresh (Ruling 011.3 + Mentor Ruling 1.4): an

@@ -321,9 +321,10 @@ def null_mark_payload(cfg, tmp_path_factory):
 def test_dom_null_mark_open_positions_never_zero(cfg, null_mark_payload):
     res = _harness(null_mark_payload)
     opens = res["dom"]["panel:OPEN POSITIONS"]
-    assert "MARK N/A" in opens                       # explicit unavailability
-    assert "mark MARK N/A" in opens                  # a.mark used, not derived
-    assert "mark 0" not in opens                     # never a zero mark
+    # UI-rev wording: explicit unavailability, never a fabricated number
+    assert "price unavailable" in opens              # explicit unavailability
+    assert "CURRENT PRICE</span><b>unavailable" in opens   # a.mark used
+    assert "CURRENT PRICE</span><b>$0" not in opens  # never a zero mark
     assert "+$0.00" not in opens                     # never false zero P&L
     assert "-$0.00" not in opens
     assert "LONG" in opens                           # position stays visible
@@ -362,8 +363,8 @@ def test_dom_valid_marks_still_render_normally(cfg, pilot_payloads):
     values and no MARK N/A anywhere in the open-positions panel."""
     res = _harness(pilot_payloads["ROUND_COMMITTED"])
     opens = res["dom"]["panel:OPEN POSITIONS"]
-    assert "MARK N/A" not in opens
-    assert "mark " in opens and "LONG" in opens
+    assert "MARK N/A" not in opens and "unavailable" not in opens
+    assert "CURRENT PRICE" in opens and "LONG" in opens
     assert "MARK N/A" not in res["dom"]["leaderboard"]
 
 

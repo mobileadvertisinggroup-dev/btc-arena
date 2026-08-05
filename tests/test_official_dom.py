@@ -63,12 +63,17 @@ def test_open_positions_age_invalidation_and_thought_process(official_payload):
     res = _harness(official_payload)
     opens = res["dom"]["panel:OPEN POSITIONS"]
     # wishlist #5: age computed from entry_t (opened this boundary => <1h)
-    assert "age</span><b>&lt;1h</b>" in opens or "age</span><b><1h</b>" in opens
-    # wishlist #6: the exact submitted condition, not just the status
-    assert "NOT TRIGGERED — invalidates if price" in opens
-    assert "(1h close)" in opens
+    assert "POSITION AGE" in opens
+    assert "&lt;1h" in opens or "<1h" in opens
+    # wishlist #6 / UI-rev item 3: exact submitted condition, labeled
+    assert "NOT TRIGGERED" in opens
+    assert "Invalidates if price" in opens and "1-hour close" in opens
+    # UI-rev item 3: human labels, Current price (never "mark")
+    assert "CURRENT PRICE" in opens and "ENTRY PRICE" in opens
+    assert "OPEN P/L" in opens and "POSITION VALUE" in opens
+    assert "OPEN LONG" in opens                      # status badge
     # wishlist #4: expandable full thought process on the position card
-    assert "click for full thought process" in opens
+    assert "Expand thought process" in opens
     assert MARKER in opens
     # a real mark renders real numbers (null-fabrication guards live in
     # test_ruling012's null-mark DOM tests, unchanged)
@@ -79,10 +84,15 @@ def test_comparison_table_raw_vs_ta(official_payload):
     res = _harness(official_payload)
     cmp_html = res["dom"]["comparison"]
     assert "RAW vs TA" in cmp_html                        # wishlist #10
-    assert "ONGOING LONG" in cmp_html                     # ongoing trades
-    assert "entry" in cmp_html and "stop" in cmp_html and "target" in cmp_html
+    assert "OPEN LONG" in cmp_html                        # current position
+    assert "CURRENT POSITION" in cmp_html                 # separate sections
+    assert "CLOSED TRADES" in cmp_html
+    assert "MODEL / MARKET" in cmp_html                   # new header
+    assert cmp_html.count("RAW ARM") >= 9                 # permanent labels
+    assert "ENTRY" in cmp_html and "STOP" in cmp_html and "TARGET" in cmp_html
     assert MARKER[:60] in cmp_html                        # reasoning snippet
-    assert "no trades yet" in cmp_html                    # untraded arms honest
+    assert "FLAT — NO OPEN POSITION" in cmp_html          # honest flats
+    assert "NO CLOSED TRADES" in cmp_html                 # untraded arms honest
 
 
 def test_ta_language_everywhere_no_feature_label(official_payload):
