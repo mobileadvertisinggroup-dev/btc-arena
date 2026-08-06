@@ -89,7 +89,9 @@ def test_top_level_scoreboard(official_payload):
     sb = res["dom"]["scoreboard"]
     # the four scoreboard sections exist, in scoreboard-not-detail form
     assert "WHO IS WINNING?" in sb
-    assert "LEADER NOW" in sb and "CLOSED-PROFIT LEADER" in sb
+    assert "LEADER NOW" in sb and "REALIZED CASH LEADER" in sb
+    # the three-figure reconciliation is visible on every ranking card
+    assert sb.count("REALIZED CASH P/L") >= 3 and sb.count("OPEN P/L") >= 3
     assert "RAW vs TA — WHO IS AHEAD?" in sb
     assert "WHAT IS HAPPENING NOW?" in sb
     assert "COMBINED EQUITY" in sb and "TOTAL P/L" in sb
@@ -97,7 +99,7 @@ def test_top_level_scoreboard(official_payload):
     # fixture: sol_haiku_raw holds the only long; the other models are flat
     assert "NO OPEN TRADES" in sb            # flat models honest
     assert "currently" in sb                 # rankings labeled as current
-    assert "Leader now includes open-position gains" in sb
+    assert "Cash P/L includes completed-trade results and fees already paid" in sb
     # no per-position detail leaks into the scoreboard
     assert "ENTRY" not in sb and "STOP</span>" not in sb
     assert "TARGET" not in sb and MARKER[:60] not in sb

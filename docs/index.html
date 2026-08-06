@@ -915,6 +915,8 @@ function scoreboard(){
         <div class="scname">${icon(r.m)} ${r.name}</div>
         <div class="kv">
           <span class="k">COMBINED EQUITY</span><b>${r.equity == null ? 'N/A — price unavailable' : money(r.equity)}</b>
+          <span class="k">REALIZED CASH P/L</span>${pnlSpan(r.realized, r.realized == null)}
+          <span class="k">OPEN P/L</span>${pnlSpan(r.openPL, r.openPL == null)}
           <span class="k">TOTAL P/L</span>${pnlSpan(r.pl, r.pl == null)}
           <span class="k">TOTAL RETURN</span><b class="${r.retPct > 0 ? 'up' : r.retPct < 0 ? 'down' : ''}">${retTxt(r.retPct)}</b>
           <span class="k">OPEN TRADES</span><b>${r.nOpen}</b>
@@ -933,13 +935,13 @@ function scoreboard(){
       <div class="sccard"><span class="sec-t">LEADER NOW</span>
         <div class="scbig">${byPl[0].pl == null ? 'N/A — price unavailable' : tieNow ? 'CURRENTLY TIED' : byPl[0].name}</div>
         ${byPl[0].pl == null || tieNow ? '' : `<div>${pnlSpan(byPl[0].pl, false)} total P/L</div>`}</div>
-      <div class="sccard"><span class="sec-t">CLOSED-PROFIT LEADER</span>
+      <div class="sccard"><span class="sec-t">REALIZED CASH LEADER</span>
         <div class="scbig">${byReal[0].realized == null ? 'N/A' : tieReal ? 'CURRENTLY TIED' : byReal[0].name}</div>
-        ${byReal[0].realized == null || tieReal ? '' : `<div>${pnlSpan(byReal[0].realized, false)} realized P/L</div>`}</div>
+        ${byReal[0].realized == null || tieReal ? '' : `<div>${pnlSpan(byReal[0].realized, false)} realized cash P/L</div>`}</div>
     </div>
     <div class="scnote">Leader now includes open-position gains and losses.
-      Closed-profit leader uses completed trades only (cash profit after
-      all fees paid so far, excluding open-position gains and losses).</div>`;
+      Cash P/L includes completed-trade results and fees already paid.
+      Open position gains and losses are shown separately.</div>`;
   const rvt = `<div class="rulehead"><h2>RAW vs TA — WHO IS AHEAD?</h2>
       <span class="sub">three Raw accounts vs three TA accounts per model · each arm started with ${money(rows[0].start / 2)}</span></div>
     <div class="scgrid">${rows.map(r => {
