@@ -66,6 +66,9 @@ nav a:hover{background:var(--ink);color:var(--paper)}
 .scbig{font-size:18px;font-weight:900;margin:4px 0 2px}
 .scverdict{font-size:12.5px;font-weight:900;letter-spacing:.5px;margin-top:6px;display:block}
 .scnote{font-size:11.5px;color:var(--mut);margin:2px 0 14px}
+.scwhat{font-size:12.5px;line-height:1.5;margin-top:9px;border-top:1px dashed var(--hair);padding-top:8px}
+#scoreboard .open .xtra{display:block}
+#scoreboard .k[title]{cursor:help;text-decoration:underline dotted}
 @media (max-width:640px){.scgrid,.scgrid.sc2{grid-template-columns:1fr}}
 /* layout */
 .main{display:grid;grid-template-columns:1.72fr 1fr;gap:22px;margin:22px 0;
@@ -894,6 +897,39 @@ function armResult(m, arm){
 function retTxt(r){
   return r == null ? 'N/A' : `${r >= 0 ? '+' : ''}${r.toFixed(2)}%`;
 }
+const HELP = {
+  realized: 'Money already added to or removed from cash, including fees paid.',
+  open: 'Profit or loss from positions that are still open and can still change.',
+  total: 'Realized cash P/L plus current open-position P/L.'};
+function plainMoney(v){ return (v >= 0 ? '+' : '−') + price(Math.abs(v)); }
+/* WHAT THIS MEANS — generated from the live values only (no hardcoded
+   names or figures); always states both components so realized + open =
+   total is visible in words as well as numbers */
+function modelSentence(r, isLeader){
+  if (r.pl == null)
+    return `Current prices are unavailable for some of ${r.name}’s positions, so its result cannot be shown right now.`;
+  const pl = plainMoney(r.pl), rz = plainMoney(r.realized), op = plainMoney(r.openPL);
+  const lead = isLeader ? `${r.name} is leading overall right now with ${pl}.`
+    : r.pl > 0 ? `${r.name} is currently up ${pl}.`
+    : r.pl < 0 ? `${r.name} is currently down ${pl}.`
+    : `${r.name} is currently at break-even.`;
+  let comp;
+  if (r.nOpen === 0)
+    comp = `It has no open trades, so this is entirely its realized cash result (${rz}).`;
+  else if (r.openPL > 0 && r.realized < 0)
+    comp = r.pl > 0
+      ? `Its open trades are up ${op}, which more than offsets its ${rz} realized cash result.`
+      : `Its open trades are up ${op}, but its realized cash result is ${rz}.`;
+  else if (r.openPL < 0 && r.realized > 0)
+    comp = r.pl > 0
+      ? `Its realized cash result of ${rz} more than offsets open trades that are down ${op}.`
+      : `Its open trades are down ${op}, outweighing its ${rz} realized cash result.`;
+  else if (r.openPL >= 0 && r.realized >= 0)
+    comp = `Its realized cash result (${rz}) and its open trades (${op}) are both ahead.`;
+  else
+    comp = `Its realized cash result (${rz}) and its open trades (${op}) are both behind.`;
+  return `${lead} ${comp}`;
+}
 function scoreboard(){
   if (!allAccounts().length){ $('scoreboard').innerHTML = ''; return; }
   const rows = Object.keys(MODEL).map(modelAgg);
@@ -915,14 +951,23 @@ function scoreboard(){
         <div class="scname">${icon(r.m)} ${r.name}</div>
         <div class="kv">
           <span class="k">COMBINED EQUITY</span><b>${r.equity == null ? 'N/A — price unavailable' : money(r.equity)}</b>
-          <span class="k">REALIZED CASH P/L</span>${pnlSpan(r.realized, r.realized == null)}
-          <span class="k">OPEN P/L</span>${pnlSpan(r.openPL, r.openPL == null)}
-          <span class="k">TOTAL P/L</span>${pnlSpan(r.pl, r.pl == null)}
+          <span class="k" title="${HELP.realized}">REALIZED CASH P/L</span>${pnlSpan(r.realized, r.realized == null)}
+          <span class="k" title="${HELP.open}">OPEN P/L</span>${pnlSpan(r.openPL, r.openPL == null)}
+          <span class="k" title="${HELP.total}">TOTAL P/L</span>${pnlSpan(r.pl, r.pl == null)}
           <span class="k">TOTAL RETURN</span><b class="${r.retPct > 0 ? 'up' : r.retPct < 0 ? 'down' : ''}">${retTxt(r.retPct)}</b>
           <span class="k">OPEN TRADES</span><b>${r.nOpen}</b>
           <span class="k">CLOSED TRADES</span><b>${r.nClosed}</b>
-        </div></div>`).join('')}</div>
-    <div class="scnote">${leadLine}</div>`;
+        </div>
+        <div class="scwhat"><span class="sec-t">WHAT THIS MEANS</span>
+          ${modelSentence(r, i === 0 && r.equity != null && !tiedTop)}</div>
+        </div>`).join('')}</div>
+    <div class="scnote">${leadLine}</div>
+    <div class="sccard" style="padding:8px 14px">
+      <button type="button" class="expandbtn" style="margin-top:0" onclick="this.parentElement.classList.toggle('open')">More details — what do these numbers mean? ▾</button>
+      <div class="xtra"><b>REALIZED CASH P/L</b> — ${HELP.realized}<br>
+        <b>OPEN P/L</b> — ${HELP.open}<br>
+        <b>TOTAL P/L</b> — ${HELP.total}</div>
+    </div>`;
   const byPl = [...rows].sort((a, b) =>
     (b.pl == null ? -Infinity : b.pl) - (a.pl == null ? -Infinity : a.pl));
   const byReal = [...rows].sort((a, b) =>
@@ -937,7 +982,8 @@ function scoreboard(){
         ${byPl[0].pl == null || tieNow ? '' : `<div>${pnlSpan(byPl[0].pl, false)} total P/L</div>`}</div>
       <div class="sccard"><span class="sec-t">REALIZED CASH LEADER</span>
         <div class="scbig">${byReal[0].realized == null ? 'N/A' : tieReal ? 'CURRENTLY TIED' : byReal[0].name}</div>
-        ${byReal[0].realized == null || tieReal ? '' : `<div>${pnlSpan(byReal[0].realized, false)} realized cash P/L</div>`}</div>
+        ${byReal[0].realized == null || tieReal ? '' : `<div>${pnlSpan(byReal[0].realized, false)} realized cash P/L</div>
+        <div class="scwhat">${byReal[0].name} has the best realized cash result so far: ${plainMoney(byReal[0].realized)}. This includes completed-trade results and all fees already paid. Open-position gains and losses are not included in this figure.</div>`}</div>
     </div>
     <div class="scnote">Leader now includes open-position gains and losses.
       Cash P/L includes completed-trade results and fees already paid.

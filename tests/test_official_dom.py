@@ -100,6 +100,11 @@ def test_top_level_scoreboard(official_payload):
     assert "NO OPEN TRADES" in sb            # flat models honest
     assert "currently" in sb                 # rankings labeled as current
     assert "Cash P/L includes completed-trade results and fees already paid" in sb
+    # WHAT THIS MEANS auto-explanations on every ranking card + help texts
+    assert sb.count("WHAT THIS MEANS") >= 3
+    assert "Money already added to or removed from cash" in sb
+    assert "still open and can still change" in sb
+    assert "More details" in sb
     # no per-position detail leaks into the scoreboard
     assert "ENTRY" not in sb and "STOP</span>" not in sb
     assert "TARGET" not in sb and MARKER[:60] not in sb
