@@ -84,6 +84,28 @@ def test_open_positions_age_invalidation_and_thought_process(official_payload):
     assert "MARK N/A" not in opens
 
 
+def test_top_level_scoreboard(official_payload):
+    res = _harness(official_payload)
+    sb = res["dom"]["scoreboard"]
+    # the four scoreboard sections exist, in scoreboard-not-detail form
+    assert "WHO IS WINNING?" in sb
+    assert "LEADER NOW" in sb and "CLOSED-PROFIT LEADER" in sb
+    assert "RAW vs TA — WHO IS AHEAD?" in sb
+    assert "WHAT IS HAPPENING NOW?" in sb
+    assert "COMBINED EQUITY" in sb and "TOTAL P/L" in sb
+    assert "OPEN TRADES" in sb and "CLOSED TRADES" in sb
+    # fixture: sol_haiku_raw holds the only long; the other models are flat
+    assert "NO OPEN TRADES" in sb            # flat models honest
+    assert "currently" in sb                 # rankings labeled as current
+    assert "Leader now includes open-position gains" in sb
+    # no per-position detail leaks into the scoreboard
+    assert "ENTRY" not in sb and "STOP</span>" not in sb
+    assert "TARGET" not in sb and MARKER[:60] not in sb
+    # arithmetic spot-check: haiku paid an entry fee, so it trails the two
+    # flat models, which are tied at the top
+    assert "tied at the top" in sb
+
+
 def test_comparison_table_raw_vs_ta(official_payload):
     res = _harness(official_payload)
     cmp_html = res["dom"]["comparison"]

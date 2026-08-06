@@ -49,6 +49,24 @@ nav a:hover{background:var(--ink);color:var(--paper)}
 .tickerline .tk.stale .dot{background:var(--stale)}
 .tickerline .tk.dead .dot{background:#999}
 .tickerline .stamp{color:var(--mut);font-size:10px}
+/* v12 top-level scoreboard */
+#scoreboard{margin:18px 0 6px}
+.scgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:10px 0}
+.scgrid.sc2{grid-template-columns:repeat(2,1fr)}
+.sccard{border:1px solid var(--hair);border-left:5px solid var(--hair);
+  background:var(--panel);padding:12px 14px}
+.sccard.gold{border-left-color:#c9a227;background:#fdf9ec}
+.sccard.silver{border-left-color:#9aa0a6;background:#f7f8f8}
+.sccard.bronze{border-left-color:#b0763b;background:#faf3ec}
+#scoreboard .sec-t{display:block;color:var(--mut);font-size:9.5px;
+  letter-spacing:1.4px;font-weight:800}
+#scoreboard .muted{color:var(--mut);font-size:12px}
+.scrank{font-size:10px;letter-spacing:1.2px;color:var(--mut);font-weight:800}
+.scname{font-size:16px;font-weight:900;margin:2px 0 7px}
+.scbig{font-size:18px;font-weight:900;margin:4px 0 2px}
+.scverdict{font-size:12.5px;font-weight:900;letter-spacing:.5px;margin-top:6px;display:block}
+.scnote{font-size:11.5px;color:var(--mut);margin:2px 0 14px}
+@media (max-width:640px){.scgrid,.scgrid.sc2{grid-template-columns:1fr}}
 /* layout */
 .main{display:grid;grid-template-columns:1.72fr 1fr;gap:22px;margin:22px 0;
   align-items:start}
@@ -265,6 +283,8 @@ footer{border-top:3px solid var(--rule);margin-top:30px;padding:16px 0 34px;
 
 <div class="wrap">
 <div class="tickerline" id="strip" title="Display-only market ticker (Coinbase spot, 30s refresh) — non-authoritative. Official experiment execution uses Kraken data."></div>
+
+<section id="scoreboard"></section>
 
 <div class="main">
 <div class="stage" id="stage">
@@ -835,6 +855,122 @@ function panel(){
 }
 window.setPanel = p => { panelTab = p; panel(); };
 
+/* ---------------- v12 top-level scoreboard ----------------
+   Every number is computed EXACTLY from payload fields (equity,
+   realized_pnl, unrealized_pnl, side, n_trades, series[0].equity as the
+   recorded starting equity). Null marks stay null — never fabricated.
+   Max drawdown is intentionally omitted: the payload holds hourly
+   boundary closes only, so a true maximum drawdown is not exactly
+   computable from published data. */
+function sumOrNull(vals){
+  let s = 0;
+  for (const v of vals){ if (v == null) return null; s += N(v); }
+  return s;
+}
+function acctStart(a){
+  return a.series && a.series.length ? N(a.series[0].equity) : 10000;
+}
+function modelAgg(m){
+  const accs = allAccounts().filter(a => a.model === m);
+  const start = accs.reduce((s, a) => s + acctStart(a), 0);
+  const equity = sumOrNull(accs.map(a => a.equity));
+  const open = accs.filter(a => a.side !== 'flat');
+  return {m, name: MODEL[m].name, start, equity,
+          pl: equity == null ? null : equity - start,
+          retPct: equity == null ? null : (equity - start) / start * 100,
+          realized: sumOrNull(accs.map(a => a.realized_pnl)),
+          openPL: sumOrNull(open.map(a => a.unrealized_pnl)),
+          nOpen: open.length,
+          longs: open.filter(a => a.side === 'long').length,
+          shorts: open.filter(a => a.side === 'short').length,
+          nClosed: accs.reduce((s, a) => s + (a.n_trades || 0), 0)};
+}
+function armResult(m, arm){
+  const accs = allAccounts().filter(a => a.model === m && a.arm === arm);
+  const start = accs.reduce((s, a) => s + acctStart(a), 0);
+  const equity = sumOrNull(accs.map(a => a.equity));
+  return equity == null ? null : equity - start;
+}
+function retTxt(r){
+  return r == null ? 'N/A' : `${r >= 0 ? '+' : ''}${r.toFixed(2)}%`;
+}
+function scoreboard(){
+  if (!allAccounts().length){ $('scoreboard').innerHTML = ''; return; }
+  const rows = Object.keys(MODEL).map(modelAgg);
+  const byEq = [...rows].sort((a, b) =>
+    (b.equity == null ? -Infinity : b.equity) -
+    (a.equity == null ? -Infinity : a.equity));
+  const medals = ['gold', 'silver', 'bronze'];
+  const tiedTop = byEq[0].equity != null && byEq[1] &&
+                  byEq[0].equity === byEq[1].equity;
+  const leadLine = byEq[0].equity == null
+    ? 'Leader unavailable — price marks missing.'
+    : tiedTop ? 'Models are currently tied at the top.'
+    : `${byEq[0].name} is currently leading.`;
+  const who = `<div class="rulehead"><h2>WHO IS WINNING?</h2>
+      <span class="sub">all six accounts per model · each model started with ${money(rows[0].start)}</span></div>
+    <div class="scgrid">${byEq.map((r, i) => `
+      <div class="sccard ${r.equity == null ? '' : medals[i]}">
+        <div class="scrank">#${i + 1}</div>
+        <div class="scname">${icon(r.m)} ${r.name}</div>
+        <div class="kv">
+          <span class="k">COMBINED EQUITY</span><b>${r.equity == null ? 'N/A — price unavailable' : money(r.equity)}</b>
+          <span class="k">TOTAL P/L</span>${pnlSpan(r.pl, r.pl == null)}
+          <span class="k">TOTAL RETURN</span><b class="${r.retPct > 0 ? 'up' : r.retPct < 0 ? 'down' : ''}">${retTxt(r.retPct)}</b>
+          <span class="k">OPEN TRADES</span><b>${r.nOpen}</b>
+          <span class="k">CLOSED TRADES</span><b>${r.nClosed}</b>
+        </div></div>`).join('')}</div>
+    <div class="scnote">${leadLine}</div>`;
+  const byPl = [...rows].sort((a, b) =>
+    (b.pl == null ? -Infinity : b.pl) - (a.pl == null ? -Infinity : a.pl));
+  const byReal = [...rows].sort((a, b) =>
+    (b.realized == null ? -Infinity : b.realized) -
+    (a.realized == null ? -Infinity : a.realized));
+  const tieNow = byPl[0].pl != null && byPl[1] && byPl[0].pl === byPl[1].pl;
+  const tieReal = byReal[0].realized != null && byReal[1] &&
+                  byReal[0].realized === byReal[1].realized;
+  const leaders = `<div class="scgrid sc2">
+      <div class="sccard"><span class="sec-t">LEADER NOW</span>
+        <div class="scbig">${byPl[0].pl == null ? 'N/A — price unavailable' : tieNow ? 'CURRENTLY TIED' : byPl[0].name}</div>
+        ${byPl[0].pl == null || tieNow ? '' : `<div>${pnlSpan(byPl[0].pl, false)} total P/L</div>`}</div>
+      <div class="sccard"><span class="sec-t">CLOSED-PROFIT LEADER</span>
+        <div class="scbig">${byReal[0].realized == null ? 'N/A' : tieReal ? 'CURRENTLY TIED' : byReal[0].name}</div>
+        ${byReal[0].realized == null || tieReal ? '' : `<div>${pnlSpan(byReal[0].realized, false)} realized P/L</div>`}</div>
+    </div>
+    <div class="scnote">Leader now includes open-position gains and losses.
+      Closed-profit leader uses completed trades only (cash profit after
+      all fees paid so far, excluding open-position gains and losses).</div>`;
+  const rvt = `<div class="rulehead"><h2>RAW vs TA — WHO IS AHEAD?</h2>
+      <span class="sub">three Raw accounts vs three TA accounts per model · each arm started with ${money(rows[0].start / 2)}</span></div>
+    <div class="scgrid">${rows.map(r => {
+      const raw = armResult(r.m, 'raw'), ta = armResult(r.m, 'ta');
+      const verdict = raw == null || ta == null
+        ? 'N/A — PRICE UNAVAILABLE'
+        : raw === ta ? 'CURRENTLY TIED'
+        : raw > ta ? `RAW IS AHEAD BY ${money(raw - ta)}`
+        : `TA IS AHEAD BY ${money(ta - raw)}`;
+      return `<div class="sccard">
+        <div class="scname">${icon(r.m)} ${r.name}</div>
+        <div class="kv">
+          <span class="k">RAW RESULT</span>${pnlSpan(raw, raw == null)}
+          <span class="k">TA RESULT</span>${pnlSpan(ta, ta == null)}
+        </div>
+        <span class="scverdict">${verdict}</span></div>`;
+    }).join('')}</div>`;
+  const now = `<div class="rulehead"><h2>WHAT IS HAPPENING NOW?</h2>
+      <span class="sub">current open trades per model — full detail in Open Positions below</span></div>
+    <div class="scgrid">${rows.map(r => `
+      <div class="sccard">
+        <div class="scname">${icon(r.m)} ${r.name}</div>
+        ${r.nOpen === 0 ? '<div class="muted">NO OPEN TRADES</div>' : `<div class="kv">
+          <span class="k">OPEN TRADES</span><b>${r.nOpen}</b>
+          <span class="k">LONG</span><b>${r.longs}</b>
+          <span class="k">SHORT</span><b>${r.shorts}</b>
+          <span class="k">OPEN P/L</span>${pnlSpan(r.openPL, r.openPL == null)}
+        </div>`}</div>`).join('')}</div>`;
+  $('scoreboard').innerHTML = who + leaders + rvt + now;
+}
+
 /* ---------------- leaderboard + boot ---------------- */
 function leaderboard(){
   // null return (mark unavailable) is NOT 0%: unranked, sorted last, and
@@ -869,7 +1005,7 @@ function boot(){
     if (h) document.documentElement.style.setProperty('--navh', h + 'px');
   } catch (e) { /* stubbed DOM in tests */ }
   renderTabs();
-  strip(); chart(); panel(); comparison(); leaderboard();
+  strip(); scoreboard(); chart(); panel(); comparison(); leaderboard();
   $('foot').innerHTML = `${D.banner} · integrity ${D.combined_hash.slice(0,12)}… · <a href="pilot-archive/">old pilot archive</a> (OLD PILOT / SYSTEM TEST / NOT VALID EXPERIMENTAL EVIDENCE) · <a href="design/DESIGN_PACK_V1_1.md">methodology</a><br>
     <span style="font-size:11px">Ticker prices are display-only (Coinbase spot, 30s refresh) and non-authoritative; official experiment execution uses Kraken data.</span>`;
 }
