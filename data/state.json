@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-09T23:00:52Z",
- "last_tick_at": "2026-08-09T23:00:52Z",
- "last_price": 65018.2,
+ "last_tick_at": "2026-08-09T23:40:23Z",
+ "last_price": 64832.9,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -126,12 +126,12 @@
   "sonnet": {
    "display": "Jamil (Sonnet 5)",
    "api_model": "claude-sonnet-5",
-   "equity": 9931.36065721618,
-   "qty": 0.05373859398342702,
-   "entry": 65130.1,
-   "stop": 64850.0,
-   "tp": 65550.0,
-   "opened_at": "2026-08-09T14:40:22Z",
+   "equity": 9914.566003131511,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -203,6 +203,16 @@
      "exit": 64893.6,
      "pnl": -13.71,
      "reason": "decision_close"
+    },
+    {
+     "opened_at": "2026-08-09T14:40:22Z",
+     "closed_at": "2026-08-09T23:40:23Z",
+     "side": "long",
+     "qty": 0.053739,
+     "entry": 65130.1,
+     "exit": 64850.0,
+     "pnl": -16.79,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 94,
@@ -513,12 +523,12 @@
   "sonnet_ta": {
    "display": "Jamil+ (Sonnet 5 TA)",
    "api_model": "claude-sonnet-5",
-   "equity": 9932.261879038533,
-   "qty": 0.06141553598105945,
-   "entry": 65130.1,
-   "stop": 64850.0,
-   "tp": 65550.0,
-   "opened_at": "2026-08-09T14:40:42Z",
+   "equity": 9913.067988656052,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close below 64850 (stop-loss level) or a sustained break below the daily SMA20 (64391) would invalidate this long thesis.",
    "liquidated": false,
    "trades": [
@@ -601,6 +611,16 @@
      "exit": 64898.8,
      "pnl": -9.83,
      "reason": "decision_close"
+    },
+    {
+     "opened_at": "2026-08-09T14:40:42Z",
+     "closed_at": "2026-08-09T23:40:23Z",
+     "side": "long",
+     "qty": 0.061416,
+     "entry": 65130.1,
+     "exit": 64850.0,
+     "pnl": -19.19,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 93,
