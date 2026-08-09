@@ -1,18 +1,18 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-09T21:54:08Z",
- "last_tick_at": "2026-08-09T21:54:08Z",
- "last_price": 65157.8,
+ "last_tick_at": "2026-08-09T22:25:38Z",
+ "last_price": 65176.1,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
    "api_model": "claude-haiku-4-5",
-   "equity": 9823.294593080358,
-   "qty": 0.2991095738072047,
-   "entry": 65193.5,
-   "stop": 64950.0,
-   "tp": 65400.0,
-   "opened_at": "2026-08-09T16:59:43Z",
+   "equity": 9875.27983700805,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -94,6 +94,16 @@
      "exit": 64850.0,
      "pnl": -11.52,
      "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-09T16:59:43Z",
+     "closed_at": "2026-08-09T22:25:38Z",
+     "side": "long",
+     "qty": 0.29911,
+     "entry": 65193.5,
+     "exit": 65400.0,
+     "pnl": 51.99,
+     "reason": "take_profit"
     }
    ],
    "n_decisions": 93,
