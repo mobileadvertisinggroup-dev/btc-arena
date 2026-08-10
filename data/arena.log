@@ -710,3 +710,9 @@
 2026-08-10T16:34:37Z haiku_ta: flat $0 -> stayed flat
 2026-08-10T16:34:45Z sonnet_ta: short $3000 -> opened short $3000 @ 64059.90; stop=64550.0 tp=63400.0
 2026-08-10T16:34:52Z opus_ta: short $19000 -> opened short $19000 @ 64059.90; stop=64720.0 tp=63450.0
+2026-08-10T17:32:17Z haiku: flat $0 -> stayed flat
+2026-08-10T17:32:22Z sonnet: short $4200 -> resized short to $4200; stop=64450.0 tp=63000.0
+2026-08-10T17:32:31Z opus: short $19000 -> opened short $19000 @ 63892.00; stop=64350.0 tp=63000.0
+2026-08-10T17:32:36Z haiku_ta: flat $0 -> stayed flat
+2026-08-10T17:32:42Z sonnet_ta: short $3200 -> resized short to $3200; stop=64550.0 tp=63000.0
+2026-08-10T17:32:48Z opus_ta: short $18950 -> held short; stop=64420.0 tp=63450.0
