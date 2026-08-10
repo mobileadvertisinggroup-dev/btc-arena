@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
- "last_decision_at": "2026-08-10T17:32:48Z",
- "last_tick_at": "2026-08-10T17:32:48Z",
- "last_price": 63892.0,
+ "last_decision_at": "2026-08-10T18:29:11Z",
+ "last_tick_at": "2026-08-10T18:29:11Z",
+ "last_price": 63848.8,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -116,12 +116,8 @@
      "reason": "decision_close"
     }
    ],
-   "n_decisions": 106,
+   "n_decisions": 107,
    "last_reasonings": [
-    {
-     "t": "2026-08-10T14:48:06Z",
-     "text": "Last stated invalidation fully triggered at 09:00 (64914 close well below 64900 support). Recovery thesis confirmed dead. Price now in congestion (64446\u201364973 recent range) with downside bias. Remaining flat to preserve equity and avoid chasing reversion signals. Waiting for clear breakout setup: either sustained break above 65200 (bullish reversal confirmation) or confirmed breakdown below 64300 (trend continuation). Current price at 64732 is mid-range noise with no directional conviction."
-    },
     {
      "t": "2026-08-10T16:34:18Z",
      "text": "Invalidation from last round fully triggered: price closed hourly below 64900 at 09:00 (64914) and has remained weak through subsequent hours. Latest close at 16:00 is 64060, now at fresh daily lows. Price has broken below the congestion range (64446\u201364973) and is testing critical support. Remaining flat to preserve equity; awaiting clear directional setup before re-engaging."
@@ -129,6 +125,10 @@
     {
      "t": "2026-08-10T17:32:17Z",
      "text": "My previous invalidation signal triggered fully: price broke below 64900 at 09:00 (64914 close) and has deteriorated further to 63892, now at fresh daily lows after breaking through the 64000\u201364450 support cluster. Recovery thesis is conclusively invalidated. Remaining flat to preserve equity ($9800). Waiting for either a sustained close above 64500 (retest of broken support as resistance, suggesting stabilization) or confirmation below 63500 (trend continuation signal) before re-engaging."
+    },
+    {
+     "t": "2026-08-10T18:28:40Z",
+     "text": "Invalidation signal from previous round (break below 64900) triggered conclusively. Price has collapsed from 65200+ to 63849, breaking through multiple support clusters (64500, 64000, 63900). After recent losses, remaining flat to preserve remaining $9800 equity and avoid compounding losses. Awaiting either: (1) stabilization + close above 64500, or (2) confirmed breakdown below 63500. Current price shows no conviction and exhaustion-like structure on the hourly."
     }
    ],
    "invalidation": "Hourly close below 64900, confirmed by two consecutive hourly closes below the support cluster. This would invalidate the recovery-and-break-above-65200 thesis and signal a reversion into the 64600\u201364950 range, triggering the stop-loss and likely resulting in a second major breakdown."
@@ -235,12 +235,8 @@
      "reason": "take_profit"
     }
    ],
-   "n_decisions": 106,
+   "n_decisions": 107,
    "last_reasonings": [
-    {
-     "t": "2026-08-10T14:48:13Z",
-     "text": "Breakdown thesis intact - price made a new low at 64446 and closed at 64732, still well below the old range floor of 64730-65330. My invalidation (hourly close back above 65000) has NOT triggered; in fact price is confirming the breakdown with lower lows. Holding the existing short unchanged with stop and target in place."
-    },
     {
      "t": "2026-08-10T16:34:25Z",
      "text": "The breakdown thesis has played out strongly - price fell from 64730 range floor down to 64060, confirming continuation with consecutive lower closes (64814, 64510, 64570, 64232, 64060). My prior invalidation (close above 65000) never triggered; instead momentum accelerated lower on the last two hourly candles with real volume (185, 99). Re-entering short here to ride continued downside, targeting the 63200 area near recent daily close lows, with a tight stop above the recent breakdown structure at 64650 to protect against a sharp reversal/short squeeze."
@@ -248,6 +244,10 @@
     {
      "t": "2026-08-10T17:32:22Z",
      "text": "Invalidation (hourly close above 64650) has NOT triggered - price continues to close lower (64510, 64570, 64232, 63832, 63892), confirming the breakdown thesis strongly. The move has accelerated with the 63759 low printed this hour. Tightening stop to 64450 (below recent structure) to lock in better risk/reward as the thesis continues to play out, keeping target at 63200/63000 zone near cycle lows."
+    },
+    {
+     "t": "2026-08-10T18:28:46Z",
+     "text": "Invalidation (hourly close above 64450) has not triggered - price continues to hold below breakdown structure, currently consolidating around 63850-63940 after the sharp move down. Downtrend intact with lower lows/lower closes over the last 6 hours. Holding existing short unchanged, letting stop and target manage risk as price approaches the 63000 target zone."
     }
    ],
    "invalidation": "Hourly close back above 64450 would signal the breakdown is failing and I'd close the short immediately."
@@ -394,12 +394,8 @@
      "reason": "take_profit"
     }
    ],
-   "n_decisions": 106,
+   "n_decisions": 107,
    "last_reasonings": [
-    {
-     "t": "2026-08-10T14:48:19Z",
-     "text": "Invalidation confront: hourly close has NOT reclaimed 64914 \u2014 the 13:00 candle closed 64510 with a low of 64446 (biggest volume of the day, 126 BTC), and 14:00 closed 64732, still well below 64914. The breakdown remains valid and volume-backed. Price bounced modestly to 64732 but that's a normal retrace within the broken box, not a reclaim. My short is only -$9 open and the thesis is intact. Holding with stop above broken floor (65085) targeting the 64100/64000 support cluster."
-    },
     {
      "t": "2026-08-10T16:34:34Z",
      "text": "Invalidation confront: my short take-profit at 64100 was hit cleanly (+$120, my best trade), so I'm flat and the thesis played out correctly. Price now 64060, having broken down through the 64776 floor and the 64000 handle briefly (15:00 low 64159, current low 63934). The downside break is real and volume-backed (185 and 99 BTC on the last two candles). However, I just banked the move and price is now sitting right at the 64000/63737 daily support cluster after a sharp 800-point drop \u2014 a natural spot for a bounce or consolidation. Chasing short here at support after a completed move offers poor risk/reward. I'll stay flat and wait for either a fresh volume-backed hourly close below 63737 (continuation short) or a clean reclaim of 64500 (failed breakdown / long)."
@@ -407,9 +403,13 @@
     {
      "t": "2026-08-10T17:32:31Z",
      "text": "Invalidation confront: I was flat, waiting for a fresh volume-backed close below 63737 for continuation. The 16:00 candle closed 63832 with a low of 63759 on the highest volume of the day (189 BTC), and 17:00 held below at 63892 with a 63757 low \u2014 the 63737 daily support has effectively been breached and pinned. The downtrend structure is intact: lower highs and lower lows all day, and the broken 64776 box floor now acts as resistance far above. I'm re-entering short on continuation with a stop above the recent swing (64350) and targeting the next daily support cluster near 63000/62760."
+    },
+    {
+     "t": "2026-08-10T18:28:53Z",
+     "text": "Invalidation confront: hourly close has NOT reclaimed 64350 \u2014 price is grinding lower, 17:00 closed 63880 and 18:00 63849, both well below my stop. Thesis intact. The all-day downtrend (lower highs/lows) persists, and 63737 daily support has been pinned/breached. Consolidation is tight between 63757-63948 for three hours, suggesting a coil before the next leg. Holding the short with stop above swing high 64350, targeting the 63000/62760 daily support cluster. Small open P&L but structure firmly favors continuation."
     }
    ],
-   "invalidation": "Hourly close back above 64350 (reclaim above the recent swing high / breakdown structure) invalidates the continuation short \u2014 I flatten. Take-profit at 63000 banks the extension."
+   "invalidation": "Hourly close back above 64350 (reclaim of the swing structure) invalidates the short \u2014 I flatten. A clean break and hold below 63000 confirms the extension toward 62760."
   },
   "haiku_ta": {
    "display": "Moudir+ (Haiku 4.5 TA)",
@@ -544,12 +544,8 @@
      "reason": "decision_close"
     }
    ],
-   "n_decisions": 105,
+   "n_decisions": 106,
    "last_reasonings": [
-    {
-     "t": "2026-08-10T14:48:22Z",
-     "text": "Invalidation signal NOT triggered: price held above 64400 (currently 64732), 14:00 hourly closed at 64732 (not consecutive closes below 64900), and RSI 43.1 is low but isolated to one hour, not sustained 2+ hours below 45. However, conviction for directional entry remains insufficient. BTC is in a congested zone between daily SMA20 (64294) and Bollinger upper (65343), with heavily negative MACD histogram (-52.0) and Fear & Greed at 30 signaling capitulation may be forming. Holding flat preserves capital and awaits either: (1) decisive hourly close above 65200 with RSI >55 (bullish entry), or (2) confirmed breakdown below 64500 closing below daily SMA20 (bearish short setup)."
-    },
     {
      "t": "2026-08-10T16:34:37Z",
      "text": "Invalidation signal NOT triggered: price held above 64400 (currently 64059.90), no sustained 2+ consecutive closes below 64900 with MACD <-5, and RSI 27.7 is now in extreme oversold but just became so on the latest candle. However, conviction for directional entry remains insufficient despite capitulation signals. Hourly RSI at 27.7 is extreme oversold, but this alone does not constitute a reversal without bullish confirmation. Holding flat to preserve capital and await either: (1) hourly close above 65200 with RSI >55 (bullish confirmation), or (2) confirmed breakdown below 64000 closing below daily SMA20 (bearish short setup with higher conviction)."
@@ -557,6 +553,10 @@
     {
      "t": "2026-08-10T17:32:36Z",
      "text": "Invalidation signal NOT triggered: price held above 64400 (currently 63892), RSI 27.0 is extreme oversold but has not sustained 2+ consecutive hours below 45 with MACD <-5, and no 2 consecutive closes below 64900 with momentum exhaustion confirmed together. Fear & Greed at 30 and hourly RSI at 27.0 indicate capitulation, but bounce confirmation is absent. Holding flat to preserve capital; entry if: (1) hourly close above 65200 with RSI >55 (bullish reversal), or (2) confirmed breakdown below 63600 closing below daily SMA20 64252 (bearish short setup)."
+    },
+    {
+     "t": "2026-08-10T18:28:57Z",
+     "text": "Invalidation signal NOT triggered: price remains above 64400 (current 63848.80), RSI 26.1 is in extreme oversold but has been below 45 for multiple consecutive hours\u2014however this aligns with my stated condition of sustained weakness PLUS MACD histogram -138.6, which is well below -5. The hourly close at 18:00 was 63849, just at current price. Fear & Greed at 30 signals capitulation. Rather than initiate a long hoping for a reversal without confirmation, I remain flat and await clearer invalidation: either (1) hourly close above 65200 with RSI >55 (bullish reversal setup), or (2) breakdown below 63600 closing below daily SMA20 64252 with momentum confirmation (short setup). Capital preservation remains priority until conviction materializes."
     }
    ]
   },
@@ -569,7 +569,7 @@
    "stop": 64550.0,
    "tp": 63000.0,
    "opened_at": "2026-08-10T16:34:45Z",
-   "invalidation": "Hourly close back above 64550 invalidates this short thesis - will exit immediately if that happens rather than hoping for reversal.",
+   "invalidation": "Hourly close back above 64550 invalidates this short thesis - will exit immediately if that happens. Also watching for a strong bounce off current lower Bollinger band level (~63860) with RSI turning up sharply as an early warning.",
    "liquidated": false,
    "trades": [
     {
@@ -673,12 +673,8 @@
      "reason": "stop_loss"
     }
    ],
-   "n_decisions": 105,
+   "n_decisions": 106,
    "last_reasonings": [
-    {
-     "t": "2026-08-10T14:48:31Z",
-     "text": "Price broke down further to 64510 low then bounced to 64732, confirming the breakdown thesis from last round played out. Now consolidating in a choppy range (64494-64838) with RSI 43 neutral, MACD histogram still negative but flattening, price sitting between hourly SMA20/50 (~64980) and below them - no clean edge either direction. ATR of 220 means normal noise is large relative to recent moves, and my last 5 trades have been death-by-chop losses from over-trading marginal setups. Staying flat and waiting for either a reclaim of 65000+ with momentum confirmation (bullish) or a clean break/hold below 64450 (bearish continuation) before committing capital again."
-    },
     {
      "t": "2026-08-10T16:34:45Z",
      "text": "Clean bearish breakdown confirmed: price broke below 64450 support decisively, now trading 64060 with RSI 27.7 (oversold but momentum still strongly down), MACD histogram widening negative, price below all hourly SMAs, and daily close at 64060 also weak. This is the \"clean break/hold below 64450\" scenario I outlined as my bearish trigger - it has now happened with volume (99 on last hourly candle, elevated from the 8-15 baseline). RSI is oversold so I'm sizing moderately rather than aggressively, and placing stop above the recent breakdown structure to avoid death-by-chop on a snapback."
@@ -686,6 +682,10 @@
     {
      "t": "2026-08-10T17:32:42Z",
      "text": "Invalidation level (64550 hourly close) has NOT triggered - price continued lower to 63757 low and closed 63892, confirming the breakdown thesis. RSI 27 shows oversold momentum but trend remains firmly down: below all SMAs, MACD histogram widening negative, daily RSI cooling to 48.6 giving room to fall further. Holding the short with a slightly wider take-profit given ATR expansion (256) and trailing stop already near breakeven risk. Not adding aggressively since RSI is oversold and a bounce is possible, but the trend structure still favors downside continuation toward the daily SMA50 (63327) area."
+    },
+    {
+     "t": "2026-08-10T18:29:03Z",
+     "text": "Invalidation (64550 hourly close) has NOT triggered - price is now 63849, continuing the breakdown and consolidating near session lows. RSI 26.1 is deeply oversold but trend remains firmly bearish: below all hourly SMAs, MACD histogram still widening negative, price sitting right at lower Bollinger band (63861) which could mean either a bounce or a band-walk continuation. Daily RSI 48.4 shows room to fall further toward daily SMA50 (63326), which remains my target zone. Holding existing short unchanged rather than adding, since RSI oversold conditions increase bounce risk - staying disciplined with the same stop/TP rather than chasing."
     }
    ]
   },
@@ -695,10 +695,10 @@
    "equity": 9494.017703770129,
    "qty": -0.29659740336778545,
    "entry": 64059.9,
-   "stop": 64420.0,
+   "stop": 64180.0,
    "tp": 63450.0,
    "opened_at": "2026-08-10T16:34:52Z",
-   "invalidation": "An hourly close back above 64420 (reclaiming the recent breakdown zone) invalidates the short and signals the oversold bounce is turning into a reversal. Hard stop at 64420.",
+   "invalidation": "An hourly close back above 64180 (reclaiming the consolidation shelf) invalidates the short \u2014 it would signal the oversold bounce is finally turning. Hard stop at 64180.",
    "liquidated": false,
    "trades": [
     {
@@ -852,12 +852,8 @@
      "reason": "take_profit"
     }
    ],
-   "n_decisions": 105,
+   "n_decisions": 106,
    "last_reasonings": [
-    {
-     "t": "2026-08-10T14:48:38Z",
-     "text": "Invalidation check: my trigger was an hourly close above 65030 \u2014 that has NOT happened. 13:00 closed 64510 (a strong downside break), 14:00 bounced to 64732 but remains well below SMA20 (64997), BB-mid (64997), and EMA26 (64961). MACD histogram deeply negative (-52), RSI 43, Fear & Greed 30. The downside thesis is intact; the 14:00 bounce is a retest of the broken range, not a reclaim. I hold the short. Tightening stop slightly to 65030 (just below the SMA20/BB-mid cluster) so a genuine reclaim exits me. Target 64150 near the recent structure."
-    },
     {
      "t": "2026-08-10T16:34:52Z",
      "text": "Invalidation check: my 65030 stop never triggered \u2014 price broke down hard instead. The downtrend continued: 15:00 closed 64232, 16:00 at 64060, both well below all short-term MAs (SMA20 64892, EMA26 64834). MACD histogram deeply negative (-109), price riding the BB-lower (64271), fresh lows on rising volume (185, 99). RSI(14) at 27.7 is oversold, so I size moderately and expect some bounce risk, but momentum and structure favor continuation toward the low-63k daily SMA50 region (63330). Stop above the BB-lower/recent bounce zone at 64720, target 63450."
@@ -865,6 +861,10 @@
     {
      "t": "2026-08-10T17:32:48Z",
      "text": "Invalidation check: my 64720 stop never triggered. Price continued lower \u2014 16:00 closed 63832, 17:00 at 63892, still below all short-term MAs (SMA20 64818, EMA26 64749, BB-lower 64020). MACD histogram deeply negative (-135.8), RSI(14) at 27 is very oversold. Trend and momentum remain firmly down toward the daily SMA50 (63327). I hold the short but trail my stop down to 64420 (just above the prior consolidation/BB-lower area) to protect the gains and cut a genuine reversal. Target unchanged at 63450."
+    },
+    {
+     "t": "2026-08-10T18:29:11Z",
+     "text": "Invalidation check: my 64420 stop did NOT trigger. Price stalled in a tight 63840-63940 range for the last 3 hourly candles \u2014 consolidating near the lows, not reversing. Structure and momentum remain down: price below SMA20 (64758), EMA26 (64681), MACD histogram deeply negative (-138.6), RSI(14) 26 oversold but no bounce materializing. That coiling near lows favors continuation toward my 63450 target near the daily SMA50 cluster. I hold the short and trail the stop tighter to 64180 (above the recent consolidation shelf) to lock in gains, since RSI is very oversold and a bounce could be sharp."
     }
    ]
   }
