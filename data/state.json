@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-12T19:47:15Z",
- "last_tick_at": "2026-08-12T19:47:15Z",
- "last_price": 63261.7,
+ "last_tick_at": "2026-08-12T20:26:13Z",
+ "last_price": 63434.1,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -812,12 +812,12 @@
   "opus_ta": {
    "display": "Ziad+ (Opus 4.8 TA)",
    "api_model": "claude-opus-4-8",
-   "equity": 9223.480345200029,
-   "qty": -0.20449093554603012,
-   "entry": 63572.5,
-   "stop": 63420.0,
-   "tp": 63000.0,
-   "opened_at": "2026-08-12T14:47:18Z",
+   "equity": 9248.180805304633,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Two consecutive hourly closes above 63420, or a hard stop at 63420. That would reclaim broken support and void the short bias.",
    "liquidated": false,
    "trades": [
@@ -1009,6 +1009,16 @@
      "entry": 64233.9,
      "exit": 63820.0,
      "pnl": -124.93,
+     "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-12T14:47:18Z",
+     "closed_at": "2026-08-12T20:26:13Z",
+     "side": "short",
+     "qty": 0.204491,
+     "entry": 63572.5,
+     "exit": 63420.0,
+     "pnl": 24.7,
      "reason": "stop_loss"
     }
    ],
