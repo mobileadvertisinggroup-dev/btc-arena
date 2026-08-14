@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-14T21:57:08Z",
- "last_tick_at": "2026-08-14T21:57:08Z",
- "last_price": 62837.2,
+ "last_tick_at": "2026-08-14T22:27:35Z",
+ "last_price": 62755.5,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -554,12 +554,12 @@
   "haiku_ta": {
    "display": "Moudir+ (Haiku 4.5 TA)",
    "api_model": "claude-haiku-4-5",
-   "equity": 10073.332712110467,
-   "qty": 0.2381009071644563,
-   "entry": 62998.5,
-   "stop": 62750.0,
-   "tp": 63500.0,
-   "opened_at": "2026-08-14T18:28:58Z",
+   "equity": 10006.694220717814,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close decisively below 62750 breaks critical support floor and invalidates recovery thesis. If this triggers, exit long immediately and reassess for potential short setup. Secondary: RSI falls below 40 with MACD histogram turning negative\u2014confirms failed recovery.",
    "liquidated": false,
    "trades": [
@@ -721,6 +721,16 @@
      "entry": 63513.9,
      "exit": 63300.0,
      "pnl": -57.99,
+     "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-14T18:28:58Z",
+     "closed_at": "2026-08-14T22:27:35Z",
+     "side": "long",
+     "qty": 0.238101,
+     "entry": 62998.5,
+     "exit": 62750.0,
+     "pnl": -66.64,
      "reason": "stop_loss"
     }
    ],
