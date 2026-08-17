@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
- "last_decision_at": "2026-08-17T20:47:14Z",
- "last_tick_at": "2026-08-17T21:11:43Z",
- "last_price": 64375.5,
+ "last_decision_at": "2026-08-17T21:43:01Z",
+ "last_tick_at": "2026-08-17T21:43:01Z",
+ "last_price": 64293.9,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -156,12 +156,8 @@
      "reason": "stop_loss"
     }
    ],
-   "n_decisions": 233,
+   "n_decisions": 234,
    "last_reasonings": [
-    {
-     "t": "2026-08-17T18:53:39Z",
-     "text": "Invalidation signal NOT triggered. Price has printed hourly closes well above 63600 at 14:00 (63810/98 vol), 15:00 (64139/283 vol), 16:00 (64059/100 vol), and 17:00 (64275/104 vol). Current 18:00 candle shows 64382 close (+2.07% daily), confirming the structural reversal. Position is up +93 unrealized. Holding long to 64800 target; stop at 63600 remains the invalidation floor."
-    },
     {
      "t": "2026-08-17T19:51:14Z",
      "text": "Invalidation signal NOT triggered. Price has consistently closed above 63600 across all recent hourly candles (18:00 at 64370, 19:00 at 64298), confirming the structural reversal thesis. Current price 64298 is +1.98% on the day and holding within the 64072-64370 consolidation. Unrealized P&L at +67.90 shows momentum intact. Holding long position to target 64800 resistance; stop at 63600 remains the floor. No changes to position or risk management."
@@ -169,6 +165,10 @@
     {
      "t": "2026-08-17T20:46:46Z",
      "text": "Invalidation signal NOT triggered. Price closed last hour at 64317 well above 63600 support threshold, and daily close target of 64317 is far above 63200 invalidation floor. Structural reversal remains intact with +$73.52 unrealized profit. Holding long to 64800 target; stop at 63600 remains the risk floor. Volume and closing structure remain consistent with bullish momentum."
+    },
+    {
+     "t": "2026-08-17T21:42:37Z",
+     "text": "Invalidation signal NOT triggered. Last hourly close (21:00) was 64294, well above the 63600 threshold. Daily close is tracking at +2.22% and structural reversal remains intact. Price is consolidating just below take-profit target of 64800 with +$66.66 unrealized profit. Holding position unchanged."
     }
    ],
    "invalidation": "Hourly close below 63600 OR daily close below 63200. Either would definitively break the reversal thesis and require immediate exit."
@@ -345,12 +345,8 @@
      "reason": "decision_close"
     }
    ],
-   "n_decisions": 233,
+   "n_decisions": 234,
    "last_reasonings": [
-    {
-     "t": "2026-08-17T18:53:45Z",
-     "text": "Invalidation of 63750 did NOT trigger - price is now 64382, a new local high, and the uptrend structure remains intact (63771->64011->64165->64371->64562 highs). Momentum continues with higher highs each hour. Tightening stop to 63950 (above prior consolidation zone near 64000) to lock in more profit while extending TP to 64900 to let the trend run further given strong volume and continuation."
-    },
     {
      "t": "2026-08-17T19:51:19Z",
      "text": "Invalidation of 63950 has NOT triggered - current price 64298 remains comfortably above that level, and the hourly uptrend structure is still intact (highs: 64139->64371->64562, with a minor pullback to 64258 low this last hour). Price consolidated slightly after tagging 64562 but hasn't broken down. Holding the existing long unchanged, keeping stop at 63950 to protect the bulk of gains and TP at 64900 to let the trend continue."
@@ -358,9 +354,13 @@
     {
      "t": "2026-08-17T20:46:51Z",
      "text": "Invalidation level of 63950 has NOT triggered - price is currently 64317, still comfortably above that level. The hourly structure shows consolidation between 64217-64562 over the last few hours after the strong push, which is healthy after a sharp rally rather than a breakdown. Higher low structure remains intact (63771->64011->64228->64217). Holding the existing long unchanged, keeping stop at 63950 to protect gains and TP at 64900 for continuation."
+    },
+    {
+     "t": "2026-08-17T21:42:41Z",
+     "text": "Invalidation of 63950 has NOT triggered - current price 64294 remains above that level. The last few hours show tight consolidation between 64217-64562, a natural pause after the strong rally from 63400. Higher-low structure (63771->64011->64228->64217->64264) is still intact. Holding the existing long unchanged, keeping stop at 63950 to lock in gains from the 63500 entry and TP at 64900 for continuation."
     }
    ],
-   "invalidation": "Hourly close below 63950 would break the recent consolidation/higher-low structure and invalidate the long thesis - will close at that point."
+   "invalidation": "Hourly close below 63950 would break the consolidation/higher-low structure and invalidate the long thesis - will close at that point."
   },
   "opus": {
    "display": "Ziad (Opus 4.8)",
@@ -604,12 +604,8 @@
      "reason": "stop_loss"
     }
    ],
-   "n_decisions": 233,
+   "n_decisions": 234,
    "last_reasonings": [
-    {
-     "t": "2026-08-17T18:53:50Z",
-     "text": "Invalidation check: I said an hourly close below 63750 breaks the base \u2014 NOT triggered. Price broke higher: 18:00 wicked to 64562 and closed 64382, holding well above the continuation zone. The breakout thesis remains fully intact and working (long +138). I keep the long and raise my stop to 63900 (just above entry) to lock in a small profit and eliminate downside risk \u2014 the trade is now \"free.\" Let the winner run toward 65000 while momentum and volume confirm."
-    },
     {
      "t": "2026-08-17T19:51:25Z",
      "text": "Invalidation check: I said an hourly close below 63900 would signal a stall \u2014 NOT triggered. 19:00 closed 64298, holding well above 63900 and staying above the breakout base. The uptrend remains intact (+1.98% on day, price near highs) though momentum cooled slightly from the 18:00 high of 64562. The trade is free (stop above entry). I nudge the stop up to 63950 to lock in a small profit while giving room for normal wicks, and keep TP at 65000 near the higher daily structure. Let the winner run."
@@ -617,9 +613,13 @@
     {
      "t": "2026-08-17T20:46:58Z",
      "text": "Invalidation check: I said an hourly close below 63950 would signal the breakout stalled \u2014 NOT triggered. 20:00 closed 64317, holding above 63950. However momentum has clearly flattened: the last four hourly closes (64275, 64370, 64262, 64317) are stalling in a 64200-64400 range after the 18:00 high of 64562, and 19:00 dipped to close below 20:00. The trade remains free with the stop above entry. I nudge the stop up to 63980 to lock in profit and tighten risk given the loss of upward thrust, keeping TP at 65000. Let the winner run but I'm no longer willing to give back gains on a fade."
+    },
+    {
+     "t": "2026-08-17T21:42:47Z",
+     "text": "Invalidation check: I said an hourly close below 63980 would stop me out \u2014 NOT triggered. 21:00 closed 64294, holding above 63980. Price remains in the 64200-64400 consolidation just below the 18:00 high of 64562, with the trade still free (stop above entry at 63890). Momentum is flat but not broken; the daily structure shows we reclaimed 64k after a multi-day dip toward 62800. I keep the long unchanged, stop at 63980 locking in ~$25 profit, TP at 65000. Let the winner run but no giving back gains on a fade."
     }
    ],
-   "invalidation": "An hourly close below 63980 stops me out at a locked profit and confirms the breakout has stalled/reversed. Sustained hourly closes above 64400 revive the trend toward 64860/65000."
+   "invalidation": "An hourly close below 63980 stops me out at locked profit and confirms the range has broken down. Sustained hourly closes above 64400 (especially reclaiming 64562) revive the trend toward 65000."
   },
   "haiku_ta": {
    "display": "Moudir+ (Haiku 4.5 TA)",
@@ -630,7 +630,7 @@
    "stop": 63900.0,
    "tp": 64600.0,
    "opened_at": "2026-08-17T18:53:56Z",
-   "invalidation": "Hourly close below 63900 with RSI dropping below 60 signals breakdown; alternatively, 2 consecutive hourly closes below 63600 combined with MACD histogram turning negative would invalidate the uptrend and force exit.",
+   "invalidation": "Hourly close below 63900 with RSI dropping below 60, or 2 consecutive hourly closes below 63600 combined with MACD histogram turning negative. If price breaks below the daily SMA 20 (63807) on a daily close while momentum indicators weaken, that would also signal a reversal requiring exit.",
    "liquidated": false,
    "trades": [
     {
@@ -864,12 +864,8 @@
      "reason": "take_profit"
     }
    ],
-   "n_decisions": 232,
+   "n_decisions": 233,
    "last_reasonings": [
-    {
-     "t": "2026-08-17T18:53:56Z",
-     "text": "Price has broken decisively above prior resistance at 63950 and extended to 64382 (current), with the 18:00 candle closing near the high despite reaching 64562 intracandle. RSI(14) at 76.1 is overbought but still rising; MACD histogram remains strongly positive (+91.5) with expanding signal. Volume picked up significantly in the last two candles (104, 81) after consolidation. The daily chart confirms: daily SMA 20 (63812) and daily RSI (53.7) show room for further extension, and we're now trading above the daily Bollinger upper band (entry point 64165 in the 15:00 candle). Momentum has decisively re-engaged. Entering long with 2x leverage targeting the next daily resistance near 64600."
-    },
     {
      "t": "2026-08-17T19:51:29Z",
      "text": "Price has extended to 64298 (current), holding above the daily SMA 20 (63807) and consolidating within the upper Bollinger Band. RSI(14) at 72.6 remains overbought but has moderated from peak 76.1; MACD histogram still positive (+84.6). Volume has remained elevated (84-104 volume in recent candles). The invalidation signal flagged a break below 63900 with RSI below 60 OR 2 consecutive closes below 63542\u2014neither has occurred. Current position (0.31065 BTC, entry 64381.80, notional $19974) is still valid and positioned at resistance. Holding current long exposure with stops/targets intact."
@@ -877,6 +873,10 @@
     {
      "t": "2026-08-17T20:47:02Z",
      "text": "Current long position (0.31065 BTC @ 64381.80) remains intact. Price at 64316.70 is consolidating within upper Bollinger Band after the 20:00 hourly close at 64317 (nearly identical to current). RSI(14) 72.1 remains overbought but is stabilizing; MACD histogram +74.2 is positive and expanding. The invalidation conditions from the last round have not triggered: no hourly close below 63900 with RSI below 60, and no consecutive closes below the midline with histogram reversal. Holding through consolidation toward the 64600 take-profit target."
+    },
+    {
+     "t": "2026-08-17T21:42:51Z",
+     "text": "Price at 64293.90 continues to consolidate near prior resistance after an intracandle high of 64385 in the 21:00 candle. RSI(14) at 70.4 remains overbought but stable; MACD histogram +62.4 is still positive and expanding, confirming upside momentum. The invalidation conditions from the previous round have NOT triggered: no hourly close below 63900 with RSI below 60, and no 2 consecutive closes below 63600. Current long position (0.31065 BTC @ 64381.80) is positioned well ahead of the 64600 take-profit target. Holding through consolidation into potential breakout; the daily SMA 20 (63807) and daily RSI (53.1) both support further extension. Stops and targets remain unchanged."
     }
    ]
   },
@@ -1053,12 +1053,8 @@
      "reason": "take_profit"
     }
    ],
-   "n_decisions": 232,
+   "n_decisions": 233,
    "last_reasonings": [
-    {
-     "t": "2026-08-17T18:54:02Z",
-     "text": "Price continues to grind higher, closing at 64382 near session highs with MACD histogram still positive and expanding (+91.5), confirming trend strength. RSI(14) at 76 is very overbought hourly but daily RSI is only 53.7, suggesting this is a healthy uptrend on the higher timeframe rather than an exhausted blowoff. Price is riding the upper Bollinger band which can indicate strong trend continuation, not just reversal risk. I'm re-entering long with a tighter stop below the recent breakout structure (64230 hourly low/63900 zone) to protect against a sharp overbought pullback, sizing moderately given the stretched short-term momentum."
-    },
     {
      "t": "2026-08-17T19:51:35Z",
      "text": "Invalidation level of 63900 has not triggered - price is still holding above it at 64298, consolidating after the push to 64562 high. RSI(14) hourly remains overbought at 72.6 but MACD histogram is still positive (+84.6) though decelerating slightly, suggesting the uptrend is intact but losing some steam near resistance. Daily RSI at 53 confirms this isn't an exhausted move on the higher timeframe. Holding the existing long unchanged since price structure and stop distance are still valid, not adding given the stretched short-term momentum."
@@ -1066,6 +1062,10 @@
     {
      "t": "2026-08-17T20:47:07Z",
      "text": "Invalidation level of 63900 has not triggered - price is consolidating around 64260-64370, still comfortably above the stop. RSI(14) hourly remains very overbought at 72.1 and momentum is decelerating (MACD histogram +74 down from +91), suggesting the rally is stalling into resistance near the upper Bollinger band (64476). Fear & Greed at 31 (Fear) despite price near highs is a bit of a divergence worth noting. Holding existing long unchanged since structure is intact, not adding given stretched short-term conditions - will let stop/TP manage the position."
+    },
+    {
+     "t": "2026-08-17T21:42:56Z",
+     "text": "Invalidation level of 63900 has not triggered - price is consolidating between 64217-64385, still well above stop. Momentum is decelerating (MACD histogram +62.4, down from +91) and RSI(14) hourly cooling slightly to 70.4 from 76, suggesting consolidation rather than reversal. Price remains above rising 20 SMA/EMA12, structure intact. Holding existing long unchanged, letting stop/TP manage risk without adding into stretched conditions."
     }
    ]
   },
@@ -1078,7 +1078,7 @@
    "stop": 64150.0,
    "tp": 64900.0,
    "opened_at": "2026-08-17T15:11:52Z",
-   "invalidation": "Hourly close below 64150 invalidates the long (consolidation shelf lost, breakout failing); my stop flattens me there.",
+   "invalidation": "Hourly close below 64150 invalidates the long (consolidation shelf lost); my stop flattens me there.",
    "liquidated": false,
    "trades": [
     {
@@ -1382,12 +1382,8 @@
      "reason": "decision_close"
     }
    ],
-   "n_decisions": 232,
+   "n_decisions": 233,
    "last_reasonings": [
-    {
-     "t": "2026-08-17T18:54:08Z",
-     "text": "Invalidation check: my 63820 stop did NOT trigger \u2014 18:00 pushed to a new session high of 64562 and closed 64382, well above the cluster. The breakout keeps extending with MACD histogram widening (+91.5). RSI 76 is very stretched and price is pinned to the upper Bollinger band (64372), so this is late-stage momentum \u2014 I don't add size. I raise my stop to 64010 to lock in a clear profit above entry (63890) while giving room for one more push; TP up to 64900 at the next daily supply shelf."
-    },
     {
      "t": "2026-08-17T19:51:42Z",
      "text": "Invalidation check: 64010 stop NOT triggered \u2014 19:00 closed 64298, holding above my stop and above the breakout shelf. However, momentum is stalling: 18:00 high 64562 was rejected, 19:00 made a lower high (64370) and closed near session lows on lighter volume (65). Price is pinned to the upper Bollinger band (64436) with RSI 72.6 stretched \u2014 classic late-stage exhaustion. I keep size flat and hold my stop at 64010, which now sits just under the current price and locks in a small profit above my 63890 entry. If momentum resumes toward 64900 TP I capture it; if the breakout rolls over the stop takes me out green. Not adding into a stretched, decelerating move."
@@ -1395,6 +1391,10 @@
     {
      "t": "2026-08-17T20:47:14Z",
      "text": "Invalidation check: my 64010 stop did NOT trigger \u2014 20:00 closed 64317, holding above. But this is stalling: 18:00 high 64562 was the peak, and the last three hours (64370/64262/64317) are consolidating sideways just under the upper Bollinger band (64476) on light volume. RSI 72 still stretched. I'm green (+113 unrealized) and momentum has decelerated, so I refuse to give profit back \u2014 I raise my stop to 64150, just under the 20-SMA-of-recent-action shelf, locking in a clean profit above my 63890 entry. If the breakout resumes to 64900 I capture it; if it rolls over I'm out green. Not adding into a late-stage, decelerating move."
+    },
+    {
+     "t": "2026-08-17T21:43:01Z",
+     "text": "Invalidation check: my 64150 stop has NOT triggered \u2014 21:00 closed 64294, holding above. Price is consolidating in a tight 64217-64385 range for the last several hours, coiling under the upper Bollinger band (64527). RSI 70 still stretched but MACD histogram ticked back up (+62), so momentum hasn't rolled over. I'm green (+107) and refuse to give it back, so I keep my stop at 64150 which locks a small profit above my 63890 entry. If it breaks up toward 64900 TP I capture it; if it rolls over I'm out green. Not adding into a late-stage move."
     }
    ]
   }
