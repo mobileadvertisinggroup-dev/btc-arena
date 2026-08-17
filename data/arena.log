@@ -1402,3 +1402,11 @@
 2026-08-16T23:49:11Z haiku_ta: flat $0 -> stayed flat
 2026-08-16T23:49:16Z sonnet_ta: short $3506 -> held short; stop=63180.0 tp=62350.0
 2026-08-16T23:49:22Z opus_ta: short $17961 -> held short; stop=63080.0 tp=62350.0
+2026-08-17T02:02:17Z opus: stop_loss @ 63080.00
+2026-08-17T02:02:17Z opus_ta: stop_loss @ 63080.00
+2026-08-17T02:02:22Z haiku: short $4700 -> held short; stop=63200.0 tp=62400.0
+2026-08-17T02:02:28Z sonnet: flat $0 -> stayed flat
+2026-08-17T02:02:35Z opus: flat $0 -> stayed flat
+2026-08-17T02:02:40Z haiku_ta: long $9935 -> opened long $9935 @ 63048.30; stop=62750.0 tp=63300.0
+2026-08-17T02:02:46Z sonnet_ta: short $3518 -> held short; stop=63180.0 tp=62350.0
+2026-08-17T02:02:54Z opus_ta: flat $0 -> stayed flat
