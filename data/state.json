@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-18T14:21:36Z",
- "last_tick_at": "2026-08-18T14:21:36Z",
- "last_price": 64437.3,
+ "last_tick_at": "2026-08-18T14:58:55Z",
+ "last_price": 64679.4,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -186,12 +186,12 @@
   "sonnet": {
    "display": "Jamil (Sonnet 5)",
    "api_model": "claude-sonnet-5",
-   "equity": 9823.38848137275,
-   "qty": 0.06299172918595788,
-   "entry": 63500.4,
-   "stop": 63950.0,
-   "tp": 64900.0,
-   "opened_at": "2026-08-17T04:53:17Z",
+   "equity": 9909.507623929334,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -353,6 +353,16 @@
      "exit": 63096.6,
      "pnl": -12.85,
      "reason": "decision_close"
+    },
+    {
+     "opened_at": "2026-08-17T04:53:17Z",
+     "closed_at": "2026-08-18T14:58:55Z",
+     "side": "long",
+     "qty": 0.062992,
+     "entry": 63500.4,
+     "exit": 64900.0,
+     "pnl": 86.12,
+     "reason": "take_profit"
     }
    ],
    "n_decisions": 247,
