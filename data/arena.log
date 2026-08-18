@@ -1629,3 +1629,9 @@
 2026-08-18T20:19:30Z haiku_ta: long $14956 -> held long; stop=64400.0 tp=65200.0
 2026-08-18T20:19:36Z sonnet_ta: flat $0 -> stayed flat
 2026-08-18T20:19:44Z opus_ta: flat $0 -> stayed flat
+2026-08-18T21:34:31Z haiku: long $19202 -> held long; stop=63600.0 tp=65500.0
+2026-08-18T21:34:36Z sonnet: long $3993 -> held long; stop=64350.0 tp=65400.0
+2026-08-18T21:34:42Z opus: flat $0 -> stayed flat
+2026-08-18T21:34:46Z haiku_ta: long $14947 -> held long; stop=64400.0 tp=65200.0
+2026-08-18T21:34:52Z sonnet_ta: flat $0 -> stayed flat
+2026-08-18T21:34:59Z opus_ta: flat $0 -> stayed flat
