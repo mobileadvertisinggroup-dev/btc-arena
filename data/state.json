@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-19T16:52:18Z",
- "last_tick_at": "2026-08-19T17:18:42Z",
- "last_price": 68090.0,
+ "last_tick_at": "2026-08-19T17:45:48Z",
+ "last_price": 68107.8,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -435,12 +435,12 @@
   "opus": {
    "display": "Ziad (Opus 4.8)",
    "api_model": "claude-opus-4-8",
-   "equity": 9550.121027961848,
-   "qty": 0.27718814510069956,
-   "entry": 68545.5,
-   "stop": 67800.0,
-   "tp": 72000.0,
-   "opened_at": "2026-08-19T15:51:11Z",
+   "equity": 9334.080587670363,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -712,6 +712,16 @@
      "exit": 66000.0,
      "pnl": 222.11,
      "reason": "take_profit"
+    },
+    {
+     "opened_at": "2026-08-19T15:51:11Z",
+     "closed_at": "2026-08-19T17:45:48Z",
+     "side": "long",
+     "qty": 0.277188,
+     "entry": 68545.5,
+     "exit": 67800.0,
+     "pnl": -216.04,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 269,
@@ -734,12 +744,12 @@
   "haiku_ta": {
    "display": "Moudir+ (Haiku 4.5 TA)",
    "api_model": "claude-haiku-4-5",
-   "equity": 9904.983470798641,
-   "qty": 0.21645476362416205,
-   "entry": 68545.5,
-   "stop": 67900.0,
-   "tp": 70000.0,
-   "opened_at": "2026-08-19T15:51:16Z",
+   "equity": 9757.913281654204,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close below 67900 (breaks the intraday swing low and contradicts the bullish setup), OR RSI falls below 70 AND MACD histogram turns negative (loss of momentum confirmation), OR 2 consecutive hourly closes below 67500 (failed breakout rejection). Any of these would indicate the rally has exhausted.",
    "liquidated": false,
    "trades": [
@@ -1012,6 +1022,16 @@
      "exit": 65650.0,
      "pnl": 31.79,
      "reason": "take_profit"
+    },
+    {
+     "opened_at": "2026-08-19T15:51:16Z",
+     "closed_at": "2026-08-19T17:45:48Z",
+     "side": "long",
+     "qty": 0.216455,
+     "entry": 68545.5,
+     "exit": 67900.0,
+     "pnl": -147.07,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 268,
