@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
- "last_decision_at": "2026-08-19T20:45:59Z",
- "last_tick_at": "2026-08-19T21:11:16Z",
- "last_price": 69353.1,
+ "last_decision_at": "2026-08-19T21:42:51Z",
+ "last_tick_at": "2026-08-19T21:42:51Z",
+ "last_price": 69557.9,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -186,12 +186,8 @@
      "reason": "take_profit"
     }
    ],
-   "n_decisions": 272,
+   "n_decisions": 273,
    "last_reasonings": [
-    {
-     "t": "2026-08-19T18:11:41Z",
-     "text": "BTC at 68028, +5.09% 24h, still holding from entry at 68545.50. The high-volume breakout (2257 contracts at 15:00, lifting 65834\u219268546) remains valid; no sustained close below 67500 has occurred. Last hourly close (68028) holds above the critical 67500 level. Maintaining position with existing stops intact\u2014invalidation signal has NOT triggered. Momentum shows consolidation rather than reversal."
-    },
     {
      "t": "2026-08-19T19:22:38Z",
      "text": "BTC at 68262, +5.64% 24h, holding 0.14412 BTC from entry 68545.50 (now -0.06% unrealized). My stated invalidation (hourly close below 67500 OR reversal candle below 67000 with volume >200) has NOT triggered. The last hourly close at 68262 remains above 67500 support, confirming the high-volume breakout (15:00 candle: 2257 contracts, 65834\u219268546) is still structurally intact. Maintaining long position with existing stops\u2014consolidation above support is constructive in a breakout regime."
@@ -199,9 +195,13 @@
     {
      "t": "2026-08-19T20:45:28Z",
      "text": "BTC at 68635, +6.33% in 24h. Holding 0.14412 BTC from entry 68545.50 (now +$12.96 unrealized). My stated invalidation (hourly close below 67500 OR reversal candle below 67000 with volume >200) has NOT triggered. The 20:00 candle closed at 68635, confirming price remains well above the 67500 support level established by the high-volume breakout (15:00: 2257 contracts, 65834\u219268546). Momentum is intact; maintaining the long with existing stops."
+    },
+    {
+     "t": "2026-08-19T21:42:20Z",
+     "text": "BTC at 69557.90, +7.74% 24h. Holding 0.14412 BTC from entry 68545.50 with +$145.91 unrealized P&L. My stated invalidation signal (hourly close below 67500 OR reversal candle below 67000 with volume >200) has NOT triggered\u2014the latest 21:00 hourly close at 69558 is decisively above the 67500 support zone. The high-volume breakout from 15:00 (2257 contracts lifting 65834\u219268546) remains structurally intact and has now extended to new intraday highs. Volume profile accelerates as price approaches TP at 71000. Maintaining the long with existing stops in place."
     }
    ],
-   "invalidation": "Hourly close below 67500 (breaking the support zone from the high-volume continuation range), or a reversal candle closing below 67000 paired with volume >200 contracts (exhaustion and trap rejection signal)."
+   "invalidation": "Hourly close below 67500 (breaks the high-volume support zone), or a reversal/pin bar closing below 67000 paired with volume >200 (exhaustion rejection), or a failed push above 70500 followed by sustained hourly closes below 69000."
   },
   "sonnet": {
    "display": "Jamil (Sonnet 5)",
@@ -209,8 +209,8 @@
    "equity": 9935.78086461294,
    "qty": 0.058278963916579496,
    "entry": 68635.4,
-   "stop": 67750.0,
-   "tp": 70200.0,
+   "stop": 68200.0,
+   "tp": 71200.0,
    "opened_at": "2026-08-19T20:45:35Z",
    "liquidated": false,
    "trades": [
@@ -415,12 +415,8 @@
      "reason": "take_profit"
     }
    ],
-   "n_decisions": 272,
+   "n_decisions": 273,
    "last_reasonings": [
-    {
-     "t": "2026-08-19T18:11:48Z",
-     "text": "Price has now pulled back from the 69577 spike high to 68028, with declining volume (17-245 vs 2257 at the spike) - this is a gradual drift down rather than a sharp rejection, but also not yet a stable base. The move is still digesting the parabolic spike; two consecutive hourly closes lower (68433 -> 68173 -> 68028) suggest some cooling of momentum. I'd rather wait for a clearer signal: either a bounce/hold above 67500-68000 confirming support, or a breakdown below 67790 (recent low) that would suggest deeper mean reversion toward 65900-66500. Staying flat avoids getting chopped in this post-spike consolidation."
-    },
     {
      "t": "2026-08-19T19:22:45Z",
      "text": "Price has been consolidating in a 68000-68930 range for the past 4 hours after the parabolic spike to 69577, showing neither a strong breakout continuation nor a decisive breakdown. Volume has dropped dramatically from the spike (2257) to normal levels (66-859), indicating the market is digesting the move. Current price 68262 sits mid-range - not a clean entry either direction. I'll wait for either a break above 68930 (spike-range high) with volume for long continuation, or a break below 67790 (recent swing low) for a short/mean-reversion play toward 66000-66500."
@@ -428,9 +424,13 @@
     {
      "t": "2026-08-19T20:45:35Z",
      "text": "Price has held the 68000-68930 consolidation range for 5+ hours after the parabolic spike, and the most recent hourly candle (68394->68635) closed near its high with a higher low (68378), suggesting the range is resolving upward rather than breaking down. Daily close of 68635 (highest in 30 days) confirms bullish structure - no bearish rejection of the spike has materialized despite multiple hours to do so. I'm entering long on this range-holding strength with a stop below the recent swing low (67790) to invalidate quickly if support fails, targeting a continuation move toward/above the spike high of 69577."
+    },
+    {
+     "t": "2026-08-19T21:42:26Z",
+     "text": "Thesis confirmed: price broke above the 68930 consolidation high and the spike high 69577, closing at 69558 with a strong bullish hourly candle (69033->69558, high 69888). Invalidation level (67790) was never touched - trade is working as planned. I'm raising the stop to lock in gains near breakeven/above entry while giving room, and extending take-profit higher since momentum and volume support continuation. New daily close at 69558 is a fresh 30-day high, confirming trend strength."
     }
    ],
-   "invalidation": "Hourly close below 67790 (recent swing low) would invalidate this thesis, indicating the consolidation is breaking down rather than continuing higher."
+   "invalidation": "Hourly close below 68200 (prior range high, now support) would invalidate this continuation thesis and suggest a failed breakout back into consolidation."
   },
   "opus": {
    "display": "Ziad (Opus 4.8)",
@@ -438,8 +438,8 @@
    "equity": 9325.080587670363,
    "qty": 0.26368912809724854,
    "entry": 68262.2,
-   "stop": 67900.0,
-   "tp": 70500.0,
+   "stop": 68950.0,
+   "tp": 71500.0,
    "opened_at": "2026-08-19T19:22:52Z",
    "liquidated": false,
    "trades": [
@@ -724,12 +724,8 @@
      "reason": "stop_loss"
     }
    ],
-   "n_decisions": 272,
+   "n_decisions": 273,
    "last_reasonings": [
-    {
-     "t": "2026-08-19T18:11:56Z",
-     "text": "Invalidation confronted honestly: my 67800 stop triggered (17:00 candle low 67790, exit 67800) \u2014 the post-breakout consolidation floor broke, so I was rightly stopped out for a -216 loss. Since then price has ground lower: 17:00 closed 68173, 18:00 closed 68028, sitting near the lows on fading volume. The vertical squeeze has stalled and momentum is exhausting. I don't chase a reversal here either direction \u2014 the move is over-extended (+5% day) and choppy. I stay flat and wait for a clean setup rather than forcing a trade after a stop-out."
-    },
     {
      "t": "2026-08-19T19:22:52Z",
      "text": "Invalidation check: my prior 67800 stop already triggered last round and I went flat. Since then price consolidated constructively \u2014 17:00-19:00 candles held a 67790-68449 range and are basing above 68000 rather than collapsing. The 15:00 breakout on 2257 volume was genuine and the pullback has been shallow (held ~68k, only 1.5% off the 69577 high). This is a controlled digestion of the squeeze, not a reversal. I re-enter a modest ~2x long with a tight stop at 67750 (below the consolidation floor) \u2014 risk ~0.75% of notional per unit. Target 70500 for continuation."
@@ -737,20 +733,24 @@
     {
      "t": "2026-08-19T20:45:41Z",
      "text": "Invalidation not triggered: no hourly close below 67750 (lowest recent close was 68173 at 17:00; 20:00 closed 68635). The consolidation above 68000 has held for six hours and the 20:00 candle pushed the range high to 68773 on rising volume (231), a constructive higher-low structure after the 15:00 squeeze. I hold my ~2x long, nudging the stop up to 67900 just below the consolidation floor to protect gains and reduce risk. Target 70500 on continuation toward the 69577 breakout high."
+    },
+    {
+     "t": "2026-08-19T21:42:32Z",
+     "text": "Invalidation confronted: my 68930 \"clean hourly close above\" trigger fired \u2014 20:00 closed 69033 and 21:00 closed 69558, breaking above the consolidation and making new closing highs. The breakout resumed exactly as my bullish scenario anticipated, with the 21:00 candle printing a fresh 69888 high on strong 480 volume. I hold the long and trail my stop up to 68950 (just below the breakout level, now locking in gains and turning old resistance into my line in the sand). Raising target to 71500 for continuation of this momentum leg."
     }
    ],
-   "invalidation": "An hourly close below 67900 breaks the consolidation floor and confirms the breakout is failing \u2014 I exit. A clean hourly close above 68930 signals resumed upside and I trail the stop higher."
+   "invalidation": "An hourly close back below 68950 means the breakout above the consolidation has failed and I exit. A clean hourly close above 70000 confirms continuation and I trail the stop higher toward 69500."
   },
   "haiku_ta": {
    "display": "Moudir+ (Haiku 4.5 TA)",
    "api_model": "claude-haiku-4-5",
-   "equity": 9757.913281654204,
-   "qty": 0.0,
-   "entry": null,
-   "stop": null,
-   "tp": null,
-   "opened_at": null,
-   "invalidation": "Hourly close below 67900 (breaks the intraday swing low and contradicts the bullish setup), OR RSI falls below 70 AND MACD histogram turns negative (loss of momentum confirmation), OR 2 consecutive hourly closes below 67500 (failed breakout rejection). Any of these would indicate the rally has exhausted.",
+   "equity": 9751.913281654204,
+   "qty": 0.17251814675256155,
+   "entry": 69557.9,
+   "stop": 68500.0,
+   "tp": 71000.0,
+   "opened_at": "2026-08-19T21:42:37Z",
+   "invalidation": "Hourly close below 68500 (violation of the intraday swing low and loss of breakout structure), OR RSI falls below 75 AND stays below for 2 consecutive hourly closes (momentum loss confirmation), OR price fails to hold above 69300 after a hourly close, indicating the breakout has been rejected.",
    "liquidated": false,
    "trades": [
     {
@@ -1034,12 +1034,8 @@
      "reason": "stop_loss"
     }
    ],
-   "n_decisions": 271,
+   "n_decisions": 272,
    "last_reasonings": [
-    {
-     "t": "2026-08-19T18:12:01Z",
-     "text": "Invalidation signal HAS triggered. My last stated condition was \"hourly close below 67900 OR RSI falls below 70 AND MACD histogram turns negative OR 2 consecutive closes below 67500.\" Current state: 18:00 hourly close at 68028 is above 67900, BUT RSI has collapsed from 92.4 to 82.0 AND MACD histogram has shrunk from +436.1 to +430.8 (momentum loss visible). More critically, the 17:00 candle closed at 68173 and 18:00 at 68028\u2014a lower high and lower close pattern emerging. Price action is losing steam after +5.09% 24h move. I must respect the signal and exit, even though the position itself hasn't stopped out. Protecting capital is paramount here."
-    },
     {
      "t": "2026-08-19T19:22:57Z",
      "text": "Flat. After exiting the long at 18:12, the invalidation signal has fully confirmed: RSI collapsed from 92.4 to 83.2, MACD histogram shrank (+418.5), and price formed lower highs/closes (68173\u219268173\u219268262). The hourly structure shows exhaustion after a +5.64% rally. Fear & Greed at 46 (Fear) confirms sentiment divergence. I'll stay flat pending a clearer directional setup with technical confirmation."
@@ -1047,6 +1043,10 @@
     {
      "t": "2026-08-19T20:45:46Z",
      "text": "Price rallied strongly to 68635 (+6.33% in 24h), but technical structure shows exhaustion: RSI(14) at 86.5 (overbought, rolling over from 92.4 peak), MACD histogram shrinking (+397.9 vs +436.1 two hours ago), and two consecutive lower closes (68379\u219268635 barely above). Daily RSI 71.8 confirms elevated momentum but not fresh strength. Fear & Greed at 46 (Fear) shows sentiment weakness. The bounce is mature; I'll remain flat and wait for either a clear pullback setup or a breakdown to confirm exhaustion before re-entering."
+    },
+    {
+     "t": "2026-08-19T21:42:37Z",
+     "text": "Price has broken decisively above the intraday swing high (69577 in the 15:00 candle) and closed the 21:00 hour at 69558 with strong momentum (RSI 89.2, MACD histogram +425.8). The hourly structure has completed a higher-low bounce (68009 low in 18:00) into a sustained rally; invalidation signals from earlier rounds have been overcome by fresh buying. Daily 20-SMA at 64097 provides structural support well below. I'm entering long on strength into the breakout, risking the recent intraday swing low (68500 area) for a move toward the upper Bollinger Band (69997) and beyond."
     }
    ]
   },
@@ -1243,12 +1243,8 @@
      "reason": "take_profit"
     }
    ],
-   "n_decisions": 271,
+   "n_decisions": 272,
    "last_reasonings": [
-    {
-     "t": "2026-08-19T18:12:08Z",
-     "text": "Price has pulled back from the 69577 spike high to 68028, now consolidating in a tighter range (68000-68900) over the last few hours rather than continuing to melt up or fully round-tripping the move. RSI remains extremely overbought (82) on hourly and daily (70), and price is still far above the 20/50/200 SMAs and upper Bollinger band, so chasing longs here is poor risk/reward. At the same time, the pullback has held above 68000 (round number, roughly the post-spike consolidation floor) rather than breaking down toward 65000, suggesting dip buyers are present - not a clean short setup either. Best to stay flat and wait for either a clean breakdown below 67790 (last hour's low) confirming distribution, or a healthy pullback into 66000-67000 for a long entry with better risk/reward."
-    },
     {
      "t": "2026-08-19T19:23:04Z",
      "text": "Price is consolidating in a 68000-68900 range after the parabolic spike to 69577, holding well above the prior breakout level (64550-65000). No position currently held, so no invalidation was triggered - I was flat last round too. RSI remains extremely overbought (83 hourly, 71 daily) and price is far above all major MAs and the upper Bollinger band, making fresh longs poor risk/reward. However, the range has held above 68000 for several hours without breaking down, so shorting into apparent support isn't attractive either. Staying flat and waiting for either a clean breakdown below 67790 (recent low) to confirm distribution/short setup, or a deeper pullback into 66000-67000 for a better long entry."
@@ -1256,6 +1252,10 @@
     {
      "t": "2026-08-19T20:45:52Z",
      "text": "I was flat last round, so no invalidation was triggered. Price is now consolidating 68000-68900 for the fourth straight hour, holding well above the 64550 breakout level and even grinding higher (68635 last close, new local high 68773). RSI is extremely overbought (86.5 hourly, 71.8 daily) and price is stretched far above all MAs and the upper Bollinger band, so chasing a fresh long here has poor risk/reward - a sharp mean-reversion pullback is a real risk. At the same time, the range keeps holding above 68000 without any breakdown, so shorting into demonstrated strength is also risky. Staying flat; will look to short on a confirmed breakdown below 68000/67790, or buy a pullback into the 66000-67000 zone where risk/reward improves."
+    },
+    {
+     "t": "2026-08-19T21:42:44Z",
+     "text": "I was flat last round, so no invalidation was triggered. Price has now broken sharply higher again, closing 69558 with a new local high 69888, extending the parabolic move. RSI(14) hourly at 89.2 is extremely extended and daily RSI 74 confirms overbought conditions across timeframes - price is far above all MAs and even above the upper Bollinger band (69997 is close but momentum is stretched). Chasing longs here has terrible risk/reward given how far/fast this has moved (from 64200 to 69888 in ~30 hours), but shorting a market in this strong an uptrend with fresh highs being made is also dangerous - no confirmed reversal signal yet. Staying flat and waiting for either a confirmed breakdown (hourly close below 68378, the last hour's low) to signal exhaustion/reversal, or a healthy pullback into the 66000-67500 zone for a better long entry with defined risk."
     }
    ]
   },
@@ -1265,10 +1265,10 @@
    "equity": 9172.778647751324,
    "qty": 0.26225533762460773,
    "entry": 68635.4,
-   "stop": 67780.0,
-   "tp": 70500.0,
+   "stop": 68550.0,
+   "tp": 71500.0,
    "opened_at": "2026-08-19T20:45:59Z",
-   "invalidation": "Hourly close below 67780 (base support / 18:00 low) invalidates the continuation and stops me out. A close back below the 20-SMA (~65686) would confirm the breakout failed entirely.",
+   "invalidation": "Hourly close below 68550 (raised stop / breakout base) invalidates continuation and closes me out. An hourly close back below the 20-SMA (~65966) would confirm total breakout failure.",
    "liquidated": false,
    "trades": [
     {
@@ -1602,12 +1602,8 @@
      "reason": "take_profit"
     }
    ],
-   "n_decisions": 271,
+   "n_decisions": 272,
    "last_reasonings": [
-    {
-     "t": "2026-08-19T18:12:19Z",
-     "text": "Invalidation (close below 65050) did NOT trigger \u2014 breakout intact, 18:00 at 68028 well above all SMAs. But the picture has cooled: after the 15:00 blowoff to 69577, price has faded three straight hours (68540 \u2192 68433 \u2192 68173 \u2192 68028) on collapsing volume. RSI still hot at 82, price sitting right on the Bollinger upper band (68386). This is a stalling top-of-move, not a fresh consolidation base holding above 68k \u2014 momentum is fading but there's no confirmed reversal either. Chasing long here into a fading RSI-82 move is poor R/R, and shorting a still-intact uptrend is premature. I stay flat and wait for either a real base to build above 68k (long re-entry) or a decisive breakdown below the 20-SMA/breakout support for a short."
-    },
     {
      "t": "2026-08-19T19:23:12Z",
      "text": "Invalidation (close below 65050) did NOT trigger \u2014 breakout intact, price 68262 well above all SMAs. After the 15:00 blowoff to 69577, price has spent 4+ hours consolidating in a tight 68000-68500 range on fading volume, digesting the spike without breaking down. RSI still elevated at 83. This is now looking more like a genuine consolidation base above 68k, but volume is thin and I have no edge chasing at the top of a stretched move near the Bollinger upper (68885). I stay flat: I'll go long only on a decisive hourly close above 68500 with volume (confirmed continuation), or short on a breakdown below 67790 (18:00-hour low / base support)."
@@ -1615,6 +1611,10 @@
     {
      "t": "2026-08-19T20:45:59Z",
      "text": "Invalidation (close below 65050) never triggered \u2014 breakout fully intact. Price has now consolidated 5+ hours in a 68000-68800 range and the 20:00 candle closed 68635, above my stated 68500 long-trigger with the strongest volume (231) of the consolidation and pushing toward the range high (68773). This is the confirmed continuation setup I laid out: a base holding above 68k, not a blowoff. Daily RSI 71.8 (not extreme), MACD strongly positive, all SMAs stacked bullishly. I go long ~2x equity with a stop below base support at 67780."
+    },
+    {
+     "t": "2026-08-19T21:42:51Z",
+     "text": "Invalidation NOT triggered \u2014 no close below 67780; the 20:00 and 21:00 candles closed 69033 and 69558, a fresh breakout above the prior consolidation on strong volume (366, 480). Position is +242 and continuation is confirmed. Hourly RSI is extreme at 89 and price is pressing the Bollinger upper (69997), so I keep size steady rather than pressing, but I raise my stop to 68550 (locking in the breakout and protecting against a sharp fade) and lift TP toward 71500. I let the trend run with a protected base."
     }
    ]
   }
