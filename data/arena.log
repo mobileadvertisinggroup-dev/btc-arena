@@ -1717,3 +1717,4 @@
 2026-08-19T13:25:15Z haiku_ta: long $12000 -> opened long $12000 @ 64936.80; stop=64400.0 tp=65200.0
 2026-08-19T13:25:22Z sonnet_ta: long $4000 -> opened long $4000 @ 64936.80; stop=64550.0 tp=65450.0
 2026-08-19T13:25:32Z opus_ta: long $17000 -> opened long $17000 @ 64936.80; stop=64620.0 tp=65650.0
+2026-08-19T14:06:08Z haiku_ta: take_profit @ 65200.00

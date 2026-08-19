@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-19T13:25:32Z",
- "last_tick_at": "2026-08-19T13:25:32Z",
- "last_price": 64936.8,
+ "last_tick_at": "2026-08-19T14:06:08Z",
+ "last_price": 65200.9,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -694,12 +694,12 @@
   "haiku_ta": {
    "display": "Moudir+ (Haiku 4.5 TA)",
    "api_model": "claude-haiku-4-5",
-   "equity": 9845.497211331076,
-   "qty": 0.18479506227593598,
-   "entry": 64936.8,
-   "stop": 64400.0,
-   "tp": 65200.0,
-   "opened_at": "2026-08-19T13:25:15Z",
+   "equity": 9888.110952691906,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close below 64400 (breaks the critical support level that held through the recent range), OR hourly RSI dropping below 55 with a lower high within 2 candles (momentum exhaustion after overbought), OR price closing below 64800 on 2 consecutive hourly candles (failed breakout structure).",
    "liquidated": false,
    "trades": [
@@ -952,6 +952,16 @@
      "exit": 64400.0,
      "pnl": -98.76,
      "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-19T13:25:15Z",
+     "closed_at": "2026-08-19T14:06:08Z",
+     "side": "long",
+     "qty": 0.184795,
+     "entry": 64936.8,
+     "exit": 65200.0,
+     "pnl": 42.61,
+     "reason": "take_profit"
     }
    ],
    "n_decisions": 265,
