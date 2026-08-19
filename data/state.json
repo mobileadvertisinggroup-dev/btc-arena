@@ -1,18 +1,18 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-19T14:50:43Z",
- "last_tick_at": "2026-08-19T14:50:43Z",
- "last_price": 65478.4,
+ "last_tick_at": "2026-08-19T15:17:24Z",
+ "last_price": 66745.0,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
    "api_model": "claude-haiku-4-5",
-   "equity": 9799.318676776611,
-   "qty": 0.27489981428990323,
-   "entry": 65478.4,
-   "stop": 63600.0,
-   "tp": 65800.0,
-   "opened_at": "2026-08-19T14:50:09Z",
+   "equity": 9878.682253162106,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -174,6 +174,16 @@
      "exit": 65500.0,
      "pnl": 200.11,
      "reason": "take_profit"
+    },
+    {
+     "opened_at": "2026-08-19T14:50:09Z",
+     "closed_at": "2026-08-19T15:17:24Z",
+     "side": "long",
+     "qty": 0.2749,
+     "entry": 65478.4,
+     "exit": 65800.0,
+     "pnl": 79.36,
+     "reason": "take_profit"
     }
    ],
    "n_decisions": 267,
@@ -196,12 +206,12 @@
   "sonnet": {
    "display": "Jamil (Sonnet 5)",
    "api_model": "claude-sonnet-5",
-   "equity": 9862.008729244397,
-   "qty": 0.06159835409197866,
-   "entry": 64936.8,
-   "stop": 64850.0,
-   "tp": 66200.0,
-   "opened_at": "2026-08-19T13:25:04Z",
+   "equity": 9937.78086461294,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -393,6 +403,16 @@
      "exit": 64520.0,
      "pnl": -19.2,
      "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-19T13:25:04Z",
+     "closed_at": "2026-08-19T15:17:24Z",
+     "side": "long",
+     "qty": 0.061598,
+     "entry": 64936.8,
+     "exit": 66200.0,
+     "pnl": 75.77,
+     "reason": "take_profit"
     }
    ],
    "n_decisions": 267,
@@ -415,12 +435,12 @@
   "opus": {
    "display": "Ziad (Opus 4.8)",
    "api_model": "claude-opus-4-8",
-   "equity": 9337.515842612402,
-   "qty": 0.2155942393219253,
-   "entry": 64936.8,
-   "stop": 65050.0,
-   "tp": 66000.0,
-   "opened_at": "2026-08-19T13:25:12Z",
+   "equity": 9559.621027961848,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -682,6 +702,16 @@
      "exit": 64480.0,
      "pnl": -54.93,
      "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-19T13:25:12Z",
+     "closed_at": "2026-08-19T15:17:24Z",
+     "side": "long",
+     "qty": 0.215594,
+     "entry": 64936.8,
+     "exit": 66000.0,
+     "pnl": 222.11,
+     "reason": "take_profit"
     }
    ],
    "n_decisions": 267,
@@ -704,12 +734,12 @@
   "haiku_ta": {
    "display": "Moudir+ (Haiku 4.5 TA)",
    "api_model": "claude-haiku-4-5",
-   "equity": 9880.610952691906,
-   "qty": 0.22908317857491936,
-   "entry": 65478.4,
-   "stop": 64900.0,
-   "tp": 65650.0,
-   "opened_at": "2026-08-19T14:50:28Z",
+   "equity": 9912.40197079864,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close below 64900 (breaks the immediate support from this breakout candle), OR hourly RSI dropping below 60 with a lower high on the next candle (exhaustion after overbought), OR a 2-candle close below 65200 (failed continuation of the breakout structure).",
    "liquidated": false,
    "trades": [
@@ -972,6 +1002,16 @@
      "exit": 65200.0,
      "pnl": 42.61,
      "reason": "take_profit"
+    },
+    {
+     "opened_at": "2026-08-19T14:50:28Z",
+     "closed_at": "2026-08-19T15:17:24Z",
+     "side": "long",
+     "qty": 0.229083,
+     "entry": 65478.4,
+     "exit": 65650.0,
+     "pnl": 31.79,
+     "reason": "take_profit"
     }
    ],
    "n_decisions": 266,
@@ -1202,12 +1242,12 @@
   "opus_ta": {
    "display": "Ziad+ (Opus 4.8 TA)",
    "api_model": "claude-opus-4-8",
-   "equity": 8885.913283273863,
-   "qty": 0.2617930048909093,
-   "entry": 64936.8,
-   "stop": 65050.0,
-   "tp": 66100.0,
-   "opened_at": "2026-08-19T13:25:32Z",
+   "equity": 9181.778647751324,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close back below 65050 (Bollinger upper / breakout support) invalidates the continuation \u2014 stop flattens me. A close below the 20-SMA (~64510) would confirm the whole breakout was a fakeout.",
    "liquidated": false,
    "trades": [
@@ -1530,6 +1570,16 @@
      "exit": 64550.0,
      "pnl": -76.86,
      "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-19T13:25:32Z",
+     "closed_at": "2026-08-19T15:17:24Z",
+     "side": "long",
+     "qty": 0.261793,
+     "entry": 64936.8,
+     "exit": 66100.0,
+     "pnl": 295.87,
+     "reason": "take_profit"
     }
    ],
    "n_decisions": 266,
