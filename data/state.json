@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-20T03:07:46Z",
- "last_tick_at": "2026-08-20T03:07:46Z",
- "last_price": 69108.5,
+ "last_tick_at": "2026-08-20T03:56:26Z",
+ "last_price": 69118.1,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -216,12 +216,12 @@
   "sonnet": {
    "display": "Jamil (Sonnet 5)",
    "api_model": "claude-sonnet-5",
-   "equity": 9935.78086461294,
-   "qty": 0.058278963916579496,
-   "entry": 68635.4,
-   "stop": 68900.0,
-   "tp": 71800.0,
-   "opened_at": "2026-08-19T20:45:35Z",
+   "equity": 9949.19376815834,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -423,6 +423,16 @@
      "exit": 66200.0,
      "pnl": 75.77,
      "reason": "take_profit"
+    },
+    {
+     "opened_at": "2026-08-19T20:45:35Z",
+     "closed_at": "2026-08-20T03:56:26Z",
+     "side": "long",
+     "qty": 0.058279,
+     "entry": 68635.4,
+     "exit": 68900.0,
+     "pnl": 13.41,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 277,
@@ -445,12 +455,12 @@
   "opus": {
    "display": "Ziad (Opus 4.8)",
    "api_model": "claude-opus-4-8",
-   "equity": 9325.080587670363,
-   "qty": 0.26368912809724854,
-   "entry": 68262.2,
-   "stop": 68950.0,
-   "tp": 71500.0,
-   "opened_at": "2026-08-19T19:22:52Z",
+   "equity": 9497.3552872845,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -731,6 +741,16 @@
      "entry": 68545.5,
      "exit": 67800.0,
      "pnl": -216.04,
+     "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-19T19:22:52Z",
+     "closed_at": "2026-08-20T03:56:26Z",
+     "side": "long",
+     "qty": 0.263689,
+     "entry": 68262.2,
+     "exit": 68950.0,
+     "pnl": 172.27,
      "reason": "stop_loss"
     }
    ],
@@ -1282,12 +1302,12 @@
   "opus_ta": {
    "display": "Ziad+ (Opus 4.8 TA)",
    "api_model": "claude-opus-4-8",
-   "equity": 9172.778647751324,
-   "qty": 0.26225533762460773,
-   "entry": 68635.4,
-   "stop": 68900.0,
-   "tp": 71500.0,
-   "opened_at": "2026-08-19T20:45:59Z",
+   "equity": 9233.13671370563,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close below 68900 invalidates the consolidation base and stops me out. A close back below the 20-SMA (~67491) would confirm breakout failure and trend reversal.",
    "liquidated": false,
    "trades": [
@@ -1620,6 +1640,16 @@
      "exit": 66100.0,
      "pnl": 295.87,
      "reason": "take_profit"
+    },
+    {
+     "opened_at": "2026-08-19T20:45:59Z",
+     "closed_at": "2026-08-20T03:56:26Z",
+     "side": "long",
+     "qty": 0.262255,
+     "entry": 68635.4,
+     "exit": 68900.0,
+     "pnl": 60.36,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 276,
