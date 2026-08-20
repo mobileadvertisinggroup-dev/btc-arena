@@ -1850,3 +1850,9 @@
 2026-08-20T13:04:55Z opus_ta: long $18089 -> held long; stop=71400.0 tp=74500.0
 2026-08-20T13:55:52Z opus: stop_loss @ 71450.00
 2026-08-20T13:55:52Z opus_ta: stop_loss @ 71400.00
+2026-08-20T14:38:15Z haiku: flat $0 -> closed long (P&L -106.86)
+2026-08-20T14:38:21Z sonnet: long $3994 -> held long; stop=70200.0 tp=73500.0
+2026-08-20T14:38:30Z opus: flat $0 -> stayed flat
+2026-08-20T14:38:34Z haiku_ta: long $20457 -> held long; stop=70500.0 tp=73000.0
+2026-08-20T14:38:41Z sonnet_ta: flat $0 -> stayed flat
+2026-08-20T14:38:49Z opus_ta: flat $0 -> stayed flat
