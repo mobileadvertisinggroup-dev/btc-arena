@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-20T13:04:55Z",
- "last_tick_at": "2026-08-20T13:04:55Z",
- "last_price": 71981.1,
+ "last_tick_at": "2026-08-20T13:55:52Z",
+ "last_price": 71709.9,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -475,12 +475,12 @@
   "opus": {
    "display": "Ziad (Opus 4.8)",
    "api_model": "claude-opus-4-8",
-   "equity": 10058.032211828006,
-   "qty": 0.27922470468497174,
-   "entry": 71626.9,
-   "stop": 71450.0,
-   "tp": 74500.0,
-   "opened_at": "2026-08-20T08:50:38Z",
+   "equity": 9998.662058994365,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -782,6 +782,16 @@
      "exit": 71500.0,
      "pnl": 579.68,
      "reason": "take_profit"
+    },
+    {
+     "opened_at": "2026-08-20T08:50:38Z",
+     "closed_at": "2026-08-20T13:55:52Z",
+     "side": "long",
+     "qty": 0.279225,
+     "entry": 71626.9,
+     "exit": 71450.0,
+     "pnl": -59.37,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 285,
@@ -1342,12 +1352,12 @@
   "opus_ta": {
    "display": "Ziad+ (Opus 4.8 TA)",
    "api_model": "claude-opus-4-8",
-   "equity": 9224.13671370563,
-   "qty": 0.2513022342164746,
-   "entry": 71626.9,
-   "stop": 71400.0,
-   "tp": 74500.0,
-   "opened_at": "2026-08-20T08:51:00Z",
+   "equity": 9158.144747000384,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close below 71400 invalidates the continuation thesis and signals the breakout is stalling into a reversal. Stop at 71400 enforces this.",
    "liquidated": false,
    "trades": [
@@ -1689,6 +1699,16 @@
      "entry": 68635.4,
      "exit": 68900.0,
      "pnl": 60.36,
+     "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-20T08:51:00Z",
+     "closed_at": "2026-08-20T13:55:52Z",
+     "side": "long",
+     "qty": 0.251302,
+     "entry": 71626.9,
+     "exit": 71400.0,
+     "pnl": -65.99,
      "reason": "stop_loss"
     }
    ],

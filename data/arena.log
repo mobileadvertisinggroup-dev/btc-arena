@@ -1848,3 +1848,5 @@
 2026-08-20T13:04:43Z haiku_ta: long $20591 -> held long; stop=70500.0 tp=73000.0
 2026-08-20T13:04:49Z sonnet_ta: flat $0 -> stayed flat
 2026-08-20T13:04:55Z opus_ta: long $18089 -> held long; stop=71400.0 tp=74500.0
+2026-08-20T13:55:52Z opus: stop_loss @ 71450.00
+2026-08-20T13:55:52Z opus_ta: stop_loss @ 71400.00
