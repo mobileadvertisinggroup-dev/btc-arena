@@ -1,18 +1,18 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
- "last_decision_at": "2026-08-20T23:35:07Z",
- "last_tick_at": "2026-08-20T23:56:08Z",
- "last_price": 73024.1,
+ "last_decision_at": "2026-08-21T01:26:55Z",
+ "last_tick_at": "2026-08-21T01:26:55Z",
+ "last_price": 74504.7,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
    "api_model": "claude-haiku-4-5",
-   "equity": 10076.005279218793,
-   "qty": 0.341383147962284,
-   "entry": 73231.5,
-   "stop": 72300.0,
-   "tp": 73500.0,
-   "opened_at": "2026-08-20T23:34:33Z",
+   "equity": 10155.120823759053,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -224,14 +224,20 @@
      "exit": 72740.5,
      "pnl": 53.49,
      "reason": "decision_close"
+    },
+    {
+     "opened_at": "2026-08-20T23:34:33Z",
+     "closed_at": "2026-08-21T01:26:13Z",
+     "side": "long",
+     "qty": 0.341383,
+     "entry": 73231.5,
+     "exit": 73500.0,
+     "pnl": 79.12,
+     "reason": "take_profit"
     }
    ],
-   "n_decisions": 294,
+   "n_decisions": 295,
    "last_reasonings": [
-    {
-     "t": "2026-08-20T21:37:14Z",
-     "text": "Current price 72817 is now 99.7% of the way to my 73500 TP target \u2014 only ~683 points remain. The invalidation signal from last round (hourly close below 71200 OR bearish engulfing at high >73000 + close <72500) has NOT triggered. The 21:00 candle closed at 72817, well above the 71200 support and showing no rejection. The 08:00 reversal structure (69770\u219271533 bottom) and entire 3000+ point rally remain intact. Holding the long to the target with stops in place."
-    },
     {
      "t": "2026-08-20T22:37:11Z",
      "text": "Current price 72740.50 is 99.9% of the way to my 73500 TP target (+760 points remaining). The 22:00 hourly candle just closed at 72740 \u2014 no break below the 71200 invalidation threshold, no bearish engulfing signal. The rally structure remains intact. However, with only 0.1% to target and momentum appearing to consolidate/decelerate into the final push zone, I am taking the +61 unrealized profit off the table now rather than risk whipsaw into TP or stop at these razor-thin margins. The risk/reward is no longer favorable given execution costs."
@@ -239,6 +245,10 @@
     {
      "t": "2026-08-20T23:34:33Z",
      "text": "Price at 73231.50 has now broken through the previous 73000+ target zone I was tracking. The 23:00 hourly close at 73232 confirms the breakout above prior resistance. The 08:00 reversal structure (69770\u219271533) underpins a clean 3500-point rally with no invalidation signal triggered. I'm re-entering long to capitalize on the breakout momentum, targeting 73500 with a tight stop below the recent swing low at 72300."
+    },
+    {
+     "t": "2026-08-21T01:26:19Z",
+     "text": "My invalidation signal from last round has NOT triggered: price did not close hourly below 72300, and there was no reversal candle below 72800 after printing a higher high above 73500 to signal exhaustion. However, I am now facing a critical decision point. The 00:00 candle printed 73930 (new high), but the 01:00 candle has just closed at 74505 \u2014 which is 1005 points above my stated TP of 73500. I am flat and took that TP profit earlier. At 74504.70 (current), price has extended ~1000 points beyond my original target zone. Momentum is still up 6.92% on the day, but the market has now moved significantly into uncharted territory. Rather than chase a move that has already exceeded my thesis, I remain flat and await a pullback or a clearer invalidation setup before re-engaging."
     }
    ],
    "invalidation": "Hourly close below 72300 (losing the 23:00 candle's support) OR a reversal candle closing below 72800 after printing a higher high above 73500, signaling exhaustion at target zone."
@@ -246,12 +256,12 @@
   "sonnet": {
    "display": "Jamil (Sonnet 5)",
    "api_model": "claude-sonnet-5",
-   "equity": 10001.703768330312,
-   "qty": 0.055844940936994346,
-   "entry": 71626.9,
-   "stop": 71800.0,
-   "tp": 74800.0,
-   "opened_at": "2026-08-20T08:50:30Z",
+   "equity": 10173.816749626445,
+   "qty": 0.08053183221998075,
+   "entry": 74504.7,
+   "stop": 72700.0,
+   "tp": 77500.0,
+   "opened_at": "2026-08-21T01:26:25Z",
    "liquidated": false,
    "trades": [
     {
@@ -473,14 +483,20 @@
      "exit": 70800.0,
      "pnl": 56.51,
      "reason": "take_profit"
+    },
+    {
+     "opened_at": "2026-08-20T08:50:30Z",
+     "closed_at": "2026-08-21T01:26:13Z",
+     "side": "long",
+     "qty": 0.055845,
+     "entry": 71626.9,
+     "exit": 74800.0,
+     "pnl": 175.11,
+     "reason": "take_profit"
     }
    ],
-   "n_decisions": 294,
+   "n_decisions": 295,
    "last_reasonings": [
-    {
-     "t": "2026-08-20T21:37:19Z",
-     "text": "Invalidation level of 70800 has not triggered \u2014 price continues to consolidate in the 72300-73000 range, well above the stop, after the strong breakout from 69k. Price is grinding sideways-to-up with higher lows forming (72309, 72362, 72588), a healthy consolidation pattern rather than a reversal. Holding the existing position unchanged; stop and take-profit remain well placed to protect gains while allowing room toward the 73800 target."
-    },
     {
      "t": "2026-08-20T22:37:15Z",
      "text": "Invalidation level of 70800 has not triggered \u2014 price continues consolidating in the 72300-73000 range with higher lows (72309, 72362, 72475, 72562), a healthy pattern after the breakout from 69k. No new information changes the thesis; holding unchanged with stop protecting gains and take-profit at 73800 for continuation."
@@ -488,19 +504,23 @@
     {
      "t": "2026-08-20T23:34:38Z",
      "text": "Invalidation level of 70800 has not triggered \u2014 price broke decisively higher, closing at 73232, near the 73800 take-profit target. Momentum remains strong with a clean breakout candle (72664->73387 range) on the last hour. Raising stop to 71800 to lock in more gains while giving room, and extending take-profit to 74800 since momentum suggests continuation rather than exhaustion."
+    },
+    {
+     "t": "2026-08-21T01:26:25Z",
+     "text": "Previous long hit take-profit at 74800 as planned - thesis fully validated, strong momentum continuation from 69k to 74.5k. Price is now breaking to new highs with a strong hourly close (73682->74505) on rising volume, no signs of exhaustion yet. Re-entering long with tighter risk given the extended move, placing stop below the recent breakout consolidation zone (72700) and targeting continuation toward 77500."
     }
    ],
-   "invalidation": "Hourly close back below 71800 would signal the breakout is failing and momentum has reversed, invalidating this long."
+   "invalidation": "Hourly close back below 72700 would signal the breakout is failing and momentum has reversed, invalidating this long."
   },
   "opus": {
    "display": "Ziad (Opus 4.8)",
    "api_model": "claude-opus-4-8",
-   "equity": 9988.662058994365,
-   "qty": 0.27606845393383744,
-   "entry": 72445.8,
-   "stop": 72700.0,
-   "tp": 74800.0,
-   "opened_at": "2026-08-20T15:52:28Z",
+   "equity": 10617.75745306828,
+   "qty": 0.28186141276993265,
+   "entry": 74504.7,
+   "stop": 73400.0,
+   "tp": 77500.0,
+   "opened_at": "2026-08-21T01:26:33Z",
    "liquidated": false,
    "trades": [
     {
@@ -812,14 +832,20 @@
      "exit": 71450.0,
      "pnl": -59.37,
      "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-20T15:52:28Z",
+     "closed_at": "2026-08-21T01:26:13Z",
+     "side": "long",
+     "qty": 0.276068,
+     "entry": 72445.8,
+     "exit": 74800.0,
+     "pnl": 639.6,
+     "reason": "take_profit"
     }
    ],
-   "n_decisions": 294,
+   "n_decisions": 295,
    "last_reasonings": [
-    {
-     "t": "2026-08-20T21:37:32Z",
-     "text": "Invalidation check: neither trigger fired. No hourly close below 72150 (all recent closes above), and no decisive close above 73200 yet \u2014 the 21:00 closed exactly at 72817, and the 20:00 tapped 73043 but couldn't hold. The breakout base is intact on a strong +4.5% day, and price is holding the highs. I keep my ~2x long. I'm nudging the stop up to 72300 to lock in more gains as the base has clearly established support above 72550 in recent hours. TP stays 74800. Won't add until a clean hourly close above 73200 confirms continuation."
-    },
     {
      "t": "2026-08-20T22:37:21Z",
      "text": "Invalidation check: neither trigger fired. No hourly close below 72300 (22:00 closed 72740, above), and no decisive close above 73200 yet \u2014 price stalled with the 22:00 candle a low-volume inside bar (44 vol) tapping 72800 high. The +5% day is holding gains but momentum is fading near the highs. I keep my ~2x long unchanged, stop 72300 protecting the base, TP 74800. Won't add until a clean hourly close above 73200."
@@ -827,19 +853,23 @@
     {
      "t": "2026-08-20T23:34:44Z",
      "text": "Invalidation check: the upside trigger fired \u2014 23:00 closed at 73232, a decisive close above 73200 confirming continuation after tapping 73387. As planned, I trail the stop up rather than adding chase risk near the highs. The +5.7% day is holding with fresh highs and rising volume into the close. I keep my ~2x long and raise the stop to 72700 to lock in gains and protect against a failed breakout. TP stays 74800."
+    },
+    {
+     "t": "2026-08-21T01:26:33Z",
+     "text": "My prior long hit the 74800 TP for +639. The breakout is accelerating hard \u2014 01:00 tapped 74850 with strong volume, and the daily structure went from 62-65k range to 74.5k in three days (+6.9% today). Momentum is clearly intact with no sign of exhaustion yet. I re-enter long at ~2x, placing the stop just below the 73400 breakout base to protect against a sharp reversal, and setting a wider TP to let the trend run. Chasing near highs carries pullback risk, so the stop is tight relative to upside."
     }
    ],
-   "invalidation": "A clean hourly close back below 72700 negates the breakout and stops me out. A close above 73400 extends the move and I'll trail the stop toward 73000."
+   "invalidation": "An hourly close back below 73400 breaks the breakout structure and stops me out. A close above 75500 confirms continuation and I'll trail the stop up toward 74500."
   },
   "haiku_ta": {
    "display": "Moudir+ (Haiku 4.5 TA)",
    "api_model": "claude-haiku-4-5",
-   "equity": 10520.253945399103,
-   "qty": 0.2797237486840582,
-   "entry": 72571.6,
-   "stop": 71200.0,
-   "tp": 73500.0,
-   "opened_at": "2026-08-20T19:29:01Z",
+   "equity": 10769.669625913242,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close below 71200 (stop level) OR daily close below 71000. Additionally: 2 consecutive hourly closes below the 20-hour SMA (71549) without retaking 72600 would signal loss of structural momentum and force exit at market.",
    "liquidated": false,
    "trades": [
@@ -1152,14 +1182,20 @@
      "exit": 72697.5,
      "pnl": 295.86,
      "reason": "decision_close"
+    },
+    {
+     "opened_at": "2026-08-20T19:29:01Z",
+     "closed_at": "2026-08-21T01:26:13Z",
+     "side": "long",
+     "qty": 0.279724,
+     "entry": 72571.6,
+     "exit": 73500.0,
+     "pnl": 249.42,
+     "reason": "take_profit"
     }
    ],
-   "n_decisions": 293,
+   "n_decisions": 294,
    "last_reasonings": [
-    {
-     "t": "2026-08-20T21:37:35Z",
-     "text": "BTC at 72817, up +4.48% in 24h. Invalidation signal has NOT triggered\u2014no hourly or daily close below my thresholds. Hourly RSI 78.6 remains elevated but stable; daily RSI 80.0 confirms overbought without reversal signal. Price consolidated 21 points in the last 4 hourly candles (72656\u219272817), showing disciplined accumulation into resistance. Upper Bollinger Band at 74018 and EMA 12 at 72129 support push toward 73500 TP. Holding 0.27972 BTC with 1.92x leverage and tight 1:3.2 risk/reward (71200 stop to 73500 target)."
-    },
     {
      "t": "2026-08-20T22:37:25Z",
      "text": "BTC at 72740.50, +5.09% in 24h. Invalidation signal (hourly close below 71200 OR daily close below 71000) has NOT triggered\u2014price remains in structural uptrend with hourly RSI 78.2 (elevated but stable, cooling from 82+ extremes). Daily RSI 79.8 confirms overbought without reversal, and upper Bollinger Band at 74053 supports push to 73500 TP target. Holding 0.27972 BTC at 1.92x leverage; risk/reward is 1:3.2 from stop to profit target. Volume consolidated 44 BTC in last hour (thin but consistent with consolidation). Daily close yesterday at 72740 remains above 71000 threshold. Tight consolidation phase before final push."
@@ -1167,6 +1203,10 @@
     {
      "t": "2026-08-20T23:34:48Z",
      "text": "BTC at 73231.50, +5.70% 24h. Invalidation signal (hourly close below 71200 OR daily close below 71000) has NOT triggered\u2014price is in strong structural uptrend. Hourly RSI 80.2 elevated but stable; daily RSI 80.5 confirms overbought without reversal signal yet. Price is 269 points below TP target (73500) with upper Bollinger Band at 74091 providing structural resistance. Just bounced from 23:00 low of 72664, showing support. Holding 0.27972 BTC long at 1.92x leverage with 1:3.2 risk/reward; momentum remains intact despite overbought readings."
+    },
+    {
+     "t": "2026-08-21T01:26:38Z",
+     "text": "BTC at 74504.70 has decisively broken above my 73500 take-profit target and into fresh ATH territory (+6.92% in 24h). My last stated TP was hit and closed automatically. Hourly RSI 85.6 and daily RSI 82.4 are now in extreme overbought\u2014no reversal signal yet, but risk/reward flips negative here. I exited into strength as planned. Evaluating fresh entry: upper Bollinger at 74348 is now just 157 points away; daily SMA 20 at 65179 is 9325 points below. I need a pullback to a more favorable risk setup (ideally 72600\u201373200 zone) before re-engaging long. Staying flat until invalidation is clear or a cleaner long setup forms."
     }
    ]
   },
@@ -1363,12 +1403,8 @@
      "reason": "take_profit"
     }
    ],
-   "n_decisions": 293,
+   "n_decisions": 294,
    "last_reasonings": [
-    {
-     "t": "2026-08-20T21:37:42Z",
-     "text": "No prior position to confront (been flat). Price is still grinding sideways/slightly up in the 72300-73050 range for 6+ hours now - volume remains thin, RSI(14) 78.6 and daily RSI 80 still extremely stretched, and MACD histogram is negative and widening slightly, showing continued momentum deceleration even as price makes marginal new highs. This is a classic late-stage grind: neither a clean breakdown nor a fresh impulsive breakout has occurred. Price is holding above the 20 SMA by ~2%, still no confirmed reversal signal. I'll continue to wait for either a breakdown below 72300-72400 (the recent consolidation floor) to fade exhaustion with a short, or a strong volume-confirmed breakout above 73043 to justify a momentum long - chasing either side in this chop offers poor R:R."
-    },
     {
      "t": "2026-08-20T22:37:32Z",
      "text": "No prior position to confront. Price remains stuck in the same 72300-73050 range for 8+ hours now, with volume drying up further (44 in the last hour, lowest of the session). RSI(14) 78.2 and daily RSI 79.8 are still deeply overbought, MACD histogram is negative and price is sitting right at the upper Bollinger band area relative to a 71549 mid - this is a stretched, low-conviction grind, not a clean trend or reversal. Neither the breakdown level (72300-72400) nor a fresh volume-confirmed breakout above 73043 has triggered, so chasing either direction here remains poor R:R. Staying flat and waiting for a decisive move."
@@ -1376,6 +1412,10 @@
     {
      "t": "2026-08-20T23:34:59Z",
      "text": "No prior position to confront (been flat throughout the grind). Price has now broken decisively above the 72300-73050 range with a strong hourly close at 73232, a fresh high, on rising volume (141 vs sub-50 recent hours). However RSI(14) 80.2 and daily RSI 80.5 are extremely overbought, MACD histogram just turned negative despite price making new highs (bearish divergence), and price is now above the upper Bollinger band (74091 is close though, so not fully extended beyond it yet). This is a classic blow-off/momentum-extension setup - dangerous to chase long given the divergence, but also dangerous to short into a confirmed breakout with volume. I'll wait for either a pullback entry on long (retest of 72600-72800 breakout zone holding) or a clear reversal candle/breakdown below 72664 (this hour's low) to signal exhaustion before committing capital."
+    },
+    {
+     "t": "2026-08-21T01:26:46Z",
+     "text": "No prior position to confront (stayed flat through the grind). Price has now blown out to 74505, up nearly 7% in 24h, with RSI(14) 85.6 and daily RSI 82.4 - extreme overbought readings rarely sustained. MACD histogram is barely positive (+2.3) and flattening despite price still rising - classic bearish divergence forming into a parabolic move. Price is well above the upper Bollinger band (74348), which itself signals over-extension. Chasing long here is poor R:R given the stretch; shorting a still-rising parabolic move without a confirmed reversal candle is also dangerous. I'll wait for either a clear reversal signal (hourly close back below 73640, this hour's low, suggesting rejection) to fade the blow-off, or a consolidation/pullback that holds above prior breakout structure (~73000-73680) before considering a trend-following long."
     }
    ]
   },
@@ -1742,12 +1782,8 @@
      "reason": "stop_loss"
     }
    ],
-   "n_decisions": 293,
+   "n_decisions": 294,
    "last_reasonings": [
-    {
-     "t": "2026-08-20T21:37:50Z",
-     "text": "My 71400 invalidation never triggered \u2014 price held far above and is now at 72817. But nothing has changed structurally: hourly RSI 78.6, daily RSI 80.0, price is deeply overbought after a +4.5% day and pinned near the upper Bollinger. MACD histogram remains negative (-67.5), momentum is fading at the highs while price stalls (18:00-21:00 chopping between 72300-72800). Chasing long here is poor R/R and shorting a strong uptrend without a confirmed lower high/breakdown is premature. I stay flat and wait for a pullback into 71400-72000 (SMA20/EMA12) to buy the trend, or a decisive hourly close below 72300 to consider a short."
-    },
     {
      "t": "2026-08-20T22:37:39Z",
      "text": "My 71400 invalidation never triggered \u2014 price held far above and sits at 72740. Structure is unchanged: hourly RSI 78.2, daily RSI 79.8, deeply overbought after a +5% day, pinned near the upper Bollinger (74053). MACD histogram is still negative (-94) and widening, momentum fading while price chops in a tight 72475-73043 range for 6 hours. Chasing long here is poor R/R, and shorting a powerful uptrend without a confirmed lower high is premature. I've stayed disciplined for many rounds; the pullback buy entry hasn't come. I stay flat and wait for either a dip into 71500-72000 (SMA20/EMA12) to buy the trend, or a decisive hourly close below 72300 to consider a short."
@@ -1755,6 +1791,10 @@
     {
      "t": "2026-08-20T23:35:07Z",
      "text": "My 71400 invalidation never triggered \u2014 price broke higher to 73387 and now sits at 73232, so the uptrend is fully intact. But I've been waiting many rounds for a pullback into 71500-72000 that simply never came; the market ran away. Now hourly RSI 80.2, daily RSI 80.5, price pressed against the upper Bollinger (74091) after a +5.7% day. MACD histogram is negative (-85.7) \u2014 momentum diverging even as price makes new highs, a classic exhaustion warning. Chasing a fresh long at extreme overbought into the BB upper band is terrible R/R, and shorting a runaway uptrend with no lower high or breakdown yet is premature. I stay flat and disciplined. I'd buy a pullback into 72000-72400 (EMA12/breakout retest), or short only on a decisive hourly close below 72400 confirming a reversal."
+    },
+    {
+     "t": "2026-08-21T01:26:55Z",
+     "text": "The pullback I waited for never came \u2014 price ran to 74505, another +7% day. My cautious stance kept me out of a big move, a real cost. But entering now is worse: hourly RSI 85.6, daily RSI 82.4, price is riding/piercing the upper Bollinger (74348) at a vertical parabolic extreme. Chasing long here is the textbook top-buying trap; MACD histogram is barely positive (+2.3) with momentum flattening despite new highs. Shorting a runaway parabola with no confirmed lower high or breakdown is still premature and dangerous. Best R/R is to wait for either a pullback into the EMA12/mid-BB zone (~72200-72800) to buy the trend, or a decisive hourly close below 73000 that signals the blowoff is reversing."
     }
    ]
   }
