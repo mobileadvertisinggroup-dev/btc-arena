@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-21T11:04:00Z",
- "last_tick_at": "2026-08-21T11:04:00Z",
- "last_price": 77649.4,
+ "last_tick_at": "2026-08-21T11:36:07Z",
+ "last_price": 76816.5,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -266,12 +266,12 @@
   "sonnet": {
    "display": "Jamil (Sonnet 5)",
    "api_model": "claude-sonnet-5",
-   "equity": 10173.816749626445,
-   "qty": 0.08053183221998075,
-   "entry": 74504.7,
-   "stop": 76500.0,
-   "tp": 81500.0,
-   "opened_at": "2026-08-21T01:26:25Z",
+   "equity": 10331.421571872559,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -503,6 +503,16 @@
      "exit": 74800.0,
      "pnl": 175.11,
      "reason": "take_profit"
+    },
+    {
+     "opened_at": "2026-08-21T01:26:25Z",
+     "closed_at": "2026-08-21T11:36:07Z",
+     "side": "long",
+     "qty": 0.080532,
+     "entry": 74504.7,
+     "exit": 76500.0,
+     "pnl": 157.6,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 302,
@@ -525,12 +535,12 @@
   "opus": {
    "display": "Ziad (Opus 4.8)",
    "api_model": "claude-opus-4-8",
-   "equity": 11580.455054024998,
-   "qty": 0.29374689490374684,
-   "entry": 78298.7,
-   "stop": 76800.0,
-   "tp": 82000.0,
-   "opened_at": "2026-08-21T08:51:48Z",
+   "equity": 11128.93670186845,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -862,6 +872,16 @@
      "exit": 78000.0,
      "pnl": 974.2,
      "reason": "take_profit"
+    },
+    {
+     "opened_at": "2026-08-21T08:51:48Z",
+     "closed_at": "2026-08-21T11:36:07Z",
+     "side": "long",
+     "qty": 0.293747,
+     "entry": 78298.7,
+     "exit": 76800.0,
+     "pnl": -451.52,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 302,
@@ -884,12 +904,12 @@
   "haiku_ta": {
    "display": "Moudir+ (Haiku 4.5 TA)",
    "api_model": "claude-haiku-4-5",
-   "equity": 10748.169625913242,
-   "qty": 0.549178977428744,
-   "entry": 78298.7,
-   "stop": 76500.0,
-   "tp": 80500.0,
-   "opened_at": "2026-08-21T08:51:52Z",
+   "equity": 9739.355303325512,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close below 76500 (stop level) OR daily close below 75500. Either would signal structural breakdown of the uptrend and a return to consolidation/pullback, invalidating the bullish thesis.",
    "liquidated": false,
    "trades": [
@@ -1212,6 +1232,16 @@
      "exit": 73500.0,
      "pnl": 249.42,
      "reason": "take_profit"
+    },
+    {
+     "opened_at": "2026-08-21T08:51:52Z",
+     "closed_at": "2026-08-21T11:36:07Z",
+     "side": "long",
+     "qty": 0.549179,
+     "entry": 78298.7,
+     "exit": 76500.0,
+     "pnl": -1008.81,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 301,
