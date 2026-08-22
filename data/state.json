@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-22T19:54:45Z",
- "last_tick_at": "2026-08-22T19:54:45Z",
- "last_price": 77460.4,
+ "last_tick_at": "2026-08-22T20:19:13Z",
+ "last_price": 77345.1,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
