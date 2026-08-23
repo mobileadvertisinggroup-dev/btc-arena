@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-23T12:58:05Z",
- "last_tick_at": "2026-08-23T12:58:05Z",
- "last_price": 77210.9,
+ "last_tick_at": "2026-08-23T13:37:01Z",
+ "last_price": 77459.3,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -994,12 +994,12 @@
   "haiku_ta": {
    "display": "Moudir+ (Haiku 4.5 TA)",
    "api_model": "claude-haiku-4-5",
-   "equity": 9241.804308958854,
-   "qty": 0.12133842344038917,
-   "entry": 76200.1,
-   "stop": 75900.0,
-   "tp": 77500.0,
-   "opened_at": "2026-08-23T08:12:14Z",
+   "equity": 9394.8302616807,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close below 76000 (breaks recovery structure floor) OR daily close below 75500 (invalidates mean-reversion thesis entirely and signals return to capitulation). Either condition = thesis broken, position reassessed immediately.",
    "liquidated": false,
    "trades": [
@@ -1362,6 +1362,16 @@
      "exit": 77145.1,
      "pnl": -41.94,
      "reason": "decision_close"
+    },
+    {
+     "opened_at": "2026-08-23T08:12:14Z",
+     "closed_at": "2026-08-23T13:37:01Z",
+     "side": "long",
+     "qty": 0.121338,
+     "entry": 76200.1,
+     "exit": 77500.0,
+     "pnl": 153.03,
+     "reason": "take_profit"
     }
    ],
    "n_decisions": 341,
