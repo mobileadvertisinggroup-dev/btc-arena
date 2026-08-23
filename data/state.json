@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
- "last_decision_at": "2026-08-23T11:46:54Z",
- "last_tick_at": "2026-08-23T12:01:37Z",
- "last_price": 77247.9,
+ "last_decision_at": "2026-08-23T12:58:05Z",
+ "last_tick_at": "2026-08-23T12:58:05Z",
+ "last_price": 77210.9,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -276,12 +276,8 @@
      "reason": "take_profit"
     }
    ],
-   "n_decisions": 341,
+   "n_decisions": 342,
    "last_reasonings": [
-    {
-     "t": "2026-08-23T09:14:26Z",
-     "text": "Invalidation signal has NOT triggered. Hourly close 09:00 at 76553 remains well above structural support at 75568 and within my mean-reversion zone (76200\u201377300). Position is +$77.88 unrealized; holding for take-profit at 77300. Structural support intact; no evidence of breakdown. Continue to target resistance."
-    },
     {
      "t": "2026-08-23T10:36:13Z",
      "text": "Invalidation signal has NOT triggered. Most recent hourly close (10:00 at 76865) remains well above 75568 structural support and within the mean-reversion zone (76200\u201377300). Price is pushing toward the take-profit target at 77300, only ~435 away. Current unrealized P&L is +$140.94. Structural support holds firm; momentum is constructive. Maintain long position targeting 77300 resistance."
@@ -289,6 +285,10 @@
     {
      "t": "2026-08-23T11:46:15Z",
      "text": "At 11:46 UTC, BTC is at 77270.90, and the 11:00 hourly close printed at 77271\u2014effectively at my take-profit target. I held through multiple consolidation candles expecting a decisive break above 77300. The market has reached my thesis objective but shows no momentum to extend further. My invalidation signal (\"daily close below 76800 after testing above 77300\") has been narrowly avoided by intraday retest, but the failure to break and hold above 77300 resistance after four hours of drifting suggests mean reversion thesis has exhausted. Closing the position at market now captures the edge and resets for a new setup."
+    },
+    {
+     "t": "2026-08-23T12:57:34Z",
+     "text": "Invalidation signal has NOT triggered. Last hour (11:00 to 12:00) closed at 77211, remaining well above the 75568 structural support level. The daily close remains above 76800, so the breakdown condition was not met. However, price is now consolidating around the 77211 level with modest volume (127 on 12:00 candle) and no clear directional conviction. The mean-reversion thesis has captured gains; staying flat to reassess whether a new structural setup (breakdown or breakout) is forming before committing fresh capital."
     }
    ],
    "invalidation": "Hourly close decisively below 75568 without recovery to 76200+ within 2 candles, OR a daily close below 76800 after testing above 77300, would invalidate this thesis."
@@ -565,12 +565,8 @@
      "reason": "decision_close"
     }
    ],
-   "n_decisions": 341,
+   "n_decisions": 342,
    "last_reasonings": [
-    {
-     "t": "2026-08-23T09:14:31Z",
-     "text": "Invalidation level of 76950 has not triggered. Price rallied back to 76609 intrahour but closed the 08:00 and 09:00 candles below 76550, still under the retest high. The breakdown/rejection thesis remains intact - lower highs since the 76500-77700 range broke, and price is holding below old support-turned-resistance. Holding the short unchanged, targeting 74800."
-    },
     {
      "t": "2026-08-23T10:36:21Z",
      "text": "Price has rallied to 76865-76892, closing in on and briefly exceeding my invalidation level of 76950 intrahour. The 10:00 candle printed a high of 76892 and closed at 76865, right at the retest high I was watching - the rejection pattern is failing. Bounce off 75568 low has been strong and steady (higher lows: 75898, 75936, 76470, 76541), suggesting the breakdown thesis is losing steam. Rather than wait for a stop-out, I'm closing the short now to preserve capital and reassess - my thesis of clean rejection at resistance is no longer holding as price grinds higher."
@@ -578,6 +574,10 @@
     {
      "t": "2026-08-23T11:46:23Z",
      "text": "Price has now closed decisively above my prior invalidation (76950), printing 77271 and 77270 - the breakdown/short thesis is fully invalidated. Price shows higher lows since the 75568 bounce (75898, 75936, 76470, 76541, 76736) and just broke back into the prior consolidation range (77000-77500) with the 11:00 candle closing at 77271 near session highs. This looks like reclaim of the range after a stop-hunt wick to 75568; momentum is now bullish short-term. Rather than chase immediately after a ~1700pt rally in hours, I'll stay flat and wait for either a pullback entry or clear continuation above 77362 (recent swing high) before committing long."
+    },
+    {
+     "t": "2026-08-23T12:57:41Z",
+     "text": "Price reclaimed the range and pushed to 77363 (11:00 high) but the 12:00 candle stalled and closed back at 77211, giving back most of the intrahour gain - showing hesitation right at the prior swing high resistance (77300-77360 zone). This is a consolidation/indecision candle after a sharp bounce from 75568, not a clean breakout continuation. I don't want to chase long into resistance nor short into an uptrend with higher lows intact. Staying flat until either a clean breakout above 77363 with follow-through, or a pullback toward 76700-76800 support for a long entry."
     }
    ],
    "invalidation": "Hourly close back above 76950 would invalidate this short thesis and trigger exit."
@@ -588,7 +588,7 @@
    "equity": 10741.514330088052,
    "qty": 0.27177113247030904,
    "entry": 77270.9,
-   "stop": 76540.0,
+   "stop": 76680.0,
    "tp": 78300.0,
    "opened_at": "2026-08-23T11:46:32Z",
    "liquidated": false,
@@ -974,12 +974,8 @@
      "reason": "stop_loss"
     }
    ],
-   "n_decisions": 341,
+   "n_decisions": 342,
    "last_reasonings": [
-    {
-     "t": "2026-08-23T09:14:40Z",
-     "text": "My invalidation triggered honestly: the 08:00 candle closed 76480 and 09:00 closed 76553, reclaiming above the 76550 stop and back near the 76767 pivot after a strong recovery from the 75568 low. The bear breakdown has failed \u2014 price recovered the entire flush zone on 144/102 volume. My short stop hit for a small gain. I don't want to flip long into a choppy, mean-reverting range (75568-77467) with no clear directional edge; the daily trend rolled over but price refuses to make new lows. I stay flat and wait for a clean signal."
-    },
     {
      "t": "2026-08-23T10:36:29Z",
      "text": "My bear thesis was invalidated last round \u2014 price reclaimed 76767 (08:00 close 76480, then recovery to 76892 high on 10:00) and has fully rebuilt the 05:00 flush. Now we're back in the middle of the 75568-77467 range, chopping sideways on declining volume. The daily trend rolled over from 78327 but price refuses to make new lows, so there's no clean directional edge. My recent trade log is a string of small stop-outs from fighting a rangebound market \u2014 the discipline here is to not force trades in chop. I stay flat and wait for either a decisive hourly close above 77300 (range high reclaim, go long) or below 75900 (fresh breakdown, go short)."
@@ -987,9 +983,13 @@
     {
      "t": "2026-08-23T11:46:32Z",
      "text": "My prior flat plan said go long on a decisive hourly close above 77300 \u2014 that just triggered: the 11:00 candle closed 77271 after tagging 77346, reclaiming the range high from the 75568 flush low. Price has built a clean series of higher lows (75568 \u2192 75885 \u2192 76464 \u2192 76541 \u2192 76736) on rising volume, a textbook recovery. Daily structure has stabilized near 77000-78327. I take the long breakout with a stop under the last consolidation at 76540 (protects against a failed breakout) targeting the 78300 daily high."
+    },
+    {
+     "t": "2026-08-23T12:57:48Z",
+     "text": "My invalidation has NOT triggered: no hourly close below 76540, and 11:00 closed 77309 while 12:00 closed 77211 \u2014 holding at/above the 77300 reclaim zone rather than falling back into 76700-77200 chop. The higher-low structure from 75568 is intact and price recovered the entire flush. I keep the long but tighten the stop from 76540 to 76680, just under the 10:00-11:00 breakout base, to protect the small unrealized gain buffer and reduce risk given my recent string of stop-outs. Target remains 78300 daily high."
     }
    ],
-   "invalidation": "Hourly close back below 76540 breaks the higher-low structure and proves the breakout false \u2014 stop out. Sustained inability to hold above 77300 (multiple hourly closes back inside 76700-77200) also weakens the thesis."
+   "invalidation": "Hourly close below 76680 breaks the breakout base and invalidates the long. Also, two or more consecutive hourly closes back below 77000 (re-entering the chop range) weakens the thesis and warrants exit."
   },
   "haiku_ta": {
    "display": "Moudir+ (Haiku 4.5 TA)",
@@ -1000,7 +1000,7 @@
    "stop": 75900.0,
    "tp": 77500.0,
    "opened_at": "2026-08-23T08:12:14Z",
-   "invalidation": "Hourly close below 76000 (breaks recovery structure and confirms momentum loss into fresh capitulation phase) OR daily close below 75500 (invalidates entire mean-reversion thesis and signals return to sustained sell-off, requiring immediate flat-to-reassess decision). Either condition = thesis broken and position requires reassessment.",
+   "invalidation": "Hourly close below 76000 (breaks recovery structure floor) OR daily close below 75500 (invalidates mean-reversion thesis entirely and signals return to capitulation). Either condition = thesis broken, position reassessed immediately.",
    "liquidated": false,
    "trades": [
     {
@@ -1364,12 +1364,8 @@
      "reason": "decision_close"
     }
    ],
-   "n_decisions": 340,
+   "n_decisions": 341,
    "last_reasonings": [
-    {
-     "t": "2026-08-23T09:14:44Z",
-     "text": "Invalidation signal NOT triggered: hourly close 76553 > 76000 floor; daily close 76553 >> 75500. Price has recovered +981 pips from 75568 capitulation low (05:00) and is now 85 pips below take-profit target 77500. Position is already long 0.12134 BTC at 76200.10 with +42.86 unrealized P&L. Hourly RSI 45.5 (recovered from 36.1 low) shows momentum inflection; MACD histogram -98.0 (improving from -150.3 nadir), signal line -96.4 (less negative), confirming reversal structure. Daily RSI 78.2 remains overbought but this is consistent with the mean-reversion bounce thesis. Holding position through target, maintaining 75900 stop (capital preservation). Next invalidation: hourly close below 76000 or daily close below 75500 would signal reversal failure."
-    },
     {
      "t": "2026-08-23T10:36:34Z",
      "text": "Invalidation signal NOT triggered: hourly close 76865 > 76000 floor; daily close 76865 >> 75500 threshold. Price has recovered +1297 pips from capitulation low (75568 at 05:00), now 635 pips below take-profit target 77500. Position unrealized P&L +80.65 is building. Hourly RSI 50.9 (neutral inflection, recovered from 36.1 low) shows momentum restoration; MACD histogram -51.3 (substantially improved from -150.3 nadir), signal crossing suggests upside continuation. Daily RSI 79.6 overbought but consistent with mean-reversion bounce into resistance zone. Bollinger Band mid 76876 just pierced; price now testing upper band 77745. Holding long position through 77500 target, maintaining 75900 stop for capital preservation. Volume remains healthy at 88 BTC (08:00), consistent with recovery thesis."
@@ -1377,6 +1373,10 @@
     {
      "t": "2026-08-23T11:46:37Z",
      "text": "Invalidation signal NOT triggered: hourly close 77271 > 76000 floor; daily close 77271 >> 75500 threshold. Price has recovered +1703 pips from capitulation low (75568 at 05:00), now at 229 pips below take-profit target 77500. Position unrealized P&L +129.93 continues to build constructively. Hourly RSI 57.0 (neutral zone, fully recovered from 36.1 nadir) shows sustained momentum restoration; MACD histogram +5.0 (first positive print in dataset, major inflection) confirms upside reversal structure intact. Daily RSI 80.8 overbought remains consistent with mean-reversion bounce phase. Price has pierced Bollinger upper band 77773, now consolidating within 76-77 range before final push to 77500. Volume steady at 74 BTC (11:00). Holding long position through 77500 take-profit target; stop remains at 75900 for capital preservation."
+    },
+    {
+     "t": "2026-08-23T12:57:51Z",
+     "text": "Invalidation NOT triggered: hourly close 77211 > 76000; daily close 77211 >> 75500. Price is now 289 pips below take-profit target 77500 after recovering +1643 pips from 75568 capitulation low. Hourly RSI 55.7 (neutral recovery mode) and MACD histogram +41.9 (first positive print, inflection confirmed) support continued upside structure. Daily RSI 80.8 overbought is consistent with mean-reversion bounce phase. Holding long through 77500 target; tight 75900 stop preserves capital if thesis breaks."
     }
    ]
   },
@@ -1603,12 +1603,8 @@
      "reason": "decision_close"
     }
    ],
-   "n_decisions": 340,
+   "n_decisions": 341,
    "last_reasonings": [
-    {
-     "t": "2026-08-23T09:14:49Z",
-     "text": "Invalidation level 77320 has not triggered - price is at 76553, still below it after bouncing off the 75568 low. RSI 45.5 and MACD histogram -98 show bearish momentum decelerating notably, suggesting the downtrend is losing steam and price is consolidating in a 75900-76600 range. However, price remains below SMA20/50 and the breakdown structure is technically intact, so holding the existing short unchanged with TP close at 75400 (within ATR range) and stop preserving the defined risk above the reclaimed range."
-    },
     {
      "t": "2026-08-23T10:36:41Z",
      "text": "Price has recovered from the 75568 low back to 76865, now essentially at my entry and back above SMA20 (76876 mid-BB). RSI is back to neutral 50.9 and MACD histogram, while still negative, is fading fast (-51 from -160). The breakdown thesis is weakening - price is consolidating right at the range highs and threatening to reclaim the prior structure. Rather than wait for the hard stop at 77320 to get hit (which would lock in a bigger loss), I'm closing the short now near breakeven to preserve capital, since momentum has clearly decelerated and greed/daily RSI 79.6 suggests underlying bullish pressure on higher timeframe."
@@ -1616,6 +1612,10 @@
     {
      "t": "2026-08-23T11:46:45Z",
      "text": "Price has reclaimed the prior range, closing above my stated invalidation of 77320... wait, actually last close 77271 is just below 77320. But the hourly candle broke above 77346 intra-hour and closed strong at 77271, near highs, with MACD histogram turning positive (+5.0) after being negative, RSI 57 rising, and price back above SMA20 (76888) and near SMA50 (77261). Daily trend remains strongly bullish (daily RSI 80.8, price above daily SMA20/50 by a wide margin, Fear&Greed 66). The prior breakdown to 75568 looks like a shakeout that's already been fully recovered. Given daily uptrend dominance and hourly momentum flipping bullish, I'm flipping long with a stop below the recent consolidation low (76400) and target near the BB upper/ATH region."
+    },
+    {
+     "t": "2026-08-23T12:57:55Z",
+     "text": "Invalidation level of 76580 has not triggered - price is holding at 77211, still above SMA20 (76886) and consolidating near recent highs. RSI 55.7 and MACD histogram +41.9 (positive and rising) confirm bullish momentum intact after last hour's reclaim. Daily trend remains strongly bullish (daily RSI 80.8, greed 66, price well above daily SMA20/50). Holding the long unchanged with stop below consolidation lows and target near BB upper/prior highs."
     }
    ]
   },
@@ -2002,12 +2002,8 @@
      "reason": "decision_close"
     }
    ],
-   "n_decisions": 340,
+   "n_decisions": 341,
    "last_reasonings": [
-    {
-     "t": "2026-08-23T09:15:36Z",
-     "text": "Invalidation check: my trigger was hourly close above 76650. The 09:00 close is 76553 \u2014 below 76650, so technically not triggered, but only barely. Price has bounced sharply from 75568 lows and reclaimed most of the breakdown; the 08:00 candle closed at 76480, well above the earlier lows, showing the sellers are exhausted near-term. Daily RSI 78 still stretched supports the mean-reversion short thesis into the 66-67k SMAs, so I keep the short but widen my stop to 76900 to avoid being wicked out during this bounce while the higher-timeframe trend still favors downside. Position is small (+$32) and I want to give the daily overextension time to resolve."
-    },
     {
      "t": "2026-08-23T10:36:49Z",
      "text": "Invalidation check: my trigger was two consecutive hourly closes above 76900. The 10:00 close is 76865 \u2014 just under, so not strictly triggered, but the bounce has fully reclaimed the breakdown. Price has recovered from 75568 to 76865, sitting right on the SMA20 (76876) and Bollinger mid, RSI back to neutral 50.9. The intraday breakdown short thesis has effectively played out and reversed \u2014 I'm giving back gains holding a position whose edge is gone. Hourly MACD is still negative but the structure I was trading (rejection below SMA20) no longer holds. I've been chasing my stop up round after round; the honest move is to close and step aside rather than fight a V-shaped recovery. Daily remains overbought (RSI 79.6) which keeps me cautious on longs too, so I go flat and wait for a cleaner setup."
@@ -2015,6 +2011,10 @@
     {
      "t": "2026-08-23T11:46:54Z",
      "text": "Invalidation check: my short thesis was invalidated last round \u2014 I closed and went flat. Since then price has fully reclaimed the breakdown: 11:00 closed at 77271, above SMA20 (76888) and SMA50 (77261), with two straight hourly closes above 76900. The V-recovery is confirmed and my breakdown short is dead. But I'm not chasing a long here either: daily RSI is extremely stretched at 80.8 after a parabolic run from 63k to 78k, F&G in Greed, and price is now pressing the upper Bollinger band (77773) \u2014 a poor risk/reward entry for a fresh long into overbought conditions. Hourly MACD is still slightly negative and flat. No clean edge in either direction; I stay flat and wait for either a pullback to the SMA20 (~76900) to buy the uptrend, or a decisive rejection to short."
+    },
+    {
+     "t": "2026-08-23T12:58:05Z",
+     "text": "My breakdown short was correctly invalidated and closed rounds ago \u2014 the V-recovery is confirmed with multiple hourly closes above 76900. Price is now chopping around SMA20 (76886) and SMA50 (77250), which are converging \u2014 a compression/indecision zone with no directional edge. Hourly MACD histogram just flipped positive (+41.9) suggesting near-term momentum is stabilizing upward, but daily RSI is extremely stretched at 80.8 after a parabolic 63k\u219278k run, and F&G in Greed \u2014 a bad spot to chase a fresh long. I want a cleaner trigger: a pullback to ~76000 (lower Bollinger) to buy the uptrend, or a decisive hourly close above 77400 (breaking the SMA50/upper structure) to join momentum. Staying flat rather than forcing a low-conviction trade in the middle of the range."
     }
    ]
   }
