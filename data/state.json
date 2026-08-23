@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-23T08:12:25Z",
- "last_tick_at": "2026-08-23T08:12:25Z",
- "last_price": 76200.1,
+ "last_tick_at": "2026-08-23T08:49:53Z",
+ "last_price": 76510.9,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -565,12 +565,12 @@
   "opus": {
    "display": "Ziad (Opus 4.8)",
    "api_model": "claude-opus-4-8",
-   "equity": 10680.320778556199,
-   "qty": -0.20797317146088154,
-   "entry": 76933.0,
-   "stop": 76550.0,
-   "tp": 75200.0,
-   "opened_at": "2026-08-22T23:29:06Z",
+   "equity": 10752.014330088052,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -942,6 +942,16 @@
      "exit": 76918.4,
      "pnl": -181.42,
      "reason": "decision_close"
+    },
+    {
+     "opened_at": "2026-08-22T23:29:06Z",
+     "closed_at": "2026-08-23T08:49:53Z",
+     "side": "short",
+     "qty": 0.207973,
+     "entry": 76933.0,
+     "exit": 76550.0,
+     "pnl": 71.69,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 338,
