@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-24T13:25:40Z",
- "last_tick_at": "2026-08-24T13:25:40Z",
- "last_price": 78908.8,
+ "last_tick_at": "2026-08-24T14:10:40Z",
+ "last_price": 78977.3,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -605,12 +605,12 @@
   "opus": {
    "display": "Ziad (Opus 4.8)",
    "api_model": "claude-opus-4-8",
-   "equity": 10413.839824574514,
-   "qty": 0.2555201943997639,
-   "entry": 78271.7,
-   "stop": 78050.0,
-   "tp": 80500.0,
-   "opened_at": "2026-08-24T11:48:23Z",
+   "equity": 10347.219321889635,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -1011,6 +1011,16 @@
      "entry": 77988.5,
      "exit": 77350.0,
      "pnl": -182.34,
+     "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-24T11:48:23Z",
+     "closed_at": "2026-08-24T14:10:40Z",
+     "side": "long",
+     "qty": 0.25552,
+     "entry": 78271.7,
+     "exit": 78050.0,
+     "pnl": -66.62,
      "reason": "stop_loss"
     }
    ],
@@ -1443,12 +1453,12 @@
   "sonnet_ta": {
    "display": "Jamil+ (Sonnet 5 TA)",
    "api_model": "claude-sonnet-5",
-   "equity": 9728.07166518142,
-   "qty": 0.05749204373994688,
-   "entry": 78271.7,
-   "stop": 78000.0,
-   "tp": 80200.0,
-   "opened_at": "2026-08-24T11:48:37Z",
+   "equity": 9710.208887191418,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close back below 78000 (recent breakout consolidation zone, also raises stop to protect profit) would invalidate continuation and trigger exit via stop.",
    "liquidated": false,
    "trades": [
@@ -1671,6 +1681,16 @@
      "exit": 77000.0,
      "pnl": -14.01,
      "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-24T11:48:37Z",
+     "closed_at": "2026-08-24T14:10:40Z",
+     "side": "long",
+     "qty": 0.057492,
+     "entry": 78271.7,
+     "exit": 78000.0,
+     "pnl": -17.86,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 361,
@@ -1692,12 +1712,12 @@
   "opus_ta": {
    "display": "Ziad+ (Opus 4.8 TA)",
    "api_model": "claude-opus-4-8",
-   "equity": 8860.335021469213,
-   "qty": 0.22613537204379106,
-   "entry": 78271.7,
-   "stop": 78050.0,
-   "tp": 80800.0,
-   "opened_at": "2026-08-24T11:48:44Z",
+   "equity": 8801.375876593096,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "An hourly close back below 78050 (below the 12:00 breakout candle body and my new stop) invalidates continuation and I exit.",
    "liquidated": false,
    "trades": [
@@ -2079,6 +2099,16 @@
      "entry": 77456.5,
      "exit": 77150.0,
      "pnl": -57.92,
+     "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-24T11:48:44Z",
+     "closed_at": "2026-08-24T14:10:40Z",
+     "side": "long",
+     "qty": 0.226135,
+     "entry": 78271.7,
+     "exit": 78050.0,
+     "pnl": -58.96,
      "reason": "stop_loss"
     }
    ],
