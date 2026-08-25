@@ -1,8 +1,8 @@
 {
  "started_at": "2026-08-02T13:45:02Z",
  "last_decision_at": "2026-08-25T07:30:10Z",
- "last_tick_at": "2026-08-25T07:30:10Z",
- "last_price": 80650.1,
+ "last_tick_at": "2026-08-25T08:19:57Z",
+ "last_price": 79971.4,
  "traders": {
   "haiku": {
    "display": "Moudir (Haiku 4.5)",
@@ -326,12 +326,12 @@
   "sonnet": {
    "display": "Jamil (Sonnet 5)",
    "api_model": "claude-sonnet-5",
-   "equity": 10200.182716416857,
-   "qty": 0.19164014579982294,
-   "entry": 78271.7,
-   "stop": 80100.0,
-   "tp": 82500.0,
-   "opened_at": "2026-08-24T11:48:16Z",
+   "equity": 10542.883207143392,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -603,6 +603,16 @@
      "exit": 77200.0,
      "pnl": -15.24,
      "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-24T11:48:16Z",
+     "closed_at": "2026-08-25T08:19:57Z",
+     "side": "long",
+     "qty": 0.19164,
+     "entry": 78271.7,
+     "exit": 80100.0,
+     "pnl": 342.7,
+     "reason": "stop_loss"
     }
    ],
    "n_decisions": 376,
@@ -625,12 +635,12 @@
   "opus": {
    "display": "Ziad (Opus 4.8)",
    "api_model": "claude-opus-4-8",
-   "equity": 10126.870955611692,
-   "qty": 0.25323379556942155,
-   "entry": 78978.4,
-   "stop": 80150.0,
-   "tp": 83500.0,
-   "opened_at": "2026-08-24T18:55:51Z",
+   "equity": 10413.411326143383,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "liquidated": false,
    "trades": [
     {
@@ -1051,6 +1061,16 @@
      "entry": 79456.6,
      "exit": 78700.0,
      "pnl": -200.35,
+     "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-24T18:55:51Z",
+     "closed_at": "2026-08-25T08:19:57Z",
+     "side": "long",
+     "qty": 0.253234,
+     "entry": 78978.4,
+     "exit": 80150.0,
+     "pnl": 286.54,
      "reason": "stop_loss"
     }
    ],
@@ -1493,12 +1513,12 @@
   "sonnet_ta": {
    "display": "Jamil+ (Sonnet 5 TA)",
    "api_model": "claude-sonnet-5",
-   "equity": 9633.776982305379,
-   "qty": 0.050125564539170615,
-   "entry": 79799.6,
-   "stop": 80300.0,
-   "tp": 82500.0,
-   "opened_at": "2026-08-25T02:08:08Z",
+   "equity": 9656.847273384532,
+   "qty": 0.0,
+   "entry": null,
+   "stop": null,
+   "tp": null,
+   "opened_at": null,
    "invalidation": "Hourly close below 80300 would break the recent higher-low structure and invalidate the continuation thesis, triggering exit/reassessment.",
    "liquidated": false,
    "trades": [
@@ -1740,6 +1760,16 @@
      "entry": 79790.6,
      "exit": 78550.0,
      "pnl": -72.18,
+     "reason": "stop_loss"
+    },
+    {
+     "opened_at": "2026-08-25T02:08:08Z",
+     "closed_at": "2026-08-25T08:19:57Z",
+     "side": "long",
+     "qty": 0.050126,
+     "entry": 79799.6,
+     "exit": 80300.0,
+     "pnl": 23.07,
      "reason": "stop_loss"
     }
    ],
