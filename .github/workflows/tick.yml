@@ -1,8 +1,10 @@
-# BTC Arena tick — re-saved to (re)register the schedule
+# BTC Arena tick — manual only (scheduled ticking paused).
 name: arena-tick
+# Scheduled ticking is PAUSED. The arena is preserved as-is; re-enable by
+# uncommenting the schedule block below.
 on:
-  schedule:
-    - cron: "*/5 * * * *"
+  # schedule:
+  #   - cron: "*/5 * * * *"
   workflow_dispatch:
 
 concurrency:
