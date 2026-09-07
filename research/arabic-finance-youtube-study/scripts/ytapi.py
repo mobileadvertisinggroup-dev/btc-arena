@@ -129,8 +129,16 @@ class YouTubeClient:
 
             if r.status_code == 200:
                 payload = r.json()
-                payload["_evidence_file"] = self._archive(endpoint, params, payload)
-                payload["_collected_at_utc"] = utcnow()
+                ev = self._archive(endpoint, params, payload)
+                stamp = utcnow()
+                payload["_evidence_file"] = ev
+                payload["_collected_at_utc"] = stamp
+                # Propagate provenance onto every item so a single row in the DB
+                # can always be traced back to the exact archived response.
+                for it in payload.get("items", []):
+                    if isinstance(it, dict):
+                        it["_evidence_file"] = ev
+                        it["_collected_at_utc"] = stamp
                 return payload
 
             # 403 quotaExceeded / keyInvalid are terminal; 5xx and 429 are retryable.

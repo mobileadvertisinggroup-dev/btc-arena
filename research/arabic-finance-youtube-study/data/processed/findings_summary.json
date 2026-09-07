@@ -1,0 +1,77 @@
+{
+ "collection_date_utc": "2026-09-07",
+ "channels_discovered": 569,
+ "channels_verified": 569,
+ "channels_eligible": 108,
+ "channels_selected": 48,
+ "videos_collected": 16281,
+ "videos_mature_30d": 14255,
+ "quota_used_units": 3595,
+ "freq_vs_views_spearman_all": -0.442,
+ "freq_vs_views_spearman_within_bucket": {
+  "A": -0.42,
+  "B": -0.573,
+  "C": -0.645,
+  "D": -0.007
+ },
+ "freq_tier_median_views": {
+  "<=5/mo": 104854.75,
+  "5-15/mo": 13053.0,
+  "15-40/mo": 5793.5,
+  "40+/mo": 5396.5
+ },
+ "freq_tier_views_per_sub": {
+  "<=5/mo": 0.2406,
+  "5-15/mo": 0.0581,
+  "15-40/mo": 0.0956,
+  "40+/mo": 0.0298
+ },
+ "shorts_beat_longform_channels": "11 of 28",
+ "shorts_vs_long_median_ratio": 0.66,
+ "shorts_advantage_vs_longform_strength_rho": -0.421,
+ "duration_index_12_20min": {
+  "A": 1.06,
+  "B": 1.04,
+  "C": 1.08,
+  "D": 1.07
+ },
+ "duration_index_3_8min": {
+  "A": 0.92,
+  "B": 0.75,
+  "C": 0.95,
+  "D": 0.85
+ },
+ "news_index_bucketB": 0.45,
+ "education_index_by_age": {
+  "1-3mo": 0.94,
+  "3-6mo": 1.0,
+  "6-12mo": 0.94,
+  "1-2y": 1.27,
+  "2y+": 1.42
+ },
+ "upload_day_spread": {
+  "A": 0.15,
+  "B": 0.07,
+  "C": 0.19,
+  "D": 0.18
+ },
+ "title_marker_share": {
+  "prediction_arabic": 0.171,
+  "prediction_intl": 0.066,
+  "news_arabic": 0.149,
+  "news_intl": 0.115,
+  "life_situation_arabic": 0.006,
+  "life_situation_intl": 0.041,
+  "explain_simply_arabic": 0.001,
+  "explain_simply_intl": 0.005,
+  "course_arabic": 0.022,
+  "course_intl": 0.001,
+  "story_arabic": 0.038,
+  "story_intl": 0.007
+ },
+ "arabic_animation_gap": {
+  "channels_found": 13,
+  "largest_true_animated_finance_explainer_subs": 1930,
+  "note": "top results were school-curriculum teachers, not finance explainers"
+ }
+}

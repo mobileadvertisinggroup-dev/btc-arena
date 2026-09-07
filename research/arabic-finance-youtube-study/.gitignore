@@ -3,3 +3,9 @@ __pycache__/
 .env
 data/*.sqlite-wal
 data/*.sqlite-shm
+
+# Large regenerable artifacts. The compressed .gz siblings ARE committed.
+evidence/raw_api/
+data/youtube_study.sqlite
+data/processed/videos_full.csv
+data/processed/video_cohort_scores.csv

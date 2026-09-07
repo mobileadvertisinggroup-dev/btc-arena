@@ -1,0 +1,17 @@
+channel_title,bucket,shows_face,primary_visuals,animation_style,coding_confidence,coding_method,coded_by,coded_on
+How Money Works,D,no,"motion graphics + stock footage + charts",2D motion graphics,high,analyst_prior_knowledge,Claude (analyst),2026-09-07
+Economics Explained,D,no,"map/data animation + charts",2D infographic animation,high,analyst_prior_knowledge,Claude (analyst),2026-09-07
+Whiteboard Crypto,D,no,"whiteboard drawing + characters",whiteboard/doodle,high,analyst_prior_knowledge,Claude (analyst),2026-09-07
+Marko - WhiteBoard Finance,D,yes,"talking head + occasional graphics",mostly live presenter,high,analyst_prior_knowledge,Claude (analyst),2026-09-07
+Crayon Capital,D,no,"hand-drawn crayon illustration",hand-drawn illustrative,high,analyst_prior_knowledge,Claude (analyst),2026-09-07
+Caleb Hammer,D,yes,"studio interview + screen share",live studio,high,analyst_prior_knowledge,Claude (analyst),2026-09-07
+Principles by Ray Dalio,D,mixed,"animated explainer + archive footage",2D animation,medium,analyst_prior_knowledge,Claude (analyst),2026-09-07
+How Money Works Uncut,D,no,"motion graphics + footage",2D motion graphics,medium,analyst_prior_knowledge,Claude (analyst),2026-09-07
+Casual Finance,D,unverified,"unknown - not verifiable via API",unverified,low,NOT_VERIFIED,Claude (analyst),2026-09-07
+Primate Economics,D,unverified,"unknown - not verifiable via API",unverified,low,NOT_VERIFIED,Claude (analyst),2026-09-07
+Andy Explains Money,D,unverified,"unknown - not verifiable via API",unverified,low,NOT_VERIFIED,Claude (analyst),2026-09-07
+The Financial Explainer,D,unverified,"unknown - not verifiable via API",unverified,low,NOT_VERIFIED,Claude (analyst),2026-09-07
+Patrick Boyle,C,yes,"talking head + charts",live presenter,high,analyst_prior_knowledge,Claude (analyst),2026-09-07
+Bloomberg Television,C,yes,"TV studio broadcast",live broadcast,high,analyst_prior_knowledge,Claude (analyst),2026-09-07
+LuxAlgo,C,no,"chart screen recording",screen capture,medium,analyst_prior_knowledge,Claude (analyst),2026-09-07
+TradingLab,C,yes,"talking head + chart overlay",live presenter,medium,analyst_prior_knowledge,Claude (analyst),2026-09-07
