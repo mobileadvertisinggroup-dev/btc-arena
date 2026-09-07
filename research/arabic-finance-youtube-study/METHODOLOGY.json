@@ -1,0 +1,90 @@
+{
+  "study": "Arabic faceless finance YouTube channel - forensic competitive study",
+  "version": "1.0",
+  "created_utc": "2026-09-07T12:47:50Z",
+  "status": "PIPELINE_READY_AWAITING_API_KEY",
+  "objective": "Identify reproducible patterns behind successful finance/economics YouTube channels (Arabic and international) that a small faceless whiteboard channel can realistically execute.",
+
+  "legal_and_ethical_scope": {
+    "data_used": "Public metadata only, retrieved through the official YouTube Data API v3 under Google's Terms of Service.",
+    "not_used": ["private analytics", "scraping behind authentication", "full video downloads", "circumvention of any access control"],
+    "thumbnails": "Referenced by public URL only; not redistributed.",
+    "captions": "Availability flag only via captions.list metadata; caption text is not downloaded.",
+    "copying_policy": "No titles, thumbnails, scripts or structures are reproduced. Only abstracted, reusable patterns are extracted."
+  },
+
+  "environment_constraints": {
+    "youtube_com_web": "BLOCKED by this session's network egress policy",
+    "third_party_stats_sites": "BLOCKED (vidiq.com, socialblade.com, playboard.co, noxinfluencer.com all denied)",
+    "support_google_com": "BLOCKED - YouTube policy pages could not be fetched live in this session",
+    "youtube_googleapis_com": "REACHABLE - the sole viable data source",
+    "consequence": "All quantitative findings derive from the YouTube Data API v3. Any statement that could not be sourced from it is labelled OPINION or UNVERIFIED in the report."
+  },
+
+  "phase_1_discovery": {
+    "method": "search.list (type=channel) across 24 targeted queries, tagged by bucket A/B/C/D, with relevanceLanguage and regionCode varied across EG/SA/AE/MA/JO/US/GB.",
+    "rationale": "Channels are surfaced by the platform's own index rather than recalled from memory, so the candidate set is reproducible and dated.",
+    "buckets": {
+      "A": "Arabic general financial / economic education",
+      "B": "Arabic trading, crypto, gold, stocks, market analysis",
+      "C": "International finance / investing / markets",
+      "D": "International faceless, animated, whiteboard explainer finance"
+    },
+    "ranking_inputs": ["median_views_last30", "views_per_sub", "uploads_per_month", "pct_outperform_2x", "days_since_last_upload", "concept_relevance"],
+    "explicitly_not_ranked_by": "subscriber_count alone",
+    "exclusion_rule": "Channels with no upload in the last 180 days are excluded unless retained as a documented format lesson, in which case they are flagged inactive_lesson=true."
+  },
+
+  "phase_2_collection": {
+    "window_months": 24,
+    "endpoints": ["channels.list", "playlistItems.list", "videos.list", "search.list", "captions.list"],
+    "quota_costs_units": {"channels": 1, "playlistItems": 1, "videos": 1, "search": 100, "captions": 50},
+    "daily_free_tier": 10000,
+    "per_channel_cost_estimate": "~21 units for a 500-video channel (1 + 10 + 10)",
+    "evidence": "Every raw API response is archived unmodified to evidence/raw_api/ with its request parameters and a UTC collection timestamp.",
+    "missing_data_handling": "NULL is stored and reported as 'not disclosed'. Hidden subscriber counts, hidden likes and disabled comments are recorded as flags, never imputed."
+  },
+
+  "phase_3_analysis": {
+    "age_bias_controls": {
+      "maturity_filter": "Cross-video comparisons use only videos >= 30 days old, because view accrual is heavily front-loaded and a 3-day-old video is not comparable to a 2-year-old one.",
+      "views_per_day": "Reported as a rate alongside raw views.",
+      "cohort_index": "Each video is scored against the median of videos from the SAME channel in the SAME calendar quarter. This is the primary fair comparison; cohorts with fewer than 4 videos are dropped."
+    },
+    "definitions": {
+      "is_short": "duration <= 180s. HEURISTIC: the API does not expose a definitive Shorts flag, so some short long-form videos may be misclassified. Flagged as an estimate.",
+      "median_preferred_over_mean": "View distributions are heavily right-skewed; the mean is dragged by single viral videos.",
+      "pct_outperform_2x": "Share of mature videos with views >= 2x the channel median.",
+      "top10pct_view_share": "Share of total views held by the top decile of videos - measures whether a channel lives off a few viral hits.",
+      "gini_views": "0 = every video performs equally, 1 = total concentration.",
+      "views_per_sub": "channel median views / subscriber count. A reach-efficiency proxy, NOT a quality measure.",
+      "engagement_rate": "likes / views. NULL where the channel hides likes."
+    },
+    "minimum_group_size": 4,
+    "known_limitations": [
+      "The API returns lifetime view counts only - no watch time, CTR, retention or impressions. All of those are private analytics and are NOT estimated here.",
+      "Upload TIME analysis uses publishedAt in UTC. Audience-local timing cannot be derived without private analytics, so time-of-day findings are correlational and weak.",
+      "The API cannot report whether a presenter shows their face, or whether whiteboard animation is used. Those fields require human review of thumbnails/videos and are coded manually with the coder and date recorded.",
+      "search.list ranking is personalised and time-varying; a rerun on another date may surface a different candidate set. The query list and date are recorded so the run is at least documented, not silently irreproducible."
+    ]
+  },
+
+  "evidence_separation": {
+    "FACT": "Retrieved verbatim from the YouTube Data API and archived in evidence/raw_api/.",
+    "CALCULATION": "Deterministically derived from FACTs by scripts/analyze.py.",
+    "ESTIMATE": "Rule-based inference such as subject classification or the Shorts heuristic.",
+    "OPINION": "Analyst judgement, including all creative and strategic recommendations."
+  },
+
+  "reproduction": {
+    "steps": [
+      "export YOUTUBE_API_KEY=...",
+      "python3 scripts/discover.py",
+      "python3 scripts/select_channels.py",
+      "python3 scripts/collect.py",
+      "python3 scripts/classify.py",
+      "python3 scripts/analyze.py"
+    ],
+    "outputs": ["data/youtube_study.sqlite", "data/processed/*.csv", "evidence/raw_api/*.json", "logs/quota_ledger.jsonl"]
+  }
+}
