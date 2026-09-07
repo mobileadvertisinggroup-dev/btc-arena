@@ -8,8 +8,21 @@ Standalone research project. **Touches nothing in the BTC Arena trading project.
 |---|---|
 | Machine inspected, project scaffolded | Done |
 | Collection + analysis pipeline built and unit-tested | Done |
-| Live data collected | **Blocked — needs a YouTube Data API v3 key** |
-| Report generated | Waiting on data |
+| Live data collected | Done — 48 channels, 16,281 videos, 2026-09-07 |
+| Report generated | Done — `report/التقرير_الرئيسي.md` |
+
+**Start with [`START_HERE_ARABIC.md`](START_HERE_ARABIC.md).**
+
+### Headline findings
+
+| Finding | Evidence |
+|---|---|
+| Upload frequency correlates **negatively** with performance | rho −0.44 overall; holds within every bucket. Channels at ≤5 uploads/mo hold a median 104,855 views vs 5,397 at 40+/mo |
+| The Shorts advantage is **Simpson's paradox** | Only 11 of 28 channels see Shorts beat long-form; median ratio 0.66; Shorts lead only where long-form is weak (rho −0.42) |
+| **12–20 minutes** is the sweet spot | The one band positive in all four buckets (1.04–1.08) |
+| News decays, education appreciates | News index 0.45 on Arabic trading channels; education reaches 1.42 at two years |
+| The Arabic whiteboard niche is **empty** | Largest genuine Arabic animated finance explainer: 1,930 subscribers |
+| Upload-day tuning is noise | Best-to-worst spread only 0.07–0.19 |
 
 ## Why an API key is required
 
